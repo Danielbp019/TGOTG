@@ -29,20 +29,23 @@ La prioridad inicial no es tener mucho contenido, sino construir una base técni
 - React.
 - TypeScript.
 - pnpm.
+- Next.js.
+- Tailwind CSS.
+- shadcn/ui como librería de componentes.
 - Phaser 4 para la representación de la ciudad y posteriormente del mapa.
-- La interfaz administrativa será HTML/CSS/React.
+- La interfaz administrativa será HTML/CSS/React con componentes de shadcn/ui.
 - Phaser se utilizará para la parte visual interactiva del juego.
 
 ### Backend
 
-- Express.js.
-- TypeScript.
-- Drizzle ORM.
+- Laravel (PHP 8.x).
+- Eloquent ORM.
 - MariaDB como base de datos relacional.
+- Composer como gestor de dependencias.
 
-Express será responsable de la API, autenticación, reglas del juego y acceso a datos.
+Laravel será responsable de la API, autenticación (Sanctum), reglas del juego, acceso a datos y tareas en segundo plano (producción de recursos, cron económico, colas).
 
-Drizzle será la capa ORM/acceso tipado a la base de datos.
+Eloquent será la capa ORM de acceso a la base de datos.
 
 ### Idioma
 
@@ -52,9 +55,11 @@ La arquitectura debe permitir internacionalización futura, aunque inicialmente 
 
 ### Gestión de paquetes
 
-Usar exclusivamente **pnpm**.
+Usar exclusivamente **pnpm** para el frontend.
 
 No utilizar npm ni yarn en las instrucciones del proyecto.
+
+Usar **Composer** para el backend Laravel.
 
 ### Estructura del repositorio
 
@@ -62,11 +67,11 @@ Todo el proyecto estará dentro de un único repositorio:
 
 ```text
 juego/
-├── back-express/
+├── back-laravel/
 └── front-next/
 ```
 
-`back-express` contiene exclusivamente el backend Express.
+`back-laravel` contiene exclusivamente el backend Laravel.
 
 `front-next` contiene exclusivamente la aplicación Next.js.
 
@@ -80,7 +85,6 @@ La aplicación debe separarse conceptualmente en dos partes:
 React
 ├── interfaz general
 ├── navegación
-├── barra superior
 ├── barra lateral
 ├── recursos
 ├── información de ciudad
@@ -113,48 +117,50 @@ No mezclar innecesariamente la lógica de interfaz con la lógica de renderizado
 
 # 4. Estructura visual principal
 
-La pantalla principal debe tener una estructura de tres zonas principales:
+La pantalla principal debe tener una estructura de dos zonas principales:
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                     BARRA SUPERIOR                          │
-│ Logo / nombre                     Usuario / Cuenta / Salir  │
-├───────────────┬─────────────────────────────────────────────┤
-│               │                                             │
-│ BARRA         │                                             │
-│ LATERAL       │                 CIUDAD                      │
-│               │                                             │
-│ Recursos      │              Phaser 4                       │
-│               │                                             │
-│ Ciudad        │                                             │
-│ Ejército      │                                             │
-│ Investigación │                                             │
-│ Construcción  │                                             │
-│ Alianzas      │                                             │
-│ Mensajes      │                                             │
-│               ├─────────────────────────────────────────────┤
-│               │ INFORMACIÓN DE LA CIUDAD                    │
-│               │ Producción / Estado / Ejército              │
-└───────────────┴─────────────────────────────────────────────┘
+┌────────────────────┬───────────────────────────────────────┐
+│                    │                                       │
+│  LOGO / NOMBRE     │                                       │
+│                    │                                       │
+│  Usuario           │                                       │
+│  Cuenta            │              CIUDAD                   │
+│  Configuración     │           Phaser 4                    │
+│  Salir             │                                       │
+│  ────────────────  │                                       │
+│  Recursos          │                                       │
+│    Oro             │                                       │
+│    Madera          │                                       │
+│    Piedra          │                                       │
+│    Hierro          │                                       │
+│    Comida          │                                       │
+│  ────────────────  ├───────────────────────────────────────┤
+│  Ciudad            │ INFORMACIÓN DE LA CIUDAD              │
+│  Ejército          │ Producción / Estado / Ejército        │
+│  Construcción      │                                       │
+│  Investigación     │                                       │
+│  Mapa              │                                       │
+│  Alianzas          │                                       │
+│  Mensajes          │                                       │
+└────────────────────┴───────────────────────────────────────┘
 ```
 
-## 4.1 Barra superior
+## 4.1 Barra lateral
 
 Debe permanecer fija mientras el usuario navega por la aplicación.
 
-Contenido inicial:
+No existe barra superior independiente. La barra lateral contiene todo el bloque de identidad, cuenta y navegación.
+
+### Cabecera
+
+En la parte superior de la barra lateral:
 
 - Nombre/logo del juego.
 - Nombre del usuario.
 - Acceso a cuenta.
 - Configuración.
 - Cerrar sesión.
-
-La barra no debe desaparecer al hacer scroll.
-
-## 4.2 Barra lateral
-
-Debe permanecer visible.
 
 ### Recursos
 
@@ -504,8 +510,7 @@ Todavía no implementar lógica real del juego.
 - Proyecto React + TypeScript.
 - Sistema de estilos.
 - Layout principal.
-- Barra superior fija.
-- Barra lateral fija.
+- Barra lateral fija con cabecera de cuenta, recursos y menú.
 - Zona central.
 - Panel inferior.
 - Navegación visual.
@@ -640,10 +645,7 @@ Puede utilizar un reloj local simulado.
 
 Después de validar toda la interfaz visual:
 
-Elegir definitivamente:
-
-- Laravel, o
-- Express.
+Usar **Laravel** como backend definitivo.
 
 Crear API para:
 
@@ -668,6 +670,7 @@ src/
 ├── app/
 ├── components/
 │   ├── layout/
+│   ├── ui/                    # componentes shadcn/ui
 │   ├── resources/
 │   ├── navigation/
 │   ├── city/
@@ -687,6 +690,8 @@ La estructura puede modificarse si el framework elegido requiere otra organizaci
 
 No crear componentes gigantes.
 
+Los componentes de interfaz se construirán sobre shadcn/ui y se personalizarán mediante el sistema de estilos propio.
+
 ---
 
 # 23. Framework de React
@@ -702,6 +707,8 @@ Motivos:
 - Facilita la organización de una aplicación grande.
 - Permite mantener una arquitectura clara alrededor de React.
 - Phaser se integrará como una parte cliente de la aplicación.
+
+Para la interfaz se utilizará **shadcn/ui** como librería de componentes, construida sobre **Tailwind CSS**.
 
 No utilizar React sin framework para este proyecto.
 
@@ -741,7 +748,7 @@ La IA debe ayudar activamente con las decisiones de diseño visual y UX, especia
 
 ### Context7
 
-Cuando se necesite documentación actualizada de Next.js, React, Phaser, Zustand, Drizzle, Express, Tailwind u otra librería/framework, utilizar el MCP de **Context7** disponible en el entorno de desarrollo.
+Cuando se necesite documentación actualizada de Next.js, React, Phaser, Zustand, Tailwind, shadcn/ui, Laravel, Eloquent u otra librería/framework, utilizar el MCP de **Context7** disponible en el entorno de desarrollo.
 
 La IA debe consultar documentación oficial/versionada mediante Context7 antes de asumir APIs, configuraciones o patrones que puedan haber cambiado. Context7 está diseñado precisamente para proporcionar documentación y ejemplos actualizados de las librerías al agente.
 
@@ -751,9 +758,9 @@ Regla de trabajo:
 
 # 26. Lore y concepto del juego
 
-## Nombre provisional
+## Nombre
 
-**El Juego de los Dioses**
+**El Juego de los Dioses / The Game of the Gods**
 
 ## Ambientación
 
@@ -886,13 +893,15 @@ Las instrucciones no deben permitir que el modelo ignore las reglas del servidor
 ## Arquitectura
 
 - [ ] Definir sistema de estilos/UI.
+- [ ] Configurar shadcn/ui en el frontend.
 - [ ] Definir estrategia de internacionalización futura.
+- [ ] Crear proyecto Laravel (back-laravel).
+- [ ] Configurar autenticación Sanctum.
 
 ## Diseño
 
 - [ ] Definir identidad visual concreta.
 - [ ] Definir resolución/aspecto objetivo.
-- [ ] Definir diseño definitivo de la barra superior.
 - [ ] Definir diseño definitivo de la barra lateral.
 - [ ] Definir panel inferior de información.
 - [ ] Definir estilo isométrico.
