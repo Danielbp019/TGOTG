@@ -2,6 +2,7 @@ import {
   Castle,
   Swords,
   FlaskConical,
+  Globe,
   Map,
   Users,
   MessageSquare,
@@ -20,4 +21,10 @@ export const mainMenu: MenuItem[] = [
   { label: 'Mapa', href: '/mapa', icon: Map, disabled: true },
   { label: 'Alianzas', href: '/alianzas', icon: Users, disabled: true },
   { label: 'Mensajes', href: '/mensajes', icon: MessageSquare },
+  {
+    label: 'Configuración del mundo',
+    href: '/configuracion',
+    icon: Globe,
+    adminOnly: true,
+  },
 ]

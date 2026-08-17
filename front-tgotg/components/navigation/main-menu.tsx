@@ -3,10 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { mainMenu } from '@/data/menu'
+import { currentUser } from '@/data/user'
 import { cn } from '@/lib/utils'
 
 export function MainMenu() {
   const pathname = usePathname()
+
+  const visibleItems = mainMenu.filter(
+    (item) => !item.adminOnly || currentUser.role === 'admin'
+  )
 
   function isActive(href: string) {
     return href === '/' ? pathname === href : pathname.startsWith(href)
@@ -14,7 +19,7 @@ export function MainMenu() {
 
   return (
     <nav className="flex flex-col gap-1">
-      {mainMenu.map((item) => {
+      {visibleItems.map((item) => {
         const active = !item.disabled && isActive(item.href)
         return (
           <Link

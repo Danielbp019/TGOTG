@@ -15,6 +15,8 @@ export interface MenuItem {
   href: string
   icon: LucideIcon
   disabled?: boolean
+  /** Solo visible para el rol de administrador del mundo */
+  adminOnly?: boolean
 }
 
 export interface CityProduction {
@@ -77,4 +79,35 @@ export interface BuildingSlot {
   /** Ancho y alto de la huella de la parcela en px */
   width: number
   height: number
+}
+
+export type WorldRole = 'admin' | 'player'
+
+export interface CurrentUser {
+  name: string
+  initials: string
+  email: string
+  role: WorldRole
+}
+
+export interface GameDuration {
+  id: string
+  label: string
+  days: number
+  description: string
+}
+
+export interface GameMultiplier {
+  id: string
+  label: string
+  multiplier: number
+  description: string
+}
+
+export interface GodBlessing {
+  id: string
+  name: string
+  benefit: string
+  description: string
+  icon: LucideIcon
 }
