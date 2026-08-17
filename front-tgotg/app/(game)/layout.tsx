@@ -1,5 +1,9 @@
-import { GameShell } from "@/components/layout/game-shell"
+import { GameShell } from '@/components/layout/game-shell'
 
-export default function GameLayout({ children }: { children: React.ReactNode }) {
+export default function GameLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return <GameShell>{children}</GameShell>
 }

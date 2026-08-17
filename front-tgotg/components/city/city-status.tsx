@@ -1,12 +1,7 @@
-import { cityProduction, cityStatus, armyStatus } from "@/data/city"
-import { resources } from "@/data/resources"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { cityProduction, cityStatus, armyStatus } from '@/data/city'
+import { resources } from '@/data/resources'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
 
 export function CityStatus() {
   return (
@@ -24,7 +19,7 @@ export function CityStatus() {
                   key={production.resource}
                   className="flex items-center justify-between text-sm"
                 >
-                  <span className="flex items-center gap-2 text-muted-foreground">
+                  <span className="text-muted-foreground flex items-center gap-2">
                     <resource.icon className="size-4 shrink-0" />
                     {production.label}
                   </span>

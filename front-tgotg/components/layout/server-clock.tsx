@@ -1,12 +1,12 @@
-"use client"
+'use client'
 
-import * as React from "react"
+import * as React from 'react'
 
 function formatTime(date: Date) {
-  return date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+  return date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
     hour12: false,
   })
 }
@@ -23,11 +23,9 @@ export function ServerClock() {
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground">
-        Hora del servidor
-      </span>
+      <span className="text-muted-foreground text-xs">Hora del servidor</span>
       <span
-        className="font-mono text-base font-medium tabular-nums tracking-wider"
+        className="font-mono text-base font-medium tracking-wider tabular-nums"
         aria-live="off"
       >
         {time}

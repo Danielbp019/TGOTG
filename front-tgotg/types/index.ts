@@ -1,6 +1,6 @@
-import type { LucideIcon } from "lucide-react"
+import type { LucideIcon } from 'lucide-react'
 
-export type ResourceKey = "gold" | "wood" | "stone" | "iron" | "food"
+export type ResourceKey = 'gold' | 'wood' | 'stone' | 'iron' | 'food'
 
 export interface Resource {
   key: ResourceKey
@@ -36,17 +36,34 @@ export interface ArmyStatus {
 }
 
 export type BuildingType =
-  | "ayuntamiento"
-  | "muralla"
-  | "foso"
-  | "granja"
-  | "minaHierro"
-  | "minaPiedra"
-  | "aserradero"
-  | "cuartel"
-  | "laboratorio"
+  | 'ayuntamiento'
+  | 'muralla'
+  | 'foso'
+  | 'granja'
+  | 'minaHierro'
+  | 'minaPiedra'
+  | 'aserradero'
+  | 'cuartel'
+  | 'laboratorio'
 
-export type PlotShape = "rect" | "diamond"
+export type PlotShape = 'rect' | 'diamond'
+
+export interface ChatMessage {
+  id: string
+  autor: 'in' | 'out'
+  texto: string
+  fecha: string
+}
+
+export interface ChatConversation {
+  id: string
+  participante: {
+    nombre: string
+    iniciales: string
+  }
+  mensajes: ChatMessage[]
+  noLeidos: number
+}
 
 export interface BuildingSlot {
   type: BuildingType

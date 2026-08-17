@@ -1,17 +1,12 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { AlertTriangle, Trash2, User } from "lucide-react"
-import type { z } from "zod"
+import * as React from 'react'
+import { AlertTriangle, Trash2, User } from 'lucide-react'
+import type { z } from 'zod'
 
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -19,40 +14,36 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { currentUser } from "@/data/user"
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { currentUser } from '@/data/user'
 import {
   accountProfileSchema,
   deleteAccountSchema,
   type AccountProfileValues,
-} from "@/lib/validations/account"
+} from '@/lib/validations/account'
 
 interface AccountSettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-type ProfileErrors = Partial<
-  Record<keyof AccountProfileValues, string>
->
+type ProfileErrors = Partial<Record<keyof AccountProfileValues, string>>
 
 const initialProfile: AccountProfileValues = {
   email: currentUser.email,
   nick: currentUser.name,
-  password: "",
-  confirmPassword: "",
+  password: '',
+  confirmPassword: '',
 }
 
 function getFieldError(
   error: z.ZodError<AccountProfileValues>,
   field: keyof AccountProfileValues
 ) {
-  return error.issues.find(
-    (issue) => issue.path.join(".") === field
-  )?.message
+  return error.issues.find((issue) => issue.path.join('.') === field)?.message
 }
 
 export function AccountSettingsDialog({
@@ -61,19 +52,16 @@ export function AccountSettingsDialog({
 }: AccountSettingsDialogProps) {
   const [profile, setProfile] =
     React.useState<AccountProfileValues>(initialProfile)
-  const [profileErrors, setProfileErrors] =
-    React.useState<ProfileErrors>({})
+  const [profileErrors, setProfileErrors] = React.useState<ProfileErrors>({})
   const [saved, setSaved] = React.useState(false)
-  const [confirmNick, setConfirmNick] = React.useState("")
-  const [deleteError, setDeleteError] = React.useState<
-    string | undefined
-  >()
+  const [confirmNick, setConfirmNick] = React.useState('')
+  const [deleteError, setDeleteError] = React.useState<string | undefined>()
 
   function resetForm() {
     setProfile(initialProfile)
     setProfileErrors({})
     setSaved(false)
-    setConfirmNick("")
+    setConfirmNick('')
     setDeleteError(undefined)
   }
 
@@ -90,8 +78,8 @@ export function AccountSettingsDialog({
   ) {
     setProfile((prev) => {
       const next = { ...prev, [field]: value }
-      if (field === "password" && value === "") {
-        next.confirmPassword = ""
+      if (field === 'password' && value === '') {
+        next.confirmPassword = ''
       }
       return next
     })
@@ -103,13 +91,10 @@ export function AccountSettingsDialog({
     const result = accountProfileSchema.safeParse(profile)
     if (!result.success) {
       setProfileErrors({
-        email: getFieldError(result.error, "email"),
-        nick: getFieldError(result.error, "nick"),
-        password: getFieldError(result.error, "password"),
-        confirmPassword: getFieldError(
-          result.error,
-          "confirmPassword"
-        ),
+        email: getFieldError(result.error, 'email'),
+        nick: getFieldError(result.error, 'nick'),
+        password: getFieldError(result.error, 'password'),
+        confirmPassword: getFieldError(result.error, 'confirmPassword'),
       })
       setSaved(false)
       return
@@ -158,32 +143,19 @@ export function AccountSettingsDialog({
                   noValidate
                 >
                   <div className="grid gap-2">
-                    <Label htmlFor="account-email">
-                      Correo electrónico
-                    </Label>
+                    <Label htmlFor="account-email">Correo electrónico</Label>
                     <Input
                       id="account-email"
                       type="email"
                       value={profile.email}
-                      onChange={(event) =>
-                        handleProfileField("email", event.target.value)
-                      }
-                      aria-invalid={Boolean(profileErrors.email)}
-                      aria-describedby={
-                        profileErrors.email
-                          ? "account-email-error"
-                          : undefined
-                      }
-                      placeholder="correo@ejemplo.com"
+                      disabled
                     />
-                    {profileErrors.email && (
-                      <p
-                        id="account-email-error"
-                        className="text-xs text-destructive"
-                      >
-                        {profileErrors.email}
-                      </p>
-                    )}
+                    <p
+                      id="account-email-note"
+                      className="text-muted-foreground text-xs"
+                    >
+                      El correo no se puede modificar.
+                    </p>
                   </div>
 
                   <div className="grid gap-2">
@@ -193,19 +165,17 @@ export function AccountSettingsDialog({
                       type="text"
                       value={profile.nick}
                       onChange={(event) =>
-                        handleProfileField("nick", event.target.value)
+                        handleProfileField('nick', event.target.value)
                       }
                       aria-invalid={Boolean(profileErrors.nick)}
                       aria-describedby={
-                        profileErrors.nick
-                          ? "account-nick-error"
-                          : undefined
+                        profileErrors.nick ? 'account-nick-error' : undefined
                       }
                     />
                     {profileErrors.nick && (
                       <p
                         id="account-nick-error"
-                        className="text-xs text-destructive"
+                        className="text-destructive text-xs"
                       >
                         {profileErrors.nick}
                       </p>
@@ -215,23 +185,18 @@ export function AccountSettingsDialog({
                   <Separator />
 
                   <div className="grid gap-2">
-                    <Label htmlFor="account-password">
-                      Nueva contraseña
-                    </Label>
+                    <Label htmlFor="account-password">Nueva contraseña</Label>
                     <Input
                       id="account-password"
                       type="password"
                       value={profile.password}
                       onChange={(event) =>
-                        handleProfileField(
-                          "password",
-                          event.target.value
-                        )
+                        handleProfileField('password', event.target.value)
                       }
                       aria-invalid={Boolean(profileErrors.password)}
                       aria-describedby={
                         profileErrors.password
-                          ? "account-password-error"
+                          ? 'account-password-error'
                           : undefined
                       }
                       placeholder="Déjala en blanco para no cambiarla"
@@ -239,7 +204,7 @@ export function AccountSettingsDialog({
                     {profileErrors.password && (
                       <p
                         id="account-password-error"
-                        className="text-xs text-destructive"
+                        className="text-destructive text-xs"
                       >
                         {profileErrors.password}
                       </p>
@@ -256,23 +221,21 @@ export function AccountSettingsDialog({
                       value={profile.confirmPassword}
                       onChange={(event) =>
                         handleProfileField(
-                          "confirmPassword",
+                          'confirmPassword',
                           event.target.value
                         )
                       }
-                      aria-invalid={Boolean(
-                        profileErrors.confirmPassword
-                      )}
+                      aria-invalid={Boolean(profileErrors.confirmPassword)}
                       aria-describedby={
                         profileErrors.confirmPassword
-                          ? "account-confirm-password-error"
+                          ? 'account-confirm-password-error'
                           : undefined
                       }
                     />
                     {profileErrors.confirmPassword && (
                       <p
                         id="account-confirm-password-error"
-                        className="text-xs text-destructive"
+                        className="text-destructive text-xs"
                       >
                         {profileErrors.confirmPassword}
                       </p>
@@ -285,24 +248,21 @@ export function AccountSettingsDialog({
                     </p>
                   )}
 
-                  <Button
-                    type="submit"
-                    className="w-full sm:w-auto"
-                  >
+                  <Button type="submit" className="w-full sm:w-auto">
                     Guardar cambios
                   </Button>
                 </form>
               </TabsContent>
 
               <TabsContent value="peligro">
-                <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4">
-                  <h3 className="flex items-center gap-2 text-sm font-medium text-destructive">
+                <div className="border-destructive/40 bg-destructive/5 rounded-xl border p-4">
+                  <h3 className="text-destructive flex items-center gap-2 text-sm font-medium">
                     <AlertTriangle className="size-4" />
                     Borrar cuenta
                   </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Esta acción es permanente y no se puede deshacer.
-                    Se perderán todos tus progresos, recursos y datos.
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    Esta acción es permanente y no se puede deshacer. Se
+                    perderán todos tus progresos, recursos y datos.
                   </p>
                   <div className="mt-3 grid gap-2">
                     <Label htmlFor="account-confirm-nick">
@@ -318,15 +278,13 @@ export function AccountSettingsDialog({
                       }}
                       aria-invalid={Boolean(deleteError)}
                       aria-describedby={
-                        deleteError
-                          ? "account-confirm-nick-error"
-                          : undefined
+                        deleteError ? 'account-confirm-nick-error' : undefined
                       }
                     />
                     {deleteError && (
                       <p
                         id="account-confirm-nick-error"
-                        className="text-xs text-destructive"
+                        className="text-destructive text-xs"
                       >
                         {deleteError}
                       </p>

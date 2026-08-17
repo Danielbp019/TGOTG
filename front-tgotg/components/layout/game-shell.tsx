@@ -1,11 +1,7 @@
-import { Sidebar, SidebarContent } from "@/components/layout/sidebar"
-import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { MenuIcon } from "lucide-react"
+import { Sidebar, SidebarContent } from '@/components/layout/sidebar'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { MenuIcon } from 'lucide-react'
 
 interface GameShellProps {
   children: React.ReactNode
@@ -16,7 +12,7 @@ export function GameShell({ children }: GameShellProps) {
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card px-4 md:hidden">
+        <header className="bg-card flex h-14 shrink-0 items-center gap-3 border-b px-4 md:hidden">
           <Sheet>
             <SheetTrigger
               render={
@@ -33,7 +29,7 @@ export function GameShell({ children }: GameShellProps) {
             El Juego de los Dioses
           </h1>
         </header>
-        <main className="min-h-0 flex-1 overflow-hidden bg-background">
+        <main className="bg-background min-h-0 flex-1 overflow-hidden">
           {children}
         </main>
       </div>

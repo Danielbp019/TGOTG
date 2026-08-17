@@ -1,8 +1,8 @@
-import Phaser from "phaser"
-import { EventBus } from "@/game/event-bus"
-import { buildingSlots } from "@/data/city"
-import { buildingAssets, groundAsset } from "@/game/assets"
-import type { BuildingSlot } from "@/types"
+import Phaser from 'phaser'
+import { EventBus } from '@/game/event-bus'
+import { buildingSlots } from '@/data/city'
+import { buildingAssets, groundAsset } from '@/game/assets'
+import type { BuildingSlot } from '@/types'
 
 export class CityScene extends Phaser.Scene {
   private readonly worldWidth = 2048
@@ -17,27 +17,29 @@ export class CityScene extends Phaser.Scene {
   private tooltip?: Phaser.GameObjects.Container
 
   constructor() {
-    super("CityScene")
+    super('CityScene')
   }
 
   preload() {
-    this.load.image("ground", groundAsset)
+    this.load.image('ground', groundAsset)
 
-    ;(Object.keys(buildingAssets) as Array<keyof typeof buildingAssets>).forEach((type) => {
+    ;(
+      Object.keys(buildingAssets) as Array<keyof typeof buildingAssets>
+    ).forEach((type) => {
       this.load.image(type, buildingAssets[type])
     })
   }
 
   create() {
-    this.cameras.main.setBackgroundColor("#1e2a1e")
+    this.cameras.main.setBackgroundColor('#1e2a1e')
 
-    this.add.image(this.worldWidth / 2, this.worldHeight / 2, "ground")
+    this.add.image(this.worldWidth / 2, this.worldHeight / 2, 'ground')
 
     this.createPlots()
     this.createBuildings()
     this.createTooltip()
 
-    EventBus.emit("current-scene-ready", this)
+    EventBus.emit('current-scene-ready', this)
   }
 
   private createPlots() {
@@ -51,7 +53,7 @@ export class CityScene extends Phaser.Scene {
       const halfH = slot.height / 2
 
       let points: number[][]
-      if (slot.shape === "rect") {
+      if (slot.shape === 'rect') {
         points = [
           [x - halfW, y],
           [x + halfW, y],
@@ -100,9 +102,12 @@ export class CityScene extends Phaser.Scene {
         const image = this.add
           .image(0, 0, slot.type)
           .setOrigin(0.5, 1)
-          .setScale(slot.shape === "rect" ? 0.18 : 0.5)
+          .setScale(slot.shape === 'rect' ? 0.18 : 0.5)
         building = this.add.container(x, y, [image])
-        building.setSize(slot.shape === "rect" ? slot.width : slot.width * 0.6, slot.shape === "rect" ? slot.height : slot.height * 0.7)
+        building.setSize(
+          slot.shape === 'rect' ? slot.width : slot.width * 0.6,
+          slot.shape === 'rect' ? slot.height : slot.height * 0.7
+        )
       } else {
         const size = this.placeholderSizes[slot.shape]
         const graphics = this.add.graphics()
@@ -115,9 +120,9 @@ export class CityScene extends Phaser.Scene {
 
         const label = this.add
           .text(0, -size.height / 2, slot.name, {
-            color: "#e8e8e8",
-            fontFamily: "Arial, sans-serif",
-            fontSize: "16px",
+            color: '#e8e8e8',
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '16px',
           })
           .setOrigin(0.5)
 
@@ -125,17 +130,20 @@ export class CityScene extends Phaser.Scene {
         building.setSize(size.width, size.height)
       }
 
-      building.setData("slot", slot)
-      building.setData("hasSprite", hasSprite)
+      building.setData('slot', slot)
+      building.setData('hasSprite', hasSprite)
       building.setInteractive({ useHandCursor: true })
 
-      building.on("pointerover", () => this.showBuilding(building))
-      building.on("pointerout", () => this.hideBuilding(building))
+      building.on('pointerover', () => this.showBuilding(building))
+      building.on('pointerout', () => this.hideBuilding(building))
     })
   }
 
   /** Vértices de un placeholder de w×h con base en y=0, con shear vertical (izquierda arriba, derecha abajo). */
-  private placeholderPoints(width: number, height: number): Phaser.Math.Vector2[] {
+  private placeholderPoints(
+    width: number,
+    height: number
+  ): Phaser.Math.Vector2[] {
     const halfW = width / 2
     const points: Array<[number, number]> = [
       [-halfW, 0],
@@ -143,16 +151,20 @@ export class CityScene extends Phaser.Scene {
       [halfW, -height],
       [-halfW, -height],
     ]
-    return points.map(([px, py]) => new Phaser.Math.Vector2(px, py + this.skewY * px))
+    return points.map(
+      ([px, py]) => new Phaser.Math.Vector2(px, py + this.skewY * px)
+    )
   }
 
   private showBuilding(building: Phaser.GameObjects.Container) {
-    if (building.getData("hasSprite")) {
+    if (building.getData('hasSprite')) {
       building.setAlpha(0.85)
     }
-    const slot = building.getData("slot") as BuildingSlot
-    const hasSprite = building.getData("hasSprite") as boolean
-    const height = hasSprite ? slot.height : this.placeholderSizes[slot.shape].height
+    const slot = building.getData('slot') as BuildingSlot
+    const hasSprite = building.getData('hasSprite') as boolean
+    const height = hasSprite
+      ? slot.height
+      : this.placeholderSizes[slot.shape].height
     this.showTooltip(slot, building.x, building.y - height - 60)
   }
 
@@ -170,27 +182,42 @@ export class CityScene extends Phaser.Scene {
   private showTooltip(slot: BuildingSlot, x: number, y: number) {
     if (!this.tooltip) return
 
-    const stars = "★".repeat(Math.min(slot.level, this.maxStars))
-    const emptyStars = "☆".repeat(this.maxStars - stars.length)
+    const stars = '★'.repeat(Math.min(slot.level, this.maxStars))
+    const emptyStars = '☆'.repeat(this.maxStars - stars.length)
 
     const text = this.add
       .text(0, 0, `${slot.name}\nNivel ${slot.level}\n${stars}${emptyStars}`, {
-        color: "#f5efe0",
-        fontFamily: "Arial, sans-serif",
-        fontSize: "24px",
-        align: "center",
+        color: '#f5efe0',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '24px',
+        align: 'center',
       })
       .setOrigin(0.5)
 
     const padding = 20
     const background = this.add
-      .rectangle(0, 0, text.width + padding * 2, text.height + padding * 2, 0x1a241a, 0.92)
+      .rectangle(
+        0,
+        0,
+        text.width + padding * 2,
+        text.height + padding * 2,
+        0x1a241a,
+        0.92
+      )
       .setStrokeStyle(2, 0x8b7d6b)
 
     this.tooltip.add([background, text])
 
-    const clampedX = Phaser.Math.Clamp(x, background.width / 2 + 10, this.worldWidth - background.width / 2 - 10)
-    const clampedY = Phaser.Math.Clamp(y, background.height / 2 + 10, this.worldHeight - background.height / 2 - 10)
+    const clampedX = Phaser.Math.Clamp(
+      x,
+      background.width / 2 + 10,
+      this.worldWidth - background.width / 2 - 10
+    )
+    const clampedY = Phaser.Math.Clamp(
+      y,
+      background.height / 2 + 10,
+      this.worldHeight - background.height / 2 - 10
+    )
 
     this.tooltip.setPosition(clampedX, clampedY)
     this.tooltip.setVisible(true)

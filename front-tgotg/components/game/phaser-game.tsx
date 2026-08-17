@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useEffect, useRef, forwardRef, useImperativeHandle } from "react"
-import Phaser from "phaser"
-import { gameConfig } from "@/game/main"
-import { EventBus } from "@/game/event-bus"
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import Phaser from 'phaser'
+import { gameConfig } from '@/game/main'
+import { EventBus } from '@/game/event-bus'
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null
@@ -24,7 +24,7 @@ export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
         return gameRef.current
       },
       get scene() {
-        return gameRef.current?.scene.getScene("CityScene") ?? null
+        return gameRef.current?.scene.getScene('CityScene') ?? null
       },
     }))
 
@@ -40,10 +40,10 @@ export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
         currentActiveScene?.(scene)
       }
 
-      EventBus.on("current-scene-ready", handleSceneReady)
+      EventBus.on('current-scene-ready', handleSceneReady)
 
       return () => {
-        EventBus.off("current-scene-ready", handleSceneReady)
+        EventBus.off('current-scene-ready', handleSceneReady)
         gameRef.current?.destroy(true)
         gameRef.current = null
       }
