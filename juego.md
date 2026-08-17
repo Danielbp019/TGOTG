@@ -3,13 +3,65 @@
 > Documento de trabajo del juego. La información de contexto, arquitectura y principios está en `AGENTS.md`.
 > Aquí solo queda lo que falta por hacer.
 
-## Backend (ETAPA 8)
+## Frontend / UI
 
-- [ ] Crear el proyecto Laravel definitivo (`back-tgotg`).
-- [ ] Configurar autenticación Sanctum.
-- [ ] Definir API para: usuario, ciudad, edificios, recursos, ejército.
-- [ ] Sustituir progresivamente los datos mock por datos reales.
-- [ ] Diseñar desde el inicio la separación jugador humano / jugador IA / identidad, sin crear todavía el sistema de IA.
+- [ ] Al seleccionar "Ciudad" en el menú, mostrar el listado de ciudades disponibles.
+- [ ] Unificar la vista de ciudad con la de construcción (cada construcción pertenece a una ciudad).
+- [ ] En el panel de construcciones, mostrar un resumen de qué hace cada construcción.
+- [ ] Al conectarse, mostrar un resumen de lo sucedido con las ciudades (ataques, daños, ganancias por defensa exitosa).
+
+## Ciudades y colonización
+
+- [ ] Fundar la primera ciudad es gratis.
+- [ ] Para fundar una ciudad, consultar el mapa del mundo; cada zona ofrece bonos según su bioma.
+- [ ] El jugador pone nombre a sus ciudades.
+
+## Estilos y biomas
+
+- [ ] Definir al menos 3 estilos de ciudad.
+- [ ] Cada bioma otorga bonos extra de producción de algún recurso.
+- [ ] Diferentes especializaciones de recursos y ventajas de producción.
+- [ ] Sistema `bioma + estilo + edificio` que no duplique la lógica del juego.
+
+## Reglas de juego
+
+- [ ] Reglas de producción de recursos.
+- [ ] El ayuntamiento determina el nivel máximo del resto de construcciones (ej. ayuntamiento 5 → construcciones 5).
+- [ ] Niveles de edificios.
+- [ ] Sistema de daño.
+- [ ] Sistema de reparación.
+- [ ] Sistema de turnos/acciones: número fijo de turnos/acciones cada cierto tiempo, acumulables.
+- [ ] La producción de recursos puede ligarse al reparto de turnos/acciones.
+- [ ] Comercio de recursos con el propio sistema (intercambiar unos recursos por otros).
+- [ ] Las tropas en la ciudad no consumen comida; la población de cada ciudad sí.
+
+## Ejército y combate
+
+- [ ] Sistema de ejército.
+- [ ] Tres tipos de tropas.
+- [ ] Reglas de combate (combates automáticos).
+- [ ] Cada ciudad produce tropas; por defecto quedan en guardia de la ciudad.
+- [ ] El jugador decide qué tropas mover al ejército; las del ejército no defienden la ciudad salvo que estén ubicadas en ella.
+- [ ] Botón de disolver ejército y elegir ciudad destino de las tropas.
+- [ ] Ataque desde el mapa: seleccionar una región y ver sus ciudades con un mensajes ("Defensa débil", "Defensa considerable", "Fuerzas superiores detectadas").
+- [ ] Al atacar, avisar de un ejército adicional sin dar detalles y sin incluirlo en el % (o no mostrar %: solo el nivel del ayuntamiento).
+- [ ] Resumen de batalla al finalizar (daños, ganancias, tropas perdidas) y combate por rounds con registro de acciones.
+- [ ] Con 1 sola ciudad no se pierde nunca; con 2+, una ciudad atacada puede pasar al atacante (definir fórmula de probabilidad).
+- [ ] El atacante recibe la ciudad con los destrozos del ataque (definir probabilidad de destrozos).
+
+## Mapa mundial y PvP
+
+- [ ] Mapa mundial.
+- [ ] No mostrar ciudades con demasiada diferencia de nivel.
+- [ ] PvP.
+- [ ] Crear alianzas y enviar recursos entre jugadores de la misma alianza.
+- [ ] Mensajería.
+
+## Partidas
+
+- [ ] Panel de inicio de partida: duraciones, multiplicadores y bendiciones de los dioses.
+- [ ] Al terminar la partida, resumen de la mejor civilización por estadísticas.
+- [ ] Antes de comenzar otra partida, borrar todos los datos (inicio limpio).
 
 ## Ciudad y Phaser
 
@@ -17,33 +69,13 @@
 - [ ] Estados visuales de edificios (construcción, dañado, destruido): validar el sistema con el Ayuntamiento y reutilizarlo en el resto.
 - [ ] Reparación y mejora (`repairing`, `upgrading`) si se necesitan.
 
-## Estilos y biomas
+## Backend (ETAPA 8)
 
-- [ ] Definir al menos 3 estilos de ciudad.
-- [ ] Diferentes especializaciones de recursos y ventajas de producción.
-- [ ] Sistema `bioma + estilo + edificio` que no duplique la lógica del juego.
-
-## Reglas de juego (definir antes de implementar)
-
-- [ ] Reglas de producción de recursos.
-- [ ] Niveles de edificios.
-- [ ] Sistema de daño.
-- [ ] Sistema de reparación.
-- [ ] Sistema de ejército.
-- [ ] Tres tipos de tropas.
-- [ ] Reglas de combate (combates automáticos).
-- [ ] Mapa mundial.
-- [ ] PvP.
-- [ ] Alianzas.
-- [ ] Mensajería.
-
-## Arte y assets
-
-- [ ] Buscar/seleccionar el estilo artístico.
-- [ ] Conseguir assets provisionales.
-- [ ] Crear/seleccionar Ayuntamiento, Mina, Aserradero, Cantera, Cuartel y Granja.
-- [ ] Crear estados dañado/destruido.
-- [ ] Iconos definitivos (cuando existan, reemplazar los de `lucide-react`).
+- [ ] Crear el proyecto Laravel definitivo (`back-tgotg`).
+- [ ] Configurar autenticación Sanctum.
+- [ ] Definir API para: usuario, ciudad, edificios, recursos, ejército.
+- [ ] Sustituir progresivamente los datos mock por datos reales.
+- [ ] Diseñar desde el inicio la separación jugador humano / jugador IA / identidad, sin crear todavía el sistema de IA.
 
 ## IA futura (post-MVP)
 

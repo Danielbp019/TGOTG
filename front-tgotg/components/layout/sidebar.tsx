@@ -1,6 +1,7 @@
 import { AccountHeader } from "@/components/account/account-header"
 import { ResourceBar } from "@/components/resources/resource-bar"
 import { MainMenu } from "@/components/navigation/main-menu"
+import { ServerClock } from "@/components/layout/server-clock"
 import { Separator } from "@/components/ui/separator"
 
 export function SidebarContent() {
@@ -18,6 +19,10 @@ export function SidebarContent() {
         <h2 className="mb-1 px-3 text-xs font-medium text-muted-foreground">Menú</h2>
         <MainMenu />
       </div>
+      <Separator />
+      <footer className="px-3">
+        <ServerClock />
+      </footer>
     </>
   )
 }

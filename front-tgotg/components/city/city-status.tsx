@@ -6,12 +6,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-export function BottomPanel() {
+export function CityStatus() {
   return (
-    <footer className="grid shrink-0 grid-cols-1 gap-4 border-t bg-card p-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-3">
       <Card size="sm">
         <CardHeader>
           <CardTitle>Producción</CardTitle>
@@ -68,10 +67,7 @@ export function BottomPanel() {
 
       <Card size="sm">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between gap-2">
-            Ejército
-            <Badge variant="secondary">{armyStatus.overall}</Badge>
-          </CardTitle>
+          <CardTitle>Ejército</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="flex flex-col gap-1 text-sm">
@@ -90,6 +86,6 @@ export function BottomPanel() {
           </dl>
         </CardContent>
       </Card>
-    </footer>
+    </div>
   )
 }

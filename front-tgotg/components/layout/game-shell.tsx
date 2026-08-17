@@ -1,5 +1,4 @@
 import { Sidebar, SidebarContent } from "@/components/layout/sidebar"
-import { BottomPanel } from "@/components/layout/bottom-panel"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -37,7 +36,6 @@ export function GameShell({ children }: GameShellProps) {
         <main className="min-h-0 flex-1 overflow-hidden bg-background">
           {children}
         </main>
-        <BottomPanel />
       </div>
     </div>
   )
