@@ -34,3 +34,30 @@ export interface ArmyStatus {
   defensePower: number
   overall: string
 }
+
+export type BuildingType =
+  | "ayuntamiento"
+  | "muralla"
+  | "foso"
+  | "granja"
+  | "minaHierro"
+  | "minaPiedra"
+  | "aserradero"
+  | "cuartel"
+  | "laboratorio"
+
+export type PlotShape = "rect" | "diamond"
+
+export interface BuildingSlot {
+  type: BuildingType
+  name: string
+  level: number
+  /** Coordenadas del centro de la base (pivot bottom-center) en px del mundo (2048x1024) */
+  x: number
+  y: number
+  /** Forma de la parcela: rect (alargada) o diamond (interior) */
+  shape: PlotShape
+  /** Ancho y alto de la huella de la parcela en px */
+  width: number
+  height: number
+}

@@ -34,7 +34,7 @@ export function GameShell({ children }: GameShellProps) {
             El Juego de los Dioses
           </h1>
         </header>
-        <main className="min-h-0 flex-1 overflow-auto bg-background">
+        <main className="min-h-0 flex-1 overflow-hidden bg-background">
           {children}
         </main>
         <BottomPanel />
