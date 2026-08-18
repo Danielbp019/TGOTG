@@ -21,6 +21,8 @@ class CivilizationFactory extends Factory
             'key' => fake()->unique()->word(),
             'name' => fake()->unique()->word(),
             'description' => fake()->sentence(),
+            'benefit' => fake()->sentence(),
+            'bonus' => ['production_bonus' => ['food' => 10]],
         ];
     }
 }

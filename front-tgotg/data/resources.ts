@@ -11,19 +11,3 @@ export const resources: Record<
   iron: { key: 'iron', label: 'Hierro', icon: Pickaxe },
   food: { key: 'food', label: 'Comida', icon: Wheat },
 }
-
-export const resourceAmounts: Record<ResourceKey, number> = {
-  gold: 12450,
-  wood: 8300,
-  stone: 6200,
-  iron: 4100,
-  food: 9700,
-}
-
-export const resourcePerHour: Record<ResourceKey, number> = {
-  gold: 120,
-  wood: 85,
-  stone: 60,
-  iron: 35,
-  food: 95,
-}

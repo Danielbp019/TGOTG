@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('key')->unique();
             $table->string('name');
             $table->text('description')->nullable();
+            $table->string('benefit')->default('');
+            $table->json('bonus')->nullable();
             $table->timestamps();
         });
     }

@@ -1,8 +1,34 @@
 import Phaser from 'phaser'
 import { EventBus } from '@/game/event-bus'
-import { buildingSlots } from '@/data/city'
 import { buildingAssets, groundAsset } from '@/game/assets'
-import type { BuildingSlot } from '@/types'
+import { getCityBuildings } from '@/game/city-data'
+import type { PlotShape } from '@/types'
+
+interface CitySlot {
+  type: string
+  name: string
+  level: number
+  x: number
+  y: number
+  shape: PlotShape
+  width: number
+  height: number
+}
+
+function toSlots(
+  buildings: ReturnType<typeof getCityBuildings>
+): CitySlot[] {
+  return buildings.map((building) => ({
+    type: building.key,
+    name: building.name,
+    level: building.level,
+    x: building.x,
+    y: building.y,
+    shape: building.shape,
+    width: building.width,
+    height: building.height,
+  }))
+}
 
 export class CityScene extends Phaser.Scene {
   private readonly worldWidth = 2048
@@ -35,18 +61,21 @@ export class CityScene extends Phaser.Scene {
 
     this.add.image(this.worldWidth / 2, this.worldHeight / 2, 'ground')
 
-    this.createPlots()
-    this.createBuildings()
+    const buildings = getCityBuildings()
+    const slots = toSlots(buildings)
+
+    this.createPlots(slots)
+    this.createBuildings(slots)
     this.createTooltip()
 
     EventBus.emit('current-scene-ready', this)
   }
 
-  private createPlots() {
+  private createPlots(slots: CitySlot[]) {
     const graphics = this.add.graphics()
     graphics.lineStyle(2, 0x8b7d6b, 0.45)
 
-    buildingSlots.forEach((slot) => {
+    slots.forEach((slot) => {
       const x = slot.x
       const y = slot.y
       const halfW = slot.width / 2
@@ -90,8 +119,8 @@ export class CityScene extends Phaser.Scene {
     return [px, py + this.skewY * dx]
   }
 
-  private createBuildings() {
-    buildingSlots.forEach((slot) => {
+  private createBuildings(slots: CitySlot[]) {
+    slots.forEach((slot) => {
       const x = slot.x
       const y = slot.y
       const hasSprite = this.textures.exists(slot.type)
@@ -160,7 +189,7 @@ export class CityScene extends Phaser.Scene {
     if (building.getData('hasSprite')) {
       building.setAlpha(0.85)
     }
-    const slot = building.getData('slot') as BuildingSlot
+    const slot = building.getData('slot') as CitySlot
     const hasSprite = building.getData('hasSprite') as boolean
     const height = hasSprite
       ? slot.height
@@ -179,7 +208,7 @@ export class CityScene extends Phaser.Scene {
     this.tooltip.setVisible(false)
   }
 
-  private showTooltip(slot: BuildingSlot, x: number, y: number) {
+  private showTooltip(slot: CitySlot, x: number, y: number) {
     if (!this.tooltip) return
 
     const stars = '★'.repeat(Math.min(slot.level, this.maxStars))

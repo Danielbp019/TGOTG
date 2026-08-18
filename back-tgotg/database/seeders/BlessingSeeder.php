@@ -19,31 +19,31 @@ class BlessingSeeder extends Seeder
             [
                 'key' => 'cosecha-abundante',
                 'name' => 'Cosecha abundante',
-                'benefit' => '+25 % producción de comida',
+                'benefit' => '+10 % producción de comida',
                 'description' => 'Los campos de tu civilización rinden como nunca.',
             ],
             [
                 'key' => 'forja-implacable',
                 'name' => 'Forja implacable',
-                'benefit' => '+20 % madera, piedra y hierro',
+                'benefit' => '+10 % madera, piedra y hierro',
                 'description' => 'Los mineros y leñadores trabajan sin descanso.',
             ],
             [
                 'key' => 'hijos-de-la-guerra',
                 'name' => 'Hijos de la guerra',
-                'benefit' => '+15 % poder de ataque',
+                'benefit' => '+10 % poder de ataque',
                 'description' => 'Tus tropas luchan con el ardor de los dioses.',
             ],
             [
                 'key' => 'muralla-eterna',
                 'name' => 'Muralla eterna',
-                'benefit' => '+20 % defensa de las ciudades',
+                'benefit' => '+10 % defensa de las ciudades',
                 'description' => 'Tus murallas resisten los asedios más feroces.',
             ],
         ];
 
         foreach ($blessings as $blessing) {
-            Blessing::firstOrCreate(['key' => $blessing['key']], $blessing);
+            Blessing::updateOrCreate(['key' => $blessing['key']], $blessing);
         }
     }
 }

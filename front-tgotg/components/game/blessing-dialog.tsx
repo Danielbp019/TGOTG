@@ -12,21 +12,34 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { godBlessings } from '@/data/new-game'
-import { fetchMyBlessing, updateMyBlessing } from '@/lib/api'
-import { ApiError } from '@/lib/api'
+import { blessingIcons } from '@/data/icons'
+import type { BlessingPayload } from '@/lib/api'
+import {
+  ApiError,
+  fetchBlessings,
+  fetchMyBlessing,
+  updateMyBlessing,
+} from '@/lib/api'
 import { notifyBlessingChanged } from '@/lib/blessing'
 import { blessingSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
 export function BlessingDialog() {
   const [open, setOpen] = React.useState(false)
+  const [blessings, setBlessings] = React.useState<BlessingPayload[]>([])
   const [selectedId, setSelectedId] = React.useState<string | undefined>()
   const [error, setError] = React.useState<string | undefined>()
   const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     let active = true
+
+    fetchBlessings()
+      .then((response) => {
+        if (!active) return
+        setBlessings(response.blessings)
+      })
+      .catch(() => {})
 
     fetchMyBlessing()
       .then((response) => {
@@ -90,14 +103,15 @@ export function BlessingDialog() {
         </DialogHeader>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {godBlessings.map((blessing) => {
-            const selected = selectedId === blessing.id
+          {blessings.map((blessing) => {
+            const selected = selectedId === blessing.key
+            const Icon = blessingIcons[blessing.key]
             return (
               <button
-                key={blessing.id}
+                key={blessing.key}
                 type="button"
                 onClick={() => {
-                  setSelectedId(blessing.id)
+                  setSelectedId(blessing.key)
                   setError(undefined)
                 }}
                 aria-pressed={selected}
@@ -109,7 +123,7 @@ export function BlessingDialog() {
                 )}
               >
                 <div className="flex w-full items-center justify-between gap-2">
-                  <blessing.icon className="size-5 shrink-0" />
+                  {Icon && <Icon className="size-5 shrink-0" />}
                   {selected && <Check className="text-primary size-4" />}
                 </div>
                 <span className="font-heading text-sm font-medium">

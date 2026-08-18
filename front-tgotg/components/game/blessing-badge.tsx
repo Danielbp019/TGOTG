@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { godBlessings } from '@/data/new-game'
+import type { BlessingPayload } from '@/lib/api'
 import { fetchMyBlessing } from '@/lib/api'
 import { subscribeToBlessingChanges } from '@/lib/blessing'
 import {
@@ -10,15 +10,16 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { blessingIcons } from '@/data/icons'
 
 export function BlessingBadge() {
-  const [blessingId, setBlessingId] = React.useState<string | null>(null)
+  const [blessing, setBlessing] = React.useState<BlessingPayload | null>(null)
 
   React.useEffect(() => {
     const refresh = () => {
       fetchMyBlessing()
-        .then((response) => setBlessingId(response.blessing?.key ?? null))
-        .catch(() => setBlessingId(null))
+        .then((response) => setBlessing(response.blessing))
+        .catch(() => setBlessing(null))
     }
     const timer = window.setTimeout(refresh, 0)
     const unsubscribe = subscribeToBlessingChanges(refresh)
@@ -28,8 +29,9 @@ export function BlessingBadge() {
     }
   }, [])
 
-  const blessing = godBlessings.find((item) => item.id === blessingId)
   if (!blessing) return null
+
+  const Icon = blessingIcons[blessing.key]
 
   return (
     <div className="flex items-center gap-3 px-3">
@@ -37,7 +39,7 @@ export function BlessingBadge() {
         <TooltipTrigger
           render={
             <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg">
-              <blessing.icon className="size-4" />
+              {Icon && <Icon className="size-4" />}
             </div>
           }
         />

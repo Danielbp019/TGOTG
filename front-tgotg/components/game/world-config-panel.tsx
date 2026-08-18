@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import { Check, Globe, Rocket } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -11,17 +12,47 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { gameDurations, gameMultipliers } from '@/data/new-game'
+import { useCity } from '@/components/city/city-provider'
+import type { GameOptionPayload } from '@/lib/api'
+import { ApiError, createWorld, fetchGameOptions } from '@/lib/api'
 import { worldConfigSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
 export function WorldConfigPanel() {
-  const [durationId, setDurationId] = React.useState('normal')
-  const [multiplierId, setMultiplierId] = React.useState('x1')
+  const router = useRouter()
+  const { reload } = useCity()
+
+  const [durations, setDurations] = React.useState<GameOptionPayload[]>([])
+  const [multipliers, setMultipliers] = React.useState<GameOptionPayload[]>([])
+  const [durationId, setDurationId] = React.useState<string | null>(null)
+  const [multiplierId, setMultiplierId] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | undefined>()
+  const [saving, setSaving] = React.useState(false)
   const [started, setStarted] = React.useState(false)
 
-  function handleStart() {
+  React.useEffect(() => {
+    let active = true
+
+    fetchGameOptions()
+      .then((response) => {
+        if (!active) return
+        setDurations(response.durations)
+        setMultipliers(response.multipliers)
+        setDurationId(response.durations[0]?.key ?? null)
+        setMultiplierId(response.multipliers[0]?.key ?? null)
+      })
+      .catch(() => {
+        if (active) setError('No se pudieron cargar las opciones del mundo.')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  async function handleStart() {
+    if (!durationId || !multiplierId) return
+
     const result = worldConfigSchema.safeParse({
       durationId,
       multiplierId,
@@ -30,8 +61,26 @@ export function WorldConfigPanel() {
       setError(result.error.issues[0]?.message)
       return
     }
+
+    setSaving(true)
     setError(undefined)
-    setStarted(true)
+    try {
+      await createWorld({
+        duration_key: durationId,
+        multiplier_key: multiplierId,
+      })
+      setStarted(true)
+      await reload()
+      router.push('/')
+    } catch (caught) {
+      if (caught instanceof ApiError) {
+        setError(caught.message)
+      } else {
+        setError('No se pudo iniciar el mundo. Inténtalo de nuevo.')
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -55,14 +104,14 @@ export function WorldConfigPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
-          {gameDurations.map((duration) => {
-            const selected = duration.id === durationId
+          {durations.map((duration) => {
+            const selected = duration.key === durationId
             return (
               <button
-                key={duration.id}
+                key={duration.key}
                 type="button"
                 onClick={() => {
-                  setDurationId(duration.id)
+                  setDurationId(duration.key)
                   setError(undefined)
                 }}
                 aria-pressed={selected}
@@ -80,7 +129,7 @@ export function WorldConfigPanel() {
                   {selected && <Check className="text-primary size-4" />}
                 </div>
                 <span className="text-muted-foreground text-xs">
-                  {duration.days} días
+                  {Math.round(duration.value)} días
                 </span>
                 <span className="text-muted-foreground text-xs">
                   {duration.description}
@@ -99,14 +148,14 @@ export function WorldConfigPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
-          {gameMultipliers.map((multiplier) => {
-            const selected = multiplier.id === multiplierId
+          {multipliers.map((multiplier) => {
+            const selected = multiplier.key === multiplierId
             return (
               <button
-                key={multiplier.id}
+                key={multiplier.key}
                 type="button"
                 onClick={() => {
-                  setMultiplierId(multiplier.id)
+                  setMultiplierId(multiplier.key)
                   setError(undefined)
                 }}
                 aria-pressed={selected}
@@ -124,7 +173,7 @@ export function WorldConfigPanel() {
                   {selected && <Check className="text-primary size-4" />}
                 </div>
                 <span className="text-muted-foreground text-xs">
-                  {multiplier.multiplier}× producción
+                  {multiplier.value}× producción
                 </span>
                 <span className="text-muted-foreground text-xs">
                   {multiplier.description}
@@ -146,11 +195,11 @@ export function WorldConfigPanel() {
       <div>
         <Button
           onClick={handleStart}
-          disabled={started}
+          disabled={saving}
           className="w-full sm:w-auto"
         >
           <Rocket />
-          {started ? 'Mundo iniciado' : 'Iniciar el mundo'}
+          {saving ? 'Creando el mundo…' : 'Iniciar el mundo'}
         </Button>
       </div>
     </div>

@@ -20,7 +20,19 @@ class Civilization extends Model
         'key',
         'name',
         'description',
+        'benefit',
+        'bonus',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'bonus' => 'array',
+        ];
+    }
 
     public function players(): HasMany
     {

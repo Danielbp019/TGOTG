@@ -41,6 +41,7 @@ class City extends Model
         'defense',
         'stationed_troops',
         'defense_power',
+        'protection_until',
     ];
 
     /**
@@ -95,6 +96,7 @@ class City extends Model
             'defense' => 'integer',
             'stationed_troops' => 'integer',
             'defense_power' => 'integer',
+            'protection_until' => 'datetime',
         ];
     }
 

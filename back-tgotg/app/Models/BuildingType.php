@@ -20,7 +20,30 @@ class BuildingType extends Model
         'key',
         'name',
         'category',
+        'description',
+        'max_level',
+        'gold_cost',
+        'wood_cost',
+        'stone_cost',
+        'iron_cost',
+        'base_minutes',
+        'repair_material',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'max_level' => 'integer',
+            'gold_cost' => 'integer',
+            'wood_cost' => 'integer',
+            'stone_cost' => 'integer',
+            'iron_cost' => 'integer',
+            'base_minutes' => 'integer',
+        ];
+    }
 
     public function buildings(): HasMany
     {

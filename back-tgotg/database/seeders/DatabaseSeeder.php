@@ -25,7 +25,10 @@ class DatabaseSeeder extends Seeder
             CivilizationSeeder::class,
             BlessingSeeder::class,
             BuildingTypeSeeder::class,
+            UnitTypeSeeder::class,
+            GameOptionSeeder::class,
             DemoWorldSeeder::class,
+            DemoMessagesSeeder::class,
         ]);
     }
 }

@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CityController;
+use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PlayerController;
 use App\Http\Controllers\Api\SystemController;
+use App\Http\Controllers\Api\WorldController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
@@ -20,4 +23,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/server-time', [SystemController::class, 'serverTime']);
     Route::get('/player/blessing', [PlayerController::class, 'blessing']);
     Route::put('/player/blessing', [PlayerController::class, 'updateBlessing']);
+    Route::get('/player/civilization', [PlayerController::class, 'civilization']);
+    Route::put('/player/civilization', [PlayerController::class, 'updateCivilization']);
+    Route::get('/blessings', [SystemController::class, 'blessings']);
+    Route::get('/civilizations', [SystemController::class, 'civilizations']);
+    Route::get('/building-types', [SystemController::class, 'buildingTypes']);
+    Route::get('/game-options', [SystemController::class, 'gameOptions']);
+    Route::get('/city', [CityController::class, 'show']);
+    Route::post('/city/buildings/{building}/repair', [CityController::class, 'repair']);
+    Route::post('/worlds', [WorldController::class, 'store']);
+
+    Route::get('/conversations', [MessageController::class, 'index']);
+    Route::post('/conversations', [MessageController::class, 'store']);
+    Route::get('/conversations/{conversation}', [MessageController::class, 'show']);
+    Route::post('/conversations/{conversation}/messages', [MessageController::class, 'sendMessage']);
+    Route::delete('/conversations/{conversation}', [MessageController::class, 'destroy']);
 });

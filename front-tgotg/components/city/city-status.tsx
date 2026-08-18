@@ -1,9 +1,70 @@
-import { cityProduction, cityStatus, armyStatus } from '@/data/city'
+'use client'
+
+import { ShieldCheck } from 'lucide-react'
+import { useCity } from '@/components/city/city-provider'
 import { resources } from '@/data/resources'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import type { ResourceKey } from '@/types'
+import { useEffect, useState } from 'react'
+
+const productionKeys: ResourceKey[] = ['gold', 'wood', 'stone', 'iron', 'food']
+
+function deriveArmyOverall(stationedTroops: number, defensePower: number) {
+  if (stationedTroops === 0) return 'Sin tropas'
+  if (defensePower >= 300) return 'Preparado'
+  if (defensePower >= 100) return 'En formación'
+  return 'Débil'
+}
 
 export function CityStatus() {
+  const { city, isLoading } = useCity()
+  const [protectionRemaining, setProtectionRemaining] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!city?.protectionUntil) {
+      setProtectionRemaining(null)
+      return
+    }
+    const until = new Date(city.protectionUntil)
+    const now = new Date()
+    const diffMs = until.getTime() - now.getTime()
+    if (diffMs > 0) {
+      setProtectionRemaining(Math.ceil(diffMs / (1000 * 60 * 60))) // hours
+    } else {
+      setProtectionRemaining(0)
+    }
+  }, [city?.protectionUntil])
+
+  const productionKeys: ResourceKey[] = ['gold', 'wood', 'stone', 'iron', 'food']
+
+  function deriveArmyOverall(stationedTroops: number, defensePower: number) {
+    if (stationedTroops === 0) return 'Sin tropas'
+    if (defensePower >= 300) return 'Preparado'
+    if (defensePower >= 100) return 'En formación'
+    return 'Débil'
+  }
+
+  const production = productionKeys.map((key) => ({
+    resource: resources[key],
+    perHour: city?.perHour[key] ?? 0,
+  }))
+
+  const status = {
+    population: city?.population ?? 0,
+    happiness: city?.happiness ?? 0,
+    defense: city?.defense ?? 0,
+  }
+
+  const army = {
+    stationedTroops: city?.stationedTroops ?? 0,
+    defensePower: city?.defensePower ?? 0,
+    overall: deriveArmyOverall(
+      city?.stationedTroops ?? 0,
+      city?.defensePower ?? 0
+    ),
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <Card size="sm">
@@ -11,23 +72,24 @@ export function CityStatus() {
           <CardTitle>Producción</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="flex flex-col gap-1">
-            {cityProduction.map((production) => {
-              const resource = resources[production.resource]
-              return (
+          {isLoading ? (
+            <p className="text-muted-foreground text-sm">Cargando…</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {production.map((item) => (
                 <li
-                  key={production.resource}
+                  key={item.resource.key}
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-muted-foreground flex items-center gap-2">
-                    <resource.icon className="size-4 shrink-0" />
-                    {production.label}
+                    <item.resource.icon className="size-4 shrink-0" />
+                    {item.resource.label}
                   </span>
-                  <span className="tabular-nums">+{production.perHour}/h</span>
+                  <span className="tabular-nums">+{item.perHour}/h</span>
                 </li>
-              )
-            })}
-          </ul>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 
@@ -39,24 +101,47 @@ export function CityStatus() {
           <div>
             <div className="mb-1 flex justify-between text-sm">
               <span className="text-muted-foreground">Población</span>
-              <span className="tabular-nums">{cityStatus.population}</span>
+              <span className="tabular-nums">{status.population}</span>
             </div>
             <Progress value={70} aria-label="Población" />
           </div>
           <div>
             <div className="mb-1 flex justify-between text-sm">
               <span className="text-muted-foreground">Felicidad</span>
-              <span className="tabular-nums">{cityStatus.happiness}%</span>
+              <span className="tabular-nums">{status.happiness}%</span>
             </div>
-            <Progress value={cityStatus.happiness} aria-label="Felicidad" />
+            <Progress value={status.happiness} aria-label="Felicidad" />
           </div>
           <div>
             <div className="mb-1 flex justify-between text-sm">
               <span className="text-muted-foreground">Defensa</span>
-              <span className="tabular-nums">{cityStatus.defense}</span>
+              <span className="tabular-nums">{status.defense}</span>
             </div>
-            <Progress value={cityStatus.defense} aria-label="Defensa" />
+            <Progress value={status.defense} aria-label="Defensa" />
           </div>
+          {protectionRemaining !== null && (
+            <div className="mb-1 flex justify-between text-sm">
+              <span className="text-muted-foreground">Protección</span>
+              {protectionRemaining > 0 ? (
+                <span>{protectionRemaining} h</span>
+              ) : (
+                <span>Expirada</span>
+              )}
+            </div>
+          )}
+          {protectionRemaining !== null && protectionRemaining > 0 && (
+            <div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Desfensa durante</span>
+                <span className="tabular-nums">{protectionRemaining} h</span>
+              </div>
+              <div>
+                <span className="text-danger-600 text-xs font-medium">
+                  <ShieldCheck className="size-3.5" /> Tu ciudad está protegida contra ataques
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -68,15 +153,15 @@ export function CityStatus() {
           <dl className="flex flex-col gap-1 text-sm">
             <div className="flex items-center justify-between">
               <dt className="text-muted-foreground">Tropas estacionadas</dt>
-              <dd className="tabular-nums">{armyStatus.stationedTroops}</dd>
+              <dd className="tabular-nums">{army.stationedTroops}</dd>
             </div>
             <div className="flex items-center justify-between">
               <dt className="text-muted-foreground">Fuerza defensiva</dt>
-              <dd className="tabular-nums">{armyStatus.defensePower}</dd>
+              <dd className="tabular-nums">{army.defensePower}</dd>
             </div>
             <div className="flex items-center justify-between">
               <dt className="text-muted-foreground">Estado general</dt>
-              <dd>{armyStatus.overall}</dd>
+              <dd>{army.overall}</dd>
             </div>
           </dl>
         </CardContent>

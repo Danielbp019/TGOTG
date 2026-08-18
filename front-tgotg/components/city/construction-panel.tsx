@@ -1,10 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { Info } from 'lucide-react'
+import { Building2, Info } from 'lucide-react'
 import type { VariantProps } from 'class-variance-authority'
 
 import { LevelBar } from '@/components/city/level-bar'
+import { useCity } from '@/components/city/city-provider'
 import { Badge, badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,13 +15,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  constructionBuildings,
-  MAX_BUILDING_LEVEL,
-  type BuildingCategory,
-} from '@/data/buildings'
-import type { BuildingType } from '@/types'
+import { buildingIcons } from '@/data/icons'
+import type { BuildingTypePayload } from '@/lib/api'
+import { fetchBuildingTypes } from '@/lib/api'
 import { cn } from '@/lib/utils'
+
+type BuildingCategory =
+  | 'Principal'
+  | 'Defensa'
+  | 'Recursos'
+  | 'Militar'
+  | 'Investigación'
 
 const categoryVariants: Record<
   BuildingCategory,
@@ -33,19 +38,45 @@ const categoryVariants: Record<
   Investigación: 'ghost',
 }
 
+function isBuildingCategory(value: string): value is BuildingCategory {
+  return ['Principal', 'Defensa', 'Recursos', 'Militar', 'Investigación'].includes(
+    value
+  )
+}
+
 export function ConstructionPanel() {
-  const [levels, setLevels] = React.useState<Record<BuildingType, number>>(
-    () =>
-      Object.fromEntries(
-        constructionBuildings.map((building) => [building.type, building.level])
-      ) as Record<BuildingType, number>
+  const { city, isLoading } = useCity()
+  const [catalog, setCatalog] = React.useState<BuildingTypePayload[] | null>(
+    null
   )
 
-  function levelUp(type: BuildingType) {
-    setLevels((prev) => ({
-      ...prev,
-      [type]: Math.min(prev[type] + 1, MAX_BUILDING_LEVEL),
-    }))
+  React.useEffect(() => {
+    let active = true
+
+    fetchBuildingTypes()
+      .then((response) => {
+        if (active) setCatalog(response.building_types)
+      })
+      .catch(() => {
+        if (active) setCatalog([])
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const levels = React.useMemo(() => {
+    if (!city) return new Map<string, number>()
+    return new Map(city.buildings.map((building) => [building.key, building.level]))
+  }, [city])
+
+  if (isLoading || !catalog) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        Cargando edificios…
+      </p>
+    )
   }
 
   return (
@@ -61,7 +92,8 @@ export function ConstructionPanel() {
         <CardContent>
           <p className="text-muted-foreground flex items-center gap-2 text-xs">
             <Info className="size-3.5 shrink-0" />
-            Vista previa visual: los costes y tiempos aún no están definidos.
+            Vista previa visual: los costes, tiempos y la mejora de edificios
+            llegarán próximamente.
           </p>
         </CardContent>
       </Card>
@@ -69,16 +101,21 @@ export function ConstructionPanel() {
       <Card className="overflow-hidden">
         <CardContent className="divide-y px-0 py-0">
           <ul>
-            {constructionBuildings.map((building) => {
-              const level = levels[building.type]
-              const isMaxLevel = level >= MAX_BUILDING_LEVEL
+            {catalog.map((building) => {
+              const level = levels.get(building.key) ?? 0
+              const maxLevel = building.max_level
+              const isMaxLevel = level >= maxLevel
+              const category = isBuildingCategory(building.category)
+                ? building.category
+                : 'Principal'
+              const Icon = buildingIcons[building.key] ?? Building2
               return (
                 <li
-                  key={building.type}
+                  key={building.key}
                   className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center"
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <building.icon className="text-muted-foreground size-5 shrink-0" />
+                    <Icon className="text-muted-foreground size-5 shrink-0" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">
                         {building.name}
@@ -87,18 +124,18 @@ export function ConstructionPanel() {
                         {building.description}
                       </p>
                       <Badge
-                        variant={categoryVariants[building.category]}
+                        variant={categoryVariants[category]}
                         className="mt-1"
                       >
-                        {building.category}
+                        {category}
                       </Badge>
                     </div>
                   </div>
 
                   <div className="flex flex-1 flex-col gap-1 sm:max-w-40">
-                    <LevelBar level={level} max={MAX_BUILDING_LEVEL} />
+                    <LevelBar level={level} max={maxLevel} />
                     <span className="text-muted-foreground text-xs tabular-nums">
-                      Nivel {level} / {MAX_BUILDING_LEVEL}
+                      Nivel {level} / {maxLevel}
                     </span>
                   </div>
 
@@ -106,14 +143,10 @@ export function ConstructionPanel() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={isMaxLevel}
-                    onClick={() => levelUp(building.type)}
-                    className={cn(
-                      'w-full sm:w-auto',
-                      isMaxLevel && 'opacity-100'
-                    )}
+                    disabled
+                    className={cn('w-full sm:w-auto', 'opacity-100')}
                   >
-                    {isMaxLevel ? 'Nivel máximo' : 'Subir nivel'}
+                    {isMaxLevel ? 'Nivel máximo' : 'Próximamente'}
                   </Button>
                 </li>
               )

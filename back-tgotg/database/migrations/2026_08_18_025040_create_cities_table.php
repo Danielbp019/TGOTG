@@ -36,6 +36,7 @@ return new class extends Migration
             $table->unsignedInteger('defense')->default(0);
             $table->unsignedInteger('stationed_troops')->default(0);
             $table->unsignedInteger('defense_power')->default(0);
+            $table->timestamp('protection_until')->nullable();
             $table->timestamps();
         });
     }

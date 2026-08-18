@@ -12,18 +12,68 @@ class CivilizationSeeder extends Seeder
 
     /**
      * Seed the initial civilizations.
+     *
+     * El bono mecánico vive en el campo JSON `bonus`:
+     * - production_bonus: mapa recurso => % de producción
+     * - attack_bonus: % de poder de ataque
+     * - defense_bonus: % de defensa de las ciudades
      */
     public function run(): void
     {
         $civilizations = [
-            ['key' => 'iberia', 'name' => 'Iberia', 'description' => 'Una civilización orgullosa, experta en comercio y en la extracción de metales.'],
-            ['key' => 'vikinga', 'name' => 'Vikinga', 'description' => 'Guerreros del norte que dominan el asalto y prosperan con el saqueo.'],
-            ['key' => 'egipcia', 'name' => 'Egipcia', 'description' => 'Heredera del Nilo, maestra en las construcciones monumentales y la agricultura.'],
-            ['key' => 'samurai', 'name' => 'Samurái', 'description' => 'El código del honor guía a sus tropas, implacables en la defensa.'],
+            [
+                'key' => 'humanos',
+                'name' => 'Humanos',
+                'description' => 'Una raza versátil que prospera en cualquier terreno. Ni los mejores ni los peores en nada.',
+                'benefit' => '+5 % a todos los recursos',
+                'bonus' => [
+                    'production_bonus' => [
+                        'gold' => 5,
+                        'wood' => 5,
+                        'stone' => 5,
+                        'iron' => 5,
+                        'food' => 5,
+                    ],
+                ],
+            ],
+            [
+                'key' => 'elfos',
+                'name' => 'Elfos',
+                'description' => 'Hijos del bosque, sus campos y bosques producen como si la naturaleza les sirviera.',
+                'benefit' => '+15 % comida y madera',
+                'bonus' => [
+                    'production_bonus' => [
+                        'food' => 15,
+                        'wood' => 15,
+                    ],
+                ],
+            ],
+            [
+                'key' => 'orcos',
+                'name' => 'Orcos',
+                'description' => 'Belicosos por naturaleza, sus guerreros luchan con una ferocidad inigualable.',
+                'benefit' => '+15 % poder de ataque',
+                'bonus' => [
+                    'attack_bonus' => 15,
+                ],
+            ],
+            [
+                'key' => 'enanos',
+                'name' => 'Enanos',
+                'description' => 'Forjadores de la montaña, extraen minerales y defienden sus fortalezas como nadie.',
+                'benefit' => '+10 % piedra y hierro, +10 % defensa',
+                'bonus' => [
+                    'production_bonus' => [
+                        'stone' => 10,
+                        'iron' => 10,
+                    ],
+                    'defense_bonus' => 10,
+                ],
+            ],
         ];
 
         foreach ($civilizations as $civilization) {
-            Civilization::firstOrCreate(['key' => $civilization['key']], $civilization);
+            Civilization::updateOrCreate(['key' => $civilization['key']], $civilization);
         }
     }
 }

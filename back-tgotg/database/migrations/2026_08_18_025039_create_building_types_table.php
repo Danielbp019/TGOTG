@@ -16,6 +16,14 @@ return new class extends Migration
             $table->string('key')->unique();
             $table->string('name');
             $table->string('category');
+            $table->text('description')->nullable();
+            $table->unsignedTinyInteger('max_level')->default(5);
+            $table->unsignedInteger('gold_cost')->default(0);
+            $table->unsignedInteger('wood_cost')->default(0);
+            $table->unsignedInteger('stone_cost')->default(0);
+            $table->unsignedInteger('iron_cost')->default(0);
+            $table->unsignedInteger('base_minutes')->default(0);
+            $table->string('repair_material')->default('stone');
             $table->timestamps();
         });
     }

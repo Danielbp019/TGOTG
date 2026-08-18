@@ -40,6 +40,7 @@ class World extends Model
     protected function casts(): array
     {
         return [
+            'speed_multiplier' => 'float',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
         ];

@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignUuid('city_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('building_type_id')->constrained()->restrictOnDelete();
             $table->unsignedTinyInteger('level')->default(0);
+            $table->unsignedTinyInteger('damage')->default(0);
+            $table->timestamp('repair_started_at')->nullable();
+            $table->boolean('repair_paid')->default(false);
             $table->string('shape')->default('diamond');
             $table->unsignedInteger('x');
             $table->unsignedInteger('y');

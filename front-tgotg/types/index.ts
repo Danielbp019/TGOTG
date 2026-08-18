@@ -19,24 +19,6 @@ export interface MenuItem {
   adminOnly?: boolean
 }
 
-export interface CityProduction {
-  resource: ResourceKey
-  label: string
-  perHour: number
-}
-
-export interface CityStatus {
-  population: number
-  happiness: number
-  defense: number
-}
-
-export interface ArmyStatus {
-  stationedTroops: number
-  defensePower: number
-  overall: string
-}
-
 export type BuildingType =
   | 'ayuntamiento'
   | 'muralla'
@@ -65,40 +47,6 @@ export interface ChatConversation {
   }
   mensajes: ChatMessage[]
   noLeidos: number
-}
-
-export interface BuildingSlot {
-  type: BuildingType
-  name: string
-  level: number
-  /** Coordenadas del centro de la base (pivot bottom-center) en px del mundo (2048x1024) */
-  x: number
-  y: number
-  /** Forma de la parcela: rect (alargada) o diamond (interior) */
-  shape: PlotShape
-  /** Ancho y alto de la huella de la parcela en px */
-  width: number
-  height: number
-}
-
-export interface GameDuration {
-  id: string
-  label: string
-  days: number
-  description: string
-}
-
-export interface GameMultiplier {
-  id: string
-  label: string
-  multiplier: number
-  description: string
-}
-
-export interface GodBlessing {
-  id: string
-  name: string
-  benefit: string
-  description: string
-  icon: LucideIcon
+  /** Último mensaje, para la vista previa de la lista */
+  ultimoMensaje?: ChatMessage
 }

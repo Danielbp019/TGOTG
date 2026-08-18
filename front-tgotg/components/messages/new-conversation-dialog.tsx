@@ -21,7 +21,7 @@ import {
 interface NewConversationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreate: (values: NewConversationValues) => void
+  onCreate: (values: NewConversationValues) => Promise<string | null>
 }
 
 type NewConversationErrors = Partial<
@@ -41,6 +41,7 @@ export function NewConversationDialog({
   const [values, setValues] =
     React.useState<NewConversationValues>(initialValues)
   const [errors, setErrors] = React.useState<NewConversationErrors>({})
+  const [submitting, setSubmitting] = React.useState(false)
 
   function reset() {
     setValues(initialValues)
@@ -59,7 +60,7 @@ export function NewConversationDialog({
     setErrors((prev) => ({ ...prev, [field]: undefined }))
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     const result = newConversationSchema.safeParse(values)
     if (!result.success) {
@@ -73,8 +74,18 @@ export function NewConversationDialog({
       })
       return
     }
-    onCreate(result.data)
-    reset()
+
+    setSubmitting(true)
+    try {
+      const error = await onCreate(result.data)
+      if (error) {
+        setErrors((prev) => ({ ...prev, destinatario: error }))
+        return
+      }
+      reset()
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -140,10 +151,13 @@ export function NewConversationDialog({
               type="button"
               variant="outline"
               onClick={() => handleOpenChange(false)}
+              disabled={submitting}
             >
               Cancelar
             </Button>
-            <Button type="submit">Enviar</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Enviando…' : 'Enviar'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

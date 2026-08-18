@@ -46,8 +46,7 @@ export function ConversationList({
           ) : (
             <ul className="divide-y">
               {conversations.map((conversation) => {
-                const last =
-                  conversation.mensajes[conversation.mensajes.length - 1]
+                const last = conversation.ultimoMensaje
                 const active = conversation.id === selectedId
                 return (
                   <li key={conversation.id}>

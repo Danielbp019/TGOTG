@@ -20,6 +20,9 @@ class Building extends Model
         'city_id',
         'building_type_id',
         'level',
+        'damage',
+        'repair_started_at',
+        'repair_paid',
         'shape',
         'x',
         'y',
@@ -28,10 +31,12 @@ class Building extends Model
     ];
 
     /**
-     * @var array<string, string|int>
+     * @var array<string, string|int|bool>
      */
     protected $attributes = [
         'level' => 0,
+        'damage' => 0,
+        'repair_paid' => false,
         'shape' => 'diamond',
     ];
 
@@ -42,6 +47,9 @@ class Building extends Model
     {
         return [
             'level' => 'integer',
+            'damage' => 'integer',
+            'repair_started_at' => 'datetime',
+            'repair_paid' => 'boolean',
             'x' => 'integer',
             'y' => 'integer',
             'width' => 'integer',

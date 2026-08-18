@@ -4,6 +4,8 @@ import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import Phaser from 'phaser'
 import { gameConfig } from '@/game/main'
 import { EventBus } from '@/game/event-bus'
+import { setCityBuildings } from '@/game/city-data'
+import type { CityBuilding } from '@/lib/api'
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null
@@ -12,10 +14,11 @@ export interface IRefPhaserGame {
 
 interface PhaserGameProps {
   currentActiveScene?: (scene: Phaser.Scene) => void
+  buildings?: CityBuilding[]
 }
 
 export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
-  function PhaserGame({ currentActiveScene }, ref) {
+  function PhaserGame({ currentActiveScene, buildings = [] }, ref) {
     const gameRef = useRef<Phaser.Game | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
 
@@ -30,6 +33,8 @@ export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
 
     useEffect(() => {
       if (!containerRef.current) return
+
+      setCityBuildings(buildings)
 
       gameRef.current = new Phaser.Game({
         ...gameConfig,
@@ -47,7 +52,7 @@ export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
         gameRef.current?.destroy(true)
         gameRef.current = null
       }
-    }, [currentActiveScene])
+    }, [currentActiveScene, buildings])
 
     return <div ref={containerRef} className="size-full" id="game-container" />
   }

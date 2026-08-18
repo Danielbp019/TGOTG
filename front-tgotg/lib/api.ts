@@ -1,3 +1,5 @@
+import type { PlotShape, ResourceKey } from '@/types'
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
@@ -26,6 +28,105 @@ export interface BlessingPayload {
 export interface MyBlessingResponse {
   in_game: boolean
   blessing: BlessingPayload | null
+}
+
+export interface BuildingTypePayload {
+  key: string
+  name: string
+  category: string
+  description: string | null
+  max_level: number
+  gold_cost: number
+  wood_cost: number
+  stone_cost: number
+  iron_cost: number
+  base_minutes: number
+  repair_material: string
+}
+
+export interface CivilizationPayload {
+  key: string
+  name: string
+  benefit: string
+  description: string | null
+}
+
+export interface MyCivilizationResponse {
+  in_game: boolean
+  civilization: CivilizationPayload | null
+}
+
+export interface GameOptionPayload {
+  key: string
+  label: string
+  value: number
+  description: string | null
+}
+
+export interface GameOptionsPayload {
+  durations: GameOptionPayload[]
+  multipliers: GameOptionPayload[]
+}
+
+export interface CityBuilding {
+  key: string
+  name: string
+  category: string
+  level: number
+  damage: number
+  repairing: boolean
+  repairPaid: boolean
+  shape: PlotShape
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface CityPayload {
+  name: string | null
+  resources: Record<ResourceKey, number>
+  perHour: Record<ResourceKey, number>
+  population: number
+  happiness: number
+  defense: number
+  stationedTroops: number
+  defensePower: number
+  protectionUntil: string | null
+  buildings: CityBuilding[]
+}
+
+export interface WorldPayload {
+  id: string
+  status: string
+  durationDays: number
+  speedMultiplier: number
+  startedAt: string | null
+  endedAt: string | null
+}
+
+export interface ConversationParticipantPayload {
+  nick: string
+}
+
+export interface ConversationMessagePayload {
+  id: string
+  body: string
+  sentAt: string
+  fromMe: boolean
+}
+
+export interface ConversationSummaryPayload {
+  id: string
+  participant: ConversationParticipantPayload
+  lastMessage: Omit<ConversationMessagePayload, 'id'> | null
+  unreadCount: number
+}
+
+export interface ConversationDetailPayload {
+  id: string
+  participant: ConversationParticipantPayload
+  messages: ConversationMessagePayload[]
 }
 
 interface ApiErrorPayload {
@@ -150,5 +251,104 @@ export function updateMyBlessing(key: string) {
   return apiFetch<{ blessing: BlessingPayload }>('/player/blessing', {
     method: 'PUT',
     body: JSON.stringify({ key }),
+  })
+}
+
+export function fetchMyCivilization() {
+  return apiFetch<MyCivilizationResponse>('/player/civilization')
+}
+
+export function updateMyCivilization(key: string) {
+  return apiFetch<{ civilization: CivilizationPayload }>(
+    '/player/civilization',
+    {
+      method: 'PUT',
+      body: JSON.stringify({ key }),
+    }
+  )
+}
+
+export function fetchCivilizations() {
+  return apiFetch<{ civilizations: CivilizationPayload[] }>('/civilizations')
+}
+
+export function fetchBlessings() {
+  return apiFetch<{ blessings: BlessingPayload[] }>('/blessings')
+}
+
+export function fetchBuildingTypes() {
+  return apiFetch<{ building_types: BuildingTypePayload[] }>(
+    '/building-types'
+  )
+}
+
+export function fetchGameOptions() {
+  return apiFetch<GameOptionsPayload>('/game-options')
+}
+
+export function fetchCity() {
+  return apiFetch<{ city: CityPayload }>('/city')
+}
+
+export function repairBuilding(buildingId: string, type: 'paid' | 'auto') {
+  return apiFetch<{
+    building: Pick<CityBuilding, 'key' | 'damage'> & {
+      repairing: boolean
+      repairPaid: boolean
+    }
+  }>(`/city/buildings/${buildingId}/repair`, {
+    method: 'POST',
+    body: JSON.stringify({ type }),
+  })
+}
+
+export function createWorld(data: {
+  duration_key: string
+  multiplier_key: string
+}) {
+  return apiFetch<{ world: WorldPayload }>('/worlds', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function fetchConversations() {
+  return apiFetch<{ conversations: ConversationSummaryPayload[] }>(
+    '/conversations'
+  )
+}
+
+export function fetchConversation(id: string) {
+  return apiFetch<{ conversation: ConversationDetailPayload }>(
+    `/conversations/${id}`
+  )
+}
+
+export function createConversation(data: {
+  recipient_nick: string
+  body: string
+}) {
+  return apiFetch<{ conversation: ConversationDetailPayload }>(
+    '/conversations',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  )
+}
+
+export function sendMessage(id: string, body: string) {
+  return apiFetch<{ conversation: ConversationDetailPayload }>(
+    `/conversations/${id}/messages`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }
+  )
+}
+
+export function deleteConversation(id: string) {
+  return apiFetch<{ message: string }>(`/conversations/${id}`, {
+    method: 'DELETE',
   })
 }

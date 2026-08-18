@@ -1,0 +1,63 @@
+'use client'
+
+import * as React from 'react'
+import type { CityPayload } from '@/lib/api'
+import { ApiError, fetchCity } from '@/lib/api'
+
+interface CityContextValue {
+  city: CityPayload | null
+  isLoading: boolean
+  error: ApiError | null
+  /** Número de cargas completadas con éxito, útil para remontar escenas. */
+  version: number
+  reload: () => Promise<void>
+}
+
+const CityContext = React.createContext<CityContextValue | null>(null)
+
+export function CityProvider({ children }: { children: React.ReactNode }) {
+  const [city, setCity] = React.useState<CityPayload | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<ApiError | null>(null)
+  const [version, setVersion] = React.useState(0)
+
+  const load = React.useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetchCity()
+      setCity(response.city)
+      setVersion((current) => current + 1)
+    } catch (caught) {
+      if (caught instanceof ApiError) {
+        setError(caught)
+      } else {
+        setError(new ApiError(500, 'No se pudo cargar la ciudad.'))
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      load()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [load])
+
+  const value = React.useMemo(
+    () => ({ city, isLoading, error, version, reload: load }),
+    [city, isLoading, error, version, load]
+  )
+
+  return <CityContext.Provider value={value}>{children}</CityContext.Provider>
+}
+
+export function useCity() {
+  const context = React.useContext(CityContext)
+  if (!context) {
+    throw new Error('useCity debe usarse dentro de <CityProvider>')
+  }
+  return context
+}
