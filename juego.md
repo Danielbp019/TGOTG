@@ -3,6 +3,37 @@
 > Documento de trabajo del juego. La información de contexto, arquitectura y principios está en `AGENTS.md`.
 > Aquí solo queda lo que falta por hacer.
 
+## Reglas de juego (definidas)
+
+### Producción y consumo de recursos
+
+- Cada ciudad tiene su **producción individual** por recurso (oro, madera, piedra, hierro y comida) y sus **consumos** por recurso.
+- Las tropas estacionadas en la ciudad **no** consumen comida; la **población** de cada ciudad sí.
+- Cuando pasa el día, se calcula la **diferencia (producción − consumo)** de cada ciudad.
+- El **excedente** producido de todas las ciudades del jugador se suma a sus **recursos generales**.
+- Si el jugador pierde una ciudad **antes del reparto**, pierde el excedente pendiente de esa ciudad (no se transfiere).
+
+### Recursos generales vs recursos de ciudad
+
+- Cada ciudad gestiona su propio stock y su producción/consumo.
+- El jugador tiene además unos **recursos generales** (a nivel de civilización), separados del stock de cada ciudad, donde se acumula el excedente del reparto diario.
+
+### Fin de partida
+
+- Al terminar la partida, el mundo se **paraliza** (estado `finished`): ya no acepta más movimientos.
+- Se genera un **reporte** con las estadísticas de la partida (ganador, rankings, totales…), guardado en una tabla de histórico (`world_reports`).
+
+### Reinicio de partida
+
+- El reinicio **vacía las tablas de juego**: mundo, jugadores, ciudades, edificios, conversaciones y mensajes.
+- Se **conservan**: la cuenta del jugador (`users`), sus estadísticas (`user_statistics`), los reportes históricos de partidas terminadas (`world_reports`) y los catálogos estáticos (`building_types`, `blessings`, `civilizations`).
+
+### Estadísticas por cuenta
+
+- Cada cuenta acumula de forma persistente (sobrevive a los reinicios): **partidas jugadas**, **bendición más usada** y **civilización más jugada**.
+
+---
+
 ## Frontend / UI
 
 - [ ] Al seleccionar "Ciudad" en el menú, mostrar el listado de ciudades disponibles.
