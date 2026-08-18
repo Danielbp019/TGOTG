@@ -1,59 +1,147 @@
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# API
 
-## About Laravel
+Backend de **TGOTG — El Juego de los Dioses**. API REST construida con Laravel 12 y autenticación por tokens de **Laravel Sanctum**.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Puesta en marcha
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```cmd
+back-dev.cmd
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Lanza Laravel en `http://127.0.0.1:8000`. La base de datos es **MariaDB** (`tgotg_game`).
 
-## Learning Laravel
+- **URL base**: `http://127.0.0.1:8000/api`
+- **CORS**: permite peticiones desde `http://localhost:3000` y `http://127.0.0.1:3000` (frontend Next.js).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Autenticación
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Sanctum en modo **Bearer token**:
 
-## Laravel Sponsors
+1. En `register` o `login` se devuelve un `token` opaco.
+2. Las rutas protegidas requieren la cabecera:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```
+Authorization: Bearer <token>
+```
 
-### Premium Partners
+3. `logout` revoca el token actual; a partir de ese momento deja de ser válido.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Endpoints
 
-## Contributing
+| Método | Ruta              | Auth | Descripción                                  |
+| ------ | ----------------- | ---- | -------------------------------------------- |
+| GET    | `/api/ping`       | No   | Comprobación de que la API responde.         |
+| POST   | `/api/auth/register` | No | Crea una cuenta y devuelve un token.         |
+| POST   | `/api/auth/login` | No   | Inicia sesión y devuelve un token.           |
+| POST   | `/api/auth/logout`| Sí   | Cierra sesión y revoca el token actual.      |
+| GET    | `/api/user`       | Sí   | Devuelve los datos del usuario autenticado.  |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### `GET /api/ping`
 
-## Code of Conduct
+Sin autenticación.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```json
+{ "message": "pong" }
+```
 
-## Security Vulnerabilities
+### `POST /api/auth/register`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Sin autenticación. Crea el usuario con rol `player` siempre (el rol nunca se acepta del cliente).
 
-## License
+**Cuerpo de petición**
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Campo                | Reglas                                    |
+| -------------------- | ----------------------------------------- |
+| `nick`               | obligatorio, string, único                |
+| `email`              | obligatorio, email válido, único          |
+| `password`           | obligatorio, mínimo 8 caracteres          |
+| `password_confirmation` | obligatorio, debe coincidir con `password` |
+
+**Respuesta 201**
+
+```json
+{
+  "token": "1|abc123...",
+  "user": {
+    "id": "01a0127e-1499-71c6-92e1-bce9ef458d82",
+    "nick": "Thor",
+    "email": "thor@example.com",
+    "role": "player"
+  }
+}
+```
+
+**Errores**: `422` con los errores de validación (en español).
+
+### `POST /api/auth/login`
+
+Sin autenticación. Limitada a **6 intentos por minuto** (`throttle:6,1`).
+
+**Cuerpo de petición**
+
+| Campo      | Reglas               |
+| ---------- | -------------------- |
+| `email`    | obligatorio, email   |
+| `password` | obligatorio          |
+
+**Respuesta 200**
+
+```json
+{
+  "token": "1|abc123...",
+  "user": {
+    "id": "01a0127e-1499-71c6-92e1-bce9ef458d82",
+    "nick": "Thor",
+    "email": "thor@example.com",
+    "role": "player"
+  }
+}
+```
+
+**Errores**: `422` si las credenciales no coinciden (`message` con `Las credenciales no coinciden con nuestros registros.`).
+
+### `POST /api/auth/logout`
+
+Requiere autenticación. Revoca el token usado en la petición.
+
+**Respuesta 200**
+
+```json
+{ "message": "Sesión cerrada correctamente." }
+```
+
+### `GET /api/user`
+
+Requiere autenticación. Datos del usuario actual.
+
+**Respuesta 200**
+
+```json
+{
+  "id": "01a0127e-1499-71c6-92e1-bce9ef458d82",
+  "nick": "Thor",
+  "email": "thor@example.com",
+  "role": "player"
+}
+```
+
+## Errores comunes
+
+| Código | Situación                                                        |
+| ------ | ---------------------------------------------------------------- |
+| `401`  | Token ausente, inválido o revocado. `{ "message": "Unauthenticated." }` |
+| `422`  | Validación fallida: `{ "message": "...", "errors": { "campo": ["..."] } }` (mensajes en español) |
+| `429`  | Demasiados intentos en `login`.                                   |
+
+## Usuario administrador (seeder)
+
+`php artisan db:seed` crea la cuenta de administrador:
+
+- **nick**: `Dios Supremo`
+- **email**: `admin@example.com`
+- **contraseña**: `password`
+- **rol**: `admin`
+
+> El rol `admin` solo se asigna por seeder; el registro público siempre crea usuarios `player`.
