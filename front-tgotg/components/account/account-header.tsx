@@ -3,7 +3,6 @@
 import * as React from 'react'
 import { LogOut, Settings } from 'lucide-react'
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/components/auth/auth-provider'
 import { AccountSettingsDialog } from '@/components/account/account-settings-dialog'
@@ -14,15 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-
-function getInitials(nick: string) {
-  return nick
-    .split(' ')
-    .map((part) => part.charAt(0))
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-}
 
 export function AccountHeader() {
   const { user, logout } = useAuth()
@@ -42,12 +32,10 @@ export function AccountHeader() {
             <Button
               variant="ghost"
               size="icon"
-              className="size-9 shrink-0 rounded-full"
+              className="size-10 shrink-0 rounded-lg"
               aria-label="Menú de cuenta"
             >
-              <Avatar>
-                <AvatarFallback>{getInitials(user?.nick ?? '?')}</AvatarFallback>
-              </Avatar>
+              <Settings className="size-5" />
             </Button>
           }
         />

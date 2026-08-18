@@ -3,18 +3,24 @@
 import * as React from 'react'
 
 import { fetchServerTime } from '@/lib/api'
+import {
+  getSavedTimeFormat,
+  subscribeToTimeFormatChanges,
+  type TimeFormat,
+} from '@/lib/settings'
 
-function formatTime(date: Date) {
+function formatTime(date: Date, format: TimeFormat) {
   return date.toLocaleTimeString('es-ES', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false,
+    hour12: format === '12h',
   })
 }
 
 export function ServerClock() {
-  const [time, setTime] = React.useState(() => formatTime(new Date()))
+  const [time, setTime] = React.useState(() => formatTime(new Date(), '24h'))
+  const [timeFormat, setTimeFormat] = React.useState<TimeFormat>('24h')
   const serverOffset = React.useRef(0)
 
   React.useEffect(() => {
@@ -24,23 +30,31 @@ export function ServerClock() {
       .then((serverTime) => {
         if (!active) return
         serverOffset.current = new Date(serverTime).getTime() - Date.now()
-        setTime(formatTime(new Date(Date.now() + serverOffset.current)))
+        setTime(formatTime(new Date(Date.now() + serverOffset.current), '24h'))
       })
       .catch(() => {
         serverOffset.current = 0
       })
 
+    const refresh = () => setTimeFormat(getSavedTimeFormat())
+    const timer = window.setTimeout(refresh, 0)
+    const unsubscribe = subscribeToTimeFormatChanges(refresh)
+
     return () => {
       active = false
+      window.clearTimeout(timer)
+      unsubscribe()
     }
   }, [])
 
   React.useEffect(() => {
     const timer = window.setInterval(() => {
-      setTime(formatTime(new Date(Date.now() + serverOffset.current)))
+      setTime(
+        formatTime(new Date(Date.now() + serverOffset.current), timeFormat)
+      )
     }, 1000)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [timeFormat])
 
   return (
     <div className="flex flex-col gap-1">

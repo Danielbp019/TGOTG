@@ -18,7 +18,7 @@ class WorldFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'duration_days' => 30,
         ];
     }
 }

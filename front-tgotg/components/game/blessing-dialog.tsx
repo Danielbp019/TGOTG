@@ -13,7 +13,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { godBlessings } from '@/data/new-game'
-import { getSavedBlessing, saveBlessing } from '@/lib/blessing'
+import { fetchMyBlessing, updateMyBlessing } from '@/lib/api'
+import { ApiError } from '@/lib/api'
+import { notifyBlessingChanged } from '@/lib/blessing'
 import { blessingSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
@@ -21,26 +23,52 @@ export function BlessingDialog() {
   const [open, setOpen] = React.useState(false)
   const [selectedId, setSelectedId] = React.useState<string | undefined>()
   const [error, setError] = React.useState<string | undefined>()
+  const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
-    if (getSavedBlessing()) return
-    const timer = window.setTimeout(() => setOpen(true), 0)
-    return () => window.clearTimeout(timer)
+    let active = true
+
+    fetchMyBlessing()
+      .then((response) => {
+        if (!active) return
+        if (!response.in_game || response.blessing) return
+        setOpen(true)
+      })
+      .catch(() => {})
+
+    return () => {
+      active = false
+    }
   }, [])
 
   function handleOpenChange(next: boolean) {
     if (next) return
-    if (getSavedBlessing()) setOpen(false)
+    setOpen(false)
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
+    if (!selectedId) return
     const result = blessingSchema.safeParse({ blessingId: selectedId })
     if (!result.success) {
       setError(result.error.issues[0]?.message)
       return
     }
-    saveBlessing(selectedId ?? '')
-    setOpen(false)
+
+    setSaving(true)
+    setError(undefined)
+    try {
+      await updateMyBlessing(selectedId)
+      notifyBlessingChanged()
+      setOpen(false)
+    } catch (caught) {
+      if (caught instanceof ApiError) {
+        setError(caught.errors.key?.[0] ?? caught.message)
+      } else {
+        setError('No se pudo guardar la bendición. Inténtalo de nuevo.')
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -101,8 +129,12 @@ export function BlessingDialog() {
         {error && <p className="text-destructive text-xs">{error}</p>}
 
         <DialogFooter showCloseButton={false}>
-          <Button onClick={handleConfirm} className="w-full">
-            Aceptar bendición
+          <Button
+            onClick={handleConfirm}
+            disabled={saving}
+            className="w-full"
+          >
+            {saving ? 'Guardando bendición…' : 'Aceptar bendición'}
           </Button>
         </DialogFooter>
       </DialogContent>

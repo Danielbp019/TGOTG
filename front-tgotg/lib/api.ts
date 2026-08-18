@@ -16,6 +16,18 @@ export interface AuthResponse {
   user: AuthUser
 }
 
+export interface BlessingPayload {
+  key: string
+  name: string
+  benefit: string
+  description: string | null
+}
+
+export interface MyBlessingResponse {
+  in_game: boolean
+  blessing: BlessingPayload | null
+}
+
 interface ApiErrorPayload {
   message?: string
   errors?: Record<string, string[]>
@@ -128,4 +140,15 @@ export function fetchMe() {
 export async function fetchServerTime() {
   const data = await apiFetch<{ time: string }>('/server-time')
   return data.time
+}
+
+export function fetchMyBlessing() {
+  return apiFetch<MyBlessingResponse>('/player/blessing')
+}
+
+export function updateMyBlessing(key: string) {
+  return apiFetch<{ blessing: BlessingPayload }>('/player/blessing', {
+    method: 'PUT',
+    body: JSON.stringify({ key }),
+  })
 }

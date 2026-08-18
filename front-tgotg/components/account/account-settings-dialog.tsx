@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { AlertTriangle, Trash2, User } from 'lucide-react'
+import { AlertTriangle, Clock, Trash2, User } from 'lucide-react'
 import type { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/components/auth/auth-provider'
+import { getSavedTimeFormat, saveTimeFormat } from '@/lib/settings'
+import { cn } from '@/lib/utils'
 import {
   accountProfileSchema,
   createDeleteAccountSchema,
@@ -58,6 +60,7 @@ export function AccountSettingsDialog({
   const [saved, setSaved] = React.useState(false)
   const [confirmNick, setConfirmNick] = React.useState('')
   const [deleteError, setDeleteError] = React.useState<string | undefined>()
+  const [timeFormat, setTimeFormat] = React.useState<'24h' | '12h'>('24h')
 
   function resetForm() {
     setProfile(initialProfile)
@@ -65,6 +68,7 @@ export function AccountSettingsDialog({
     setSaved(false)
     setConfirmNick('')
     setDeleteError(undefined)
+    setTimeFormat(getSavedTimeFormat())
   }
 
   function handleOpenChange(next: boolean) {
@@ -131,6 +135,10 @@ export function AccountSettingsDialog({
                 <TabsTrigger value="datos">
                   <User />
                   Datos de usuario
+                </TabsTrigger>
+                <TabsTrigger value="preferencias">
+                  <Clock />
+                  Preferencias
                 </TabsTrigger>
                 <TabsTrigger value="peligro">
                   <AlertTriangle />
@@ -254,6 +262,51 @@ export function AccountSettingsDialog({
                     Guardar cambios
                   </Button>
                 </form>
+              </TabsContent>
+
+              <TabsContent value="preferencias">
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="account-time-format">
+                      Formato de hora
+                    </Label>
+                    <p className="text-muted-foreground text-xs">
+                      Cómo se muestra la hora del servidor en la interfaz.
+                    </p>
+                    <div
+                      id="account-time-format"
+                      className="grid grid-cols-2 gap-2"
+                    >
+                      {(
+                        [
+                          { id: '24h', label: '24 horas' },
+                          { id: '12h', label: '12 horas' },
+                        ] as const
+                      ).map((option) => {
+                        const selected = option.id === timeFormat
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => {
+                              setTimeFormat(option.id)
+                              saveTimeFormat(option.id)
+                            }}
+                            aria-pressed={selected}
+                            className={cn(
+                              'rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+                              selected
+                                ? 'border-primary bg-primary/5 ring-primary ring-2'
+                                : 'border-border hover:bg-muted'
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
               </TabsContent>
 
               <TabsContent value="peligro">
