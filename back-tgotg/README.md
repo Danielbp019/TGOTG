@@ -37,6 +37,7 @@ Authorization: Bearer <token>
 | POST   | `/api/auth/login` | No   | Inicia sesión y devuelve un token.           |
 | POST   | `/api/auth/logout`| Sí   | Cierra sesión y revoca el token actual.      |
 | GET    | `/api/user`       | Sí   | Devuelve los datos del usuario autenticado.  |
+| GET    | `/api/server-time`| Sí   | Devuelve la hora actual del servidor (ISO 8601 UTC). |
 
 ### `GET /api/ping`
 
@@ -124,6 +125,18 @@ Requiere autenticación. Datos del usuario actual.
   "nick": "Thor",
   "email": "thor@example.com",
   "role": "player"
+}
+```
+
+### `GET /api/server-time`
+
+Requiere autenticación. Hora actual del servidor en formato ISO 8601 (UTC).
+
+**Respuesta 200**
+
+```json
+{
+  "time": "2026-08-18T12:34:56+00:00"
 }
 ```
 

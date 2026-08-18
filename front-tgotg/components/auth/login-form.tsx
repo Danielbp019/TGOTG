@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import type { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
@@ -15,7 +14,9 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ApiError } from '@/lib/api'
 import { loginSchema, type LoginValues } from '@/lib/validations/auth'
+import { useAuth } from '@/components/auth/auth-provider'
 
 type LoginErrors = Partial<Record<keyof LoginValues, string>>
 
@@ -32,7 +33,7 @@ function getFieldError(
 }
 
 export function LoginForm() {
-  const router = useRouter()
+  const { login } = useAuth()
   const [form, setForm] = React.useState<LoginValues>(initialLogin)
   const [errors, setErrors] = React.useState<LoginErrors>({})
   const [formError, setFormError] = React.useState<string | undefined>()
@@ -43,7 +44,7 @@ export function LoginForm() {
     setFormError(undefined)
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     const result = loginSchema.safeParse(form)
     if (!result.success) {
@@ -54,15 +55,28 @@ export function LoginForm() {
       return
     }
     setErrors({})
-    if (form.email === 'error@tgotg.com') {
-      setFormError('Correo o contraseña incorrectos')
-      return
-    }
     setSubmitting(true)
-    window.setTimeout(() => {
+    try {
+      await login(form.email, form.password)
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 422) {
+          setErrors({
+            email: error.errors.email?.[0],
+            password: error.errors.password?.[0],
+          })
+          setFormError(error.message)
+        } else if (error.status === 429) {
+          setFormError('Demasiados intentos. Inténtalo de nuevo en un minuto.')
+        } else {
+          setFormError(error.message)
+        }
+      } else {
+        setFormError('No se pudo conectar con el servidor.')
+      }
+    } finally {
       setSubmitting(false)
-      router.push('/')
-    }, 800)
+    }
   }
 
   return (

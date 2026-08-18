@@ -18,10 +18,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { currentUser } from '@/data/user'
+import { useAuth } from '@/components/auth/auth-provider'
 import {
   accountProfileSchema,
-  deleteAccountSchema,
+  createDeleteAccountSchema,
   type AccountProfileValues,
 } from '@/lib/validations/account'
 
@@ -31,13 +31,6 @@ interface AccountSettingsDialogProps {
 }
 
 type ProfileErrors = Partial<Record<keyof AccountProfileValues, string>>
-
-const initialProfile: AccountProfileValues = {
-  email: currentUser.email,
-  nick: currentUser.name,
-  password: '',
-  confirmPassword: '',
-}
 
 function getFieldError(
   error: z.ZodError<AccountProfileValues>,
@@ -50,6 +43,15 @@ export function AccountSettingsDialog({
   open,
   onOpenChange,
 }: AccountSettingsDialogProps) {
+  const { user } = useAuth()
+
+  const initialProfile: AccountProfileValues = {
+    email: user?.email ?? '',
+    nick: user?.nick ?? '',
+    password: '',
+    confirmPassword: '',
+  }
+
   const [profile, setProfile] =
     React.useState<AccountProfileValues>(initialProfile)
   const [profileErrors, setProfileErrors] = React.useState<ProfileErrors>({})
@@ -66,9 +68,7 @@ export function AccountSettingsDialog({
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next) {
-      resetForm()
-    }
+    resetForm()
     onOpenChange(next)
   }
 
@@ -104,7 +104,9 @@ export function AccountSettingsDialog({
   }
 
   function handleDelete() {
-    const result = deleteAccountSchema.safeParse({ confirmNick })
+    const result = createDeleteAccountSchema(user?.nick ?? '').safeParse({
+      confirmNick,
+    })
     if (!result.success) {
       setDeleteError(result.error.issues[0]?.message)
       return

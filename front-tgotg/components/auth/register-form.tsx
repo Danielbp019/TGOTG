@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import type { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
@@ -15,7 +14,9 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ApiError } from '@/lib/api'
 import { registerSchema, type RegisterValues } from '@/lib/validations/auth'
+import { useAuth } from '@/components/auth/auth-provider'
 
 type RegisterErrors = Partial<Record<keyof RegisterValues, string>>
 
@@ -34,7 +35,7 @@ function getFieldError(
 }
 
 export function RegisterForm() {
-  const router = useRouter()
+  const { register } = useAuth()
   const [form, setForm] = React.useState<RegisterValues>(initialRegister)
   const [errors, setErrors] = React.useState<RegisterErrors>({})
   const [formError, setFormError] = React.useState<string | undefined>()
@@ -45,7 +46,7 @@ export function RegisterForm() {
     setFormError(undefined)
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     const result = registerSchema.safeParse(form)
     if (!result.success) {
@@ -58,15 +59,35 @@ export function RegisterForm() {
       return
     }
     setErrors({})
-    if (form.nick.trim().toLowerCase() === 'dios supremo') {
-      setFormError('Ya existe una civilización con ese nombre')
-      return
-    }
     setSubmitting(true)
-    window.setTimeout(() => {
+    try {
+      await register({
+        nick: form.nick,
+        email: form.email,
+        password: form.password,
+        password_confirmation: form.confirmPassword,
+      })
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 422) {
+          setErrors({
+            nick: error.errors.nick?.[0],
+            email: error.errors.email?.[0],
+            password: error.errors.password?.[0],
+            confirmPassword:
+              error.errors.confirmPassword?.[0] ??
+              error.errors.password_confirmation?.[0],
+          })
+          setFormError(error.message)
+        } else {
+          setFormError(error.message)
+        }
+      } else {
+        setFormError('No se pudo conectar con el servidor.')
+      }
+    } finally {
       setSubmitting(false)
-      router.push('/')
-    }, 800)
+    }
   }
 
   return (

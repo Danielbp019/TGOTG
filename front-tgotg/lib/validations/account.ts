@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-import { currentUser } from '@/data/user'
-
 export const accountProfileSchema = z
   .object({
     email: z.email('Introduce un correo válido'),
@@ -23,13 +21,16 @@ export const accountProfileSchema = z
 
 export type AccountProfileValues = z.infer<typeof accountProfileSchema>
 
-export const deleteAccountSchema = z
-  .object({
-    confirmNick: z.string(),
-  })
-  .refine((data) => data.confirmNick === currentUser.name, {
-    message: 'El nick no coincide. Escríbelo tal y como aparece.',
-    path: ['confirmNick'],
-  })
+export const createDeleteAccountSchema = (nick: string) =>
+  z
+    .object({
+      confirmNick: z.string(),
+    })
+    .refine((data) => data.confirmNick === nick, {
+      message: 'El nick no coincide. Escríbelo tal y como aparece.',
+      path: ['confirmNick'],
+    })
 
-export type DeleteAccountValues = z.infer<typeof deleteAccountSchema>
+export type DeleteAccountValues = z.infer<
+  ReturnType<typeof createDeleteAccountSchema>
+>

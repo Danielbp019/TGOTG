@@ -3,14 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { mainMenu } from '@/data/menu'
-import { currentUser } from '@/data/user'
+import { useAuth } from '@/components/auth/auth-provider'
 import { cn } from '@/lib/utils'
 
 export function MainMenu() {
   const pathname = usePathname()
+  const { user } = useAuth()
 
   const visibleItems = mainMenu.filter(
-    (item) => !item.adminOnly || currentUser.role === 'admin'
+    (item) => !item.adminOnly || user?.role === 'admin'
   )
 
   function isActive(href: string) {

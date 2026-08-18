@@ -81,15 +81,6 @@ export interface BuildingSlot {
   height: number
 }
 
-export type WorldRole = 'admin' | 'player'
-
-export interface CurrentUser {
-  name: string
-  initials: string
-  email: string
-  role: WorldRole
-}
-
 export interface GameDuration {
   id: string
   label: string

@@ -1,3 +1,5 @@
+'use client'
+
 import { ShieldAlert } from 'lucide-react'
 
 import { WorldConfigPanel } from '@/components/game/world-config-panel'
@@ -7,10 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { currentUser } from '@/data/user'
+import { useAuth } from '@/components/auth/auth-provider'
 
 export default function WorldConfigPage() {
-  if (currentUser.role !== 'admin') {
+  const { user } = useAuth()
+
+  if (user?.role !== 'admin') {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <Card className="w-full max-w-sm">

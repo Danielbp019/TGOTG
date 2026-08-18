@@ -2,6 +2,8 @@
 
 import * as React from 'react'
 
+import { fetchServerTime } from '@/lib/api'
+
 function formatTime(date: Date) {
   return date.toLocaleTimeString('es-ES', {
     hour: '2-digit',
@@ -13,12 +15,31 @@ function formatTime(date: Date) {
 
 export function ServerClock() {
   const [time, setTime] = React.useState(() => formatTime(new Date()))
+  const serverOffset = React.useRef(0)
 
   React.useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(formatTime(new Date()))
+    let active = true
+
+    fetchServerTime()
+      .then((serverTime) => {
+        if (!active) return
+        serverOffset.current = new Date(serverTime).getTime() - Date.now()
+        setTime(formatTime(new Date(Date.now() + serverOffset.current)))
+      })
+      .catch(() => {
+        serverOffset.current = 0
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const timer = window.setInterval(() => {
+      setTime(formatTime(new Date(Date.now() + serverOffset.current)))
     }, 1000)
-    return () => clearInterval(timer)
+    return () => window.clearInterval(timer)
   }, [])
 
   return (
