@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\MessageController;
@@ -13,13 +14,15 @@ Route::get('/ping', function () {
 });
 
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
+    Route::put('/account/profile', [AccountController::class, 'updateProfile']);
+    Route::delete('/account', [AccountController::class, 'destroy']);
     Route::get('/server-time', [SystemController::class, 'serverTime']);
     Route::get('/player/blessing', [PlayerController::class, 'blessing']);
     Route::put('/player/blessing', [PlayerController::class, 'updateBlessing']);

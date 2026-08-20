@@ -1,7 +1,6 @@
 import type { PlotShape, ResourceKey } from '@/types'
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
 const TOKEN_STORAGE_KEY = 'tgotg:auth-token'
 const UNAUTHORIZED_EVENT = 'tgotg:unauthorized'
@@ -238,6 +237,28 @@ export function fetchMe() {
   return apiFetch<AuthUser>('/user')
 }
 
+export function updateAccountProfile(data: {
+  nick: string
+  current_password?: string
+  password?: string
+  password_confirmation?: string
+}) {
+  return apiFetch<{ user: AuthUser }>('/account/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteAccount(data: {
+  confirm_nick: string
+  password: string
+}) {
+  return apiFetch<{ message: string }>('/account', {
+    method: 'DELETE',
+    body: JSON.stringify(data),
+  })
+}
+
 export async function fetchServerTime() {
   const data = await apiFetch<{ time: string }>('/server-time')
   return data.time
@@ -277,9 +298,7 @@ export function fetchBlessings() {
 }
 
 export function fetchBuildingTypes() {
-  return apiFetch<{ building_types: BuildingTypePayload[] }>(
-    '/building-types'
-  )
+  return apiFetch<{ building_types: BuildingTypePayload[] }>('/building-types')
 }
 
 export function fetchGameOptions() {

@@ -61,6 +61,56 @@ test('el registro rechaza un email duplicado', function () {
         ->assertJsonValidationErrors(['email']);
 });
 
+test('el registro rechaza un nick duplicado exacto', function () {
+    User::factory()->create(['nick' => 'Thor']);
+
+    $this->postJson('/api/auth/register', [
+        'nick' => 'Thor',
+        'email' => 'thor@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors(['nick'])
+        ->assertJsonPath('errors.nick.0', 'Este nick ya está en uso.');
+});
+
+test('el registro permite nicks que solo difieren en mayúsculas', function () {
+    $this->postJson('/api/auth/register', [
+        'nick' => 'Thor',
+        'email' => 'thor@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertStatus(201);
+
+    $this->postJson('/api/auth/register', [
+        'nick' => 'thor',
+        'email' => 'thor2@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertStatus(201);
+
+    expect(User::where('nick', 'Thor')->exists())->toBeTrue();
+    expect(User::where('nick', 'thor')->exists())->toBeTrue();
+});
+
+test('el registro está limitado a 6 peticiones por minuto', function () {
+    for ($i = 0; $i < 6; $i++) {
+        $this->postJson('/api/auth/register', [
+            'nick' => "Thor{$i}",
+            'email' => "thor{$i}@example.com",
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertStatus(201);
+    }
+
+    $this->postJson('/api/auth/register', [
+        'nick' => 'Thor6',
+        'email' => 'thor6@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertStatus(429);
+});
+
 test('un usuario puede iniciar sesión', function () {
     User::factory()->create([
         'nick' => 'Thor',

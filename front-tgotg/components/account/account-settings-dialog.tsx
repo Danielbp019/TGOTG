@@ -19,12 +19,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/components/auth/auth-provider'
+import { ApiError, deleteAccount, updateAccountProfile } from '@/lib/api'
 import { getSavedTimeFormat, saveTimeFormat } from '@/lib/settings'
 import { cn } from '@/lib/utils'
 import {
   accountProfileSchema,
   createDeleteAccountSchema,
   type AccountProfileValues,
+  type DeleteAccountValues,
 } from '@/lib/validations/account'
 
 interface AccountSettingsDialogProps {
@@ -33,6 +35,9 @@ interface AccountSettingsDialogProps {
 }
 
 type ProfileErrors = Partial<Record<keyof AccountProfileValues, string>>
+type DeleteErrors = Partial<Record<keyof DeleteAccountValues, string>> & {
+  form?: string
+}
 
 function getFieldError(
   error: z.ZodError<AccountProfileValues>,
@@ -41,15 +46,23 @@ function getFieldError(
   return error.issues.find((issue) => issue.path.join('.') === field)?.message
 }
 
+function getDeleteFieldError(
+  error: z.ZodError<DeleteAccountValues>,
+  field: keyof DeleteAccountValues
+) {
+  return error.issues.find((issue) => issue.path.join('.') === field)?.message
+}
+
 export function AccountSettingsDialog({
   open,
   onOpenChange,
 }: AccountSettingsDialogProps) {
-  const { user } = useAuth()
+  const { user, updateUser, logout } = useAuth()
 
   const initialProfile: AccountProfileValues = {
     email: user?.email ?? '',
     nick: user?.nick ?? '',
+    currentPassword: '',
     password: '',
     confirmPassword: '',
   }
@@ -57,17 +70,25 @@ export function AccountSettingsDialog({
   const [profile, setProfile] =
     React.useState<AccountProfileValues>(initialProfile)
   const [profileErrors, setProfileErrors] = React.useState<ProfileErrors>({})
+  const [formError, setFormError] = React.useState<string | undefined>()
   const [saved, setSaved] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
   const [confirmNick, setConfirmNick] = React.useState('')
-  const [deleteError, setDeleteError] = React.useState<string | undefined>()
+  const [deletePassword, setDeletePassword] = React.useState('')
+  const [deleteErrors, setDeleteErrors] = React.useState<DeleteErrors>({})
+  const [deleting, setDeleting] = React.useState(false)
   const [timeFormat, setTimeFormat] = React.useState<'24h' | '12h'>('24h')
 
   function resetForm() {
     setProfile(initialProfile)
     setProfileErrors({})
+    setFormError(undefined)
     setSaved(false)
+    setSaving(false)
     setConfirmNick('')
-    setDeleteError(undefined)
+    setDeletePassword('')
+    setDeleteErrors({})
+    setDeleting(false)
     setTimeFormat(getSavedTimeFormat())
   }
 
@@ -90,13 +111,14 @@ export function AccountSettingsDialog({
     setSaved(false)
   }
 
-  function handleProfileSubmit(event: React.FormEvent) {
+  async function handleProfileSubmit(event: React.FormEvent) {
     event.preventDefault()
     const result = accountProfileSchema.safeParse(profile)
     if (!result.success) {
       setProfileErrors({
         email: getFieldError(result.error, 'email'),
         nick: getFieldError(result.error, 'nick'),
+        currentPassword: getFieldError(result.error, 'currentPassword'),
         password: getFieldError(result.error, 'password'),
         confirmPassword: getFieldError(result.error, 'confirmPassword'),
       })
@@ -104,18 +126,78 @@ export function AccountSettingsDialog({
       return
     }
     setProfileErrors({})
-    setSaved(true)
+    setFormError(undefined)
+    setSaved(false)
+    setSaving(true)
+    try {
+      const { user: updated } = await updateAccountProfile({
+        nick: profile.nick,
+        current_password: profile.currentPassword || undefined,
+        password: profile.password || undefined,
+        password_confirmation: profile.confirmPassword || undefined,
+      })
+      updateUser(updated)
+      setSaved(true)
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 422) {
+        setProfileErrors({
+          nick: error.errors.nick?.[0],
+          currentPassword: error.errors.current_password?.[0],
+          password: error.errors.password?.[0],
+          confirmPassword:
+            error.errors.confirmPassword?.[0] ??
+            error.errors.password_confirmation?.[0],
+        })
+      } else {
+        setFormError(
+          error instanceof ApiError
+            ? error.message
+            : 'No se pudo conectar con el servidor.'
+        )
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     const result = createDeleteAccountSchema(user?.nick ?? '').safeParse({
       confirmNick,
+      password: deletePassword,
     })
     if (!result.success) {
-      setDeleteError(result.error.issues[0]?.message)
+      setDeleteErrors({
+        confirmNick: getDeleteFieldError(result.error, 'confirmNick'),
+        password: getDeleteFieldError(result.error, 'password'),
+      })
       return
     }
-    setDeleteError(undefined)
+    setDeleteErrors({})
+    setDeleting(true)
+    try {
+      await deleteAccount({
+        confirm_nick: confirmNick,
+        password: deletePassword,
+      })
+      setDeleting(false)
+      await logout()
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 422) {
+        setDeleteErrors({
+          confirmNick: error.errors.confirm_nick?.[0],
+          password: error.errors.password?.[0],
+          form: error.message,
+        })
+      } else {
+        setDeleteErrors({
+          form:
+            error instanceof ApiError
+              ? error.message
+              : 'No se pudo conectar con el servidor.',
+        })
+      }
+      setDeleting(false)
+    }
   }
 
   return (
@@ -195,6 +277,39 @@ export function AccountSettingsDialog({
                   <Separator />
 
                   <div className="grid gap-2">
+                    <Label htmlFor="account-current-password">
+                      Contraseña actual
+                    </Label>
+                    <Input
+                      id="account-current-password"
+                      type="password"
+                      autoComplete="current-password"
+                      value={profile.currentPassword}
+                      onChange={(event) =>
+                        handleProfileField(
+                          'currentPassword',
+                          event.target.value
+                        )
+                      }
+                      aria-invalid={Boolean(profileErrors.currentPassword)}
+                      aria-describedby={
+                        profileErrors.currentPassword
+                          ? 'account-current-password-error'
+                          : undefined
+                      }
+                      placeholder="Necesaria para cambiar la contraseña"
+                    />
+                    {profileErrors.currentPassword && (
+                      <p
+                        id="account-current-password-error"
+                        className="text-destructive text-xs"
+                      >
+                        {profileErrors.currentPassword}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2">
                     <Label htmlFor="account-password">Nueva contraseña</Label>
                     <Input
                       id="account-password"
@@ -258,8 +373,16 @@ export function AccountSettingsDialog({
                     </p>
                   )}
 
-                  <Button type="submit" className="w-full sm:w-auto">
-                    Guardar cambios
+                  {formError && (
+                    <p className="text-destructive text-sm">{formError}</p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full sm:w-auto"
+                    disabled={saving}
+                  >
+                    {saving ? 'Guardando…' : 'Guardar cambios'}
                   </Button>
                 </form>
               </TabsContent>
@@ -267,9 +390,7 @@ export function AccountSettingsDialog({
               <TabsContent value="preferencias">
                 <div className="grid gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="account-time-format">
-                      Formato de hora
-                    </Label>
+                    <Label htmlFor="account-time-format">Formato de hora</Label>
                     <p className="text-muted-foreground text-xs">
                       Cómo se muestra la hora del servidor en la interfaz.
                     </p>
@@ -329,30 +450,73 @@ export function AccountSettingsDialog({
                       value={confirmNick}
                       onChange={(event) => {
                         setConfirmNick(event.target.value)
-                        setDeleteError(undefined)
+                        setDeleteErrors((prev) => ({
+                          ...prev,
+                          confirmNick: undefined,
+                          form: undefined,
+                        }))
                       }}
-                      aria-invalid={Boolean(deleteError)}
+                      aria-invalid={Boolean(deleteErrors.confirmNick)}
                       aria-describedby={
-                        deleteError ? 'account-confirm-nick-error' : undefined
+                        deleteErrors.confirmNick
+                          ? 'account-confirm-nick-error'
+                          : undefined
                       }
                     />
-                    {deleteError && (
+                    {deleteErrors.confirmNick && (
                       <p
                         id="account-confirm-nick-error"
                         className="text-destructive text-xs"
                       >
-                        {deleteError}
+                        {deleteErrors.confirmNick}
                       </p>
                     )}
                   </div>
+                  <div className="mt-3 grid gap-2">
+                    <Label htmlFor="account-delete-password">Contraseña</Label>
+                    <Input
+                      id="account-delete-password"
+                      type="password"
+                      autoComplete="current-password"
+                      value={deletePassword}
+                      onChange={(event) => {
+                        setDeletePassword(event.target.value)
+                        setDeleteErrors((prev) => ({
+                          ...prev,
+                          password: undefined,
+                          form: undefined,
+                        }))
+                      }}
+                      aria-invalid={Boolean(deleteErrors.password)}
+                      aria-describedby={
+                        deleteErrors.password
+                          ? 'account-delete-password-error'
+                          : undefined
+                      }
+                    />
+                    {deleteErrors.password && (
+                      <p
+                        id="account-delete-password-error"
+                        className="text-destructive text-xs"
+                      >
+                        {deleteErrors.password}
+                      </p>
+                    )}
+                  </div>
+                  {deleteErrors.form && (
+                    <p className="text-destructive mt-2 text-sm">
+                      {deleteErrors.form}
+                    </p>
+                  )}
                   <Button
                     type="button"
                     variant="destructive"
                     onClick={handleDelete}
+                    disabled={deleting}
                     className="mt-3 w-full sm:w-auto"
                   >
                     <Trash2 />
-                    Borrar cuenta
+                    {deleting ? 'Borrando…' : 'Borrar cuenta'}
                   </Button>
                 </div>
               </TabsContent>

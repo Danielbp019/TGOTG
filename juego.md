@@ -69,7 +69,7 @@
 ## Ejército y combate
 
 - [ ] Sistema de ejército.
-- [ ] Tres tipos de tropas.
+- [ ] Cinco tipos de tropas.
 - [ ] Reglas de combate (combates automáticos).
 - [ ] Cada ciudad produce tropas; por defecto quedan en guardia de la ciudad.
 - [ ] El jugador decide qué tropas mover al ejército; las del ejército no defienden la ciudad salvo que estén ubicadas en ella.
@@ -96,17 +96,20 @@
 
 ## Ciudad y Phaser
 
-- [ ] Día/noche: transición de iluminación, amanecer → día → atardecer → noche, con reloj local simulado.
 - [ ] Estados visuales de edificios (construcción, dañado, destruido): validar el sistema con el Ayuntamiento y reutilizarlo en el resto.
 - [ ] Reparación y mejora (`repairing`, `upgrading`) si se necesitan.
 
-## Backend (ETAPA 8)
+## Backend (ETAPA 8 - en progreso)
 
-- [ ] Crear el proyecto Laravel definitivo (`back-tgotg`).
-- [ ] Configurar autenticación Sanctum.
-- [ ] Definir API para: usuario, ciudad, edificios, recursos, ejército.
-- [ ] Sustituir progresivamente los datos mock por datos reales.
-- [ ] Diseñar desde el inicio la separación jugador humano / jugador IA / identidad, sin crear todavía el sistema de IA.
+Laravel proyecto corriendo con routes API implementadas:
+
+- Autenticación Sanctum: register, login, logout, user actual
+- World: crear/terminar contienda, duración y multiplicadores
+- City: mostrar ciudad con recursos, producción por hora, edificios
+- Building: reparación (paid/auto), progreso automático
+- System: bendiciones, civilizaciones, tipos de edificio, opciones de juego
+- Mensajería: conversaciones y mensajes entre jugadores
+- Pendiente: reglas completas de producción, ejército y combate
 
 ## IA futura (post-MVP)
 

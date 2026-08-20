@@ -26,6 +26,7 @@ interface AuthContextValue {
     password_confirmation: string
   }) => Promise<void>
   logout: () => Promise<void>
+  updateUser: (user: AuthUser) => void
 }
 
 const AuthContext = React.createContext<AuthContextValue | undefined>(undefined)
@@ -110,6 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = React.useCallback(async () => {
     try {
       await logoutRequest()
+    } catch {
+      // El token puede haber sido revocado ya (p. ej. cuenta eliminada).
     } finally {
       clearToken()
       setUser(null)
@@ -117,9 +120,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [router])
 
+  const updateUser = React.useCallback((updated: AuthUser) => {
+    setUser(updated)
+  }, [])
+
   const value = React.useMemo(
-    () => ({ user, isLoading, login, register, logout }),
-    [isLoading, login, logout, register, user]
+    () => ({ user, isLoading, login, register, logout, updateUser }),
+    [isLoading, login, logout, register, updateUser, user]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

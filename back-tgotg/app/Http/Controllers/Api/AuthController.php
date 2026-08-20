@@ -17,6 +17,8 @@ class AuthController extends Controller
             'nick' => ['required', 'string', 'max:255', 'unique:users,nick'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'nick.unique' => __('Este nick ya está en uso.'),
         ]);
 
         $user = User::create($data);
