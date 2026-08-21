@@ -53,22 +53,6 @@ Cada construcción tiene un propósito dentro de tu civilización:
 | Cuartel del ejército | Militar       | Entrena y aloja a tus tropas, tu garantía para defender y atacar.                     |
 | Laboratorio          | Investigación | El centro de la investigación, donde se desbloquean nuevas tecnologías y mejoras.     |
 
----
-
-## Coordenadas y mapas — fuente única
-
-Las **coordenadas de los edificios nunca se guardan en la base de datos**. La tabla `buildings` solo persiste `level`, `damage` y estado de reparación; `shape`, `x`, `y`, `width`, `height` y `worldSize` viven **solo en código**:
-
-* **SSOT backend:** `back-tgotg/app/Support/CityLayouts.php` — `WORLD_SIZE` (2048×1024) + `plots(map = 'bosque'): list<{key,level,x,y,shape,width,height}>` y `plotForKey(key, map)`. `StartingConfig::buildings()` es alias `@deprecated` para compatibilidad.
-* **API:** `GET /api/city` resuelve cada `Building` contra `CityLayouts::plotForKey()` y devuelve `CityBuilding {id,key,name,category,level,damage,repairing,repairPaid,shape,x,y,width,height}` + `worldSize`. El front **solo lee** — `front-tgotg/game/plots.ts` está deprecado a stub sin datos.
-* **Render:** `CityScene` (`front-tgotg/game/scenes/city-scene.ts`) usa `getCityBuildings()` / `getWorldSize()` de `game/city-data.ts` alimentados por `city-provider` tras `fetchCity()`. No define parcelas.
-
-**Para mover un edificio:** edita `CityLayouts::plots()` (un sitio) y el front lo refleja sin tocar DB ni frontend.
-
-**Para añadir un mapa/edificios:** añade un `case 'desierto' => [...]` en `CityLayouts::plots()` y pásale el `map` a `CityLayouts::plots(map)` / `plotForKey(key, map)` y a `WorldController::store` / `DemoWorldSeeder`. No requiere nueva migración. Validaciones `zod` en `front-tgotg/lib/validations/city.ts`.
-
----
-
 ## Tecnología
 
 - **Frontend** (`front-tgotg/`): React + TypeScript, Next.js, Tailwind CSS, shadcn/ui y Phaser 4 para la representación del mundo.
