@@ -19,30 +19,37 @@ function formatTime(date: Date, format: TimeFormat) {
 }
 
 export function ServerClock() {
-  const [time, setTime] = React.useState(() => formatTime(new Date(), '24h'))
+  const [time, setTime] = React.useState<string | null>(null)
   const [timeFormat, setTimeFormat] = React.useState<TimeFormat>('24h')
   const serverOffset = React.useRef(0)
 
   React.useEffect(() => {
     let active = true
 
+    const initialFormat = getSavedTimeFormat()
+    setTimeFormat(initialFormat)
+    setTime(formatTime(new Date(), initialFormat))
+
     fetchServerTime()
       .then((serverTime) => {
         if (!active) return
         serverOffset.current = new Date(serverTime).getTime() - Date.now()
-        setTime(formatTime(new Date(Date.now() + serverOffset.current), '24h'))
+        setTime(
+          formatTime(
+            new Date(Date.now() + serverOffset.current),
+            getSavedTimeFormat()
+          )
+        )
       })
       .catch(() => {
         serverOffset.current = 0
       })
 
     const refresh = () => setTimeFormat(getSavedTimeFormat())
-    const timer = window.setTimeout(refresh, 0)
     const unsubscribe = subscribeToTimeFormatChanges(refresh)
 
     return () => {
       active = false
-      window.clearTimeout(timer)
       unsubscribe()
     }
   }, [])
@@ -62,8 +69,9 @@ export function ServerClock() {
       <span
         className="font-mono text-base font-medium tracking-wider tabular-nums"
         aria-live="off"
+        suppressHydrationWarning
       >
-        {time}
+        {time ?? '--:--:--'}
       </span>
     </div>
   )
