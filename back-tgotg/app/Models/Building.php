@@ -23,11 +23,6 @@ class Building extends Model
         'damage',
         'repair_started_at',
         'repair_paid',
-        'shape',
-        'x',
-        'y',
-        'width',
-        'height',
     ];
 
     /**
@@ -37,7 +32,6 @@ class Building extends Model
         'level' => 0,
         'damage' => 0,
         'repair_paid' => false,
-        'shape' => 'diamond',
     ];
 
     /**
@@ -50,10 +44,6 @@ class Building extends Model
             'damage' => 'integer',
             'repair_started_at' => 'datetime',
             'repair_paid' => 'boolean',
-            'x' => 'integer',
-            'y' => 'integer',
-            'width' => 'integer',
-            'height' => 'integer',
         ];
     }
 

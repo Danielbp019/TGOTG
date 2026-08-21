@@ -41,20 +41,12 @@ class StartingConfig
     /**
      * The initial building plots for a freshly created city.
      *
+     * @deprecated SSOT movido a CityLayouts::plots(). Este método es alias para compat.
+     *
      * @return list<array<string, string|int>>
      */
-    public static function buildings(): array
+    public static function buildings(string $map = 'bosque'): array
     {
-        return [
-            ['key' => 'foso', 'level' => 1, 'x' => 1024, 'y' => 910, 'shape' => 'rect', 'width' => 1800, 'height' => 160],
-            ['key' => 'muralla', 'level' => 2, 'x' => 1024, 'y' => 690, 'shape' => 'rect', 'width' => 1750, 'height' => 200],
-            ['key' => 'minaPiedra', 'level' => 1, 'x' => 520, 'y' => 480, 'shape' => 'diamond', 'width' => 480, 'height' => 250],
-            ['key' => 'ayuntamiento', 'level' => 3, 'x' => 960, 'y' => 470, 'shape' => 'diamond', 'width' => 500, 'height' => 260],
-            ['key' => 'minaHierro', 'level' => 2, 'x' => 1420, 'y' => 490, 'shape' => 'diamond', 'width' => 510, 'height' => 260],
-            ['key' => 'cuartel', 'level' => 1, 'x' => 640, 'y' => 260, 'shape' => 'diamond', 'width' => 490, 'height' => 250],
-            ['key' => 'laboratorio', 'level' => 0, 'x' => 1080, 'y' => 220, 'shape' => 'diamond', 'width' => 500, 'height' => 260],
-            ['key' => 'aserradero', 'level' => 2, 'x' => 1500, 'y' => 240, 'shape' => 'diamond', 'width' => 480, 'height' => 250],
-            ['key' => 'granja', 'level' => 2, 'x' => 1620, 'y' => 360, 'shape' => 'diamond', 'width' => 490, 'height' => 250],
-        ];
+        return CityLayouts::plots($map);
     }
 }

@@ -18,6 +18,7 @@ Juego de estrategia medieval persistente por navegador, con una experiencia visu
 
 - Idioma predeterminado de la interfaz: **español**. Todos los textos visibles en español.
 - La arquitectura debe permitir i18n futuro, pero inicialmente solo español.
+- Responde en idioma español.
 
 ## Arquitectura
 

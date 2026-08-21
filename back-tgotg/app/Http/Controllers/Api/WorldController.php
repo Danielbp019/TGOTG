@@ -9,6 +9,7 @@ use App\Models\City;
 use App\Models\GameOption;
 use App\Models\Player;
 use App\Models\World;
+use App\Support\CityLayouts;
 use App\Support\StartingConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -81,16 +82,11 @@ class WorldController extends Controller
             ]
         ));
 
-        foreach (StartingConfig::buildings() as $plot) {
+        foreach (CityLayouts::plots() as $plot) {
             Building::create([
                 'city_id' => $city->id,
                 'building_type_id' => BuildingType::where('key', $plot['key'])->value('id'),
                 'level' => $plot['level'],
-                'shape' => $plot['shape'],
-                'x' => $plot['x'],
-                'y' => $plot['y'],
-                'width' => $plot['width'],
-                'height' => $plot['height'],
             ]);
         }
 

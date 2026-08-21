@@ -57,11 +57,6 @@ test('devuelve la ciudad del jugador actual con sus edificios', function () {
         'city_id' => $city->id,
         'building_type_id' => $buildingType->id,
         'level' => 3,
-        'shape' => 'diamond',
-        'x' => 960,
-        'y' => 470,
-        'width' => 500,
-        'height' => 260,
     ]);
 
     $this->actingAs($user, 'sanctum')
@@ -78,7 +73,11 @@ test('devuelve la ciudad del jugador actual con sus edificios', function () {
         ->assertJsonCount(1, 'city.buildings')
         ->assertJsonPath('city.buildings.0.key', 'ayuntamiento')
         ->assertJsonPath('city.buildings.0.level', 3)
-        ->assertJsonPath('city.buildings.0.shape', 'diamond');
+        ->assertJsonPath('city.buildings.0.shape', 'diamond')
+        ->assertJsonPath('city.buildings.0.x', 916)
+        ->assertJsonPath('city.buildings.0.y', 336)
+        ->assertJsonPath('city.buildings.0.width', 328)
+        ->assertJsonPath('city.buildings.0.height', 184);
 });
 
 test('la producción horaria aplica el multiplicador de velocidad del mundo', function () {

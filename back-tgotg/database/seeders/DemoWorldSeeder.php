@@ -9,6 +9,7 @@ use App\Models\Player;
 use App\Models\User;
 use App\Models\UserStatistic;
 use App\Models\World;
+use App\Support\CityLayouts;
 use App\Support\StartingConfig;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -56,16 +57,11 @@ class DemoWorldSeeder extends Seeder
             'world_id' => $world->id,
         ]);
 
-        foreach (StartingConfig::buildings() as $building) {
+        foreach (CityLayouts::plots() as $building) {
             Building::create([
                 'city_id' => $city->id,
                 'building_type_id' => BuildingType::where('key', $building['key'])->value('id'),
                 'level' => $building['level'],
-                'shape' => $building['shape'],
-                'x' => $building['x'],
-                'y' => $building['y'],
-                'width' => $building['width'],
-                'height' => $building['height'],
             ]);
         }
 

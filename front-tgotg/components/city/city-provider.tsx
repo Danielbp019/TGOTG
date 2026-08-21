@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { setCityBuildings, setWorldSize } from '@/game/city-data'
 import type { CityPayload } from '@/lib/api'
 import { ApiError, fetchCity } from '@/lib/api'
 
@@ -27,6 +28,8 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await fetchCity()
       setCity(response.city)
+      setCityBuildings(response.city.buildings)
+      if (response.city.worldSize) setWorldSize(response.city.worldSize)
       setVersion((current) => current + 1)
     } catch (caught) {
       if (caught instanceof ApiError) {

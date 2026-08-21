@@ -23,11 +23,6 @@ class BuildingFactory extends Factory
             'city_id' => City::factory(),
             'building_type_id' => BuildingType::factory(),
             'level' => fake()->numberBetween(0, 5),
-            'shape' => 'diamond',
-            'x' => fake()->numberBetween(100, 1900),
-            'y' => fake()->numberBetween(100, 900),
-            'width' => fake()->numberBetween(400, 500),
-            'height' => fake()->numberBetween(200, 300),
         ];
     }
 }

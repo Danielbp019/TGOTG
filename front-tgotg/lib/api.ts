@@ -68,6 +68,7 @@ export interface GameOptionsPayload {
 }
 
 export interface CityBuilding {
+  id: string
   key: string
   name: string
   category: string
@@ -92,6 +93,7 @@ export interface CityPayload {
   stationedTroops: number
   defensePower: number
   protectionUntil: string | null
+  worldSize: { width: number; height: number }
   buildings: CityBuilding[]
 }
 

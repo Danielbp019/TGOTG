@@ -60,13 +60,11 @@ export function RepairPanel() {
 
   async function handleRepair(building: CityBuilding, type: 'paid' | 'auto') {
     if (!city) return
-    const cityBuilding = city.buildings.find((item) => item.key === building.key)
-    if (!cityBuilding || !('id' in cityBuilding)) return
 
     setBusyKey(building.key)
     setError(undefined)
     try {
-      await repairBuilding(cityBuilding.id as string, type)
+      await repairBuilding(building.id, type)
       await reload()
     } catch (caught) {
       if (caught instanceof ApiError) {

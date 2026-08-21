@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Concerns\ResolvesCurrentPlayer;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\City;
+use App\Support\CityLayouts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,20 +42,30 @@ class CityController extends Controller
         $buildings = $city->buildings
             ->sortBy('buildingType.name')
             ->values()
-            ->map(fn ($building) => [
-                'key' => $building->buildingType->key,
-                'name' => $building->buildingType->name,
-                'category' => $building->buildingType->category,
-                'level' => $building->level,
-                'damage' => $building->damage,
-                'repairing' => $building->repair_started_at !== null,
-                'repairPaid' => $building->repair_paid,
-                'shape' => $building->shape,
-                'x' => $building->x,
-                'y' => $building->y,
-                'width' => $building->width,
-                'height' => $building->height,
-            ]);
+            ->map(function ($building) {
+                $plot = CityLayouts::plotForKey($building->buildingType->key);
+                $shape = $plot['shape'] ?? 'diamond';
+                $x = $plot['x'] ?? 0;
+                $y = $plot['y'] ?? 0;
+                $width = $plot['width'] ?? 0;
+                $height = $plot['height'] ?? 0;
+
+                return [
+                    'id' => $building->id,
+                    'key' => $building->buildingType->key,
+                    'name' => $building->buildingType->name,
+                    'category' => $building->buildingType->category,
+                    'level' => $building->level,
+                    'damage' => $building->damage,
+                    'repairing' => $building->repair_started_at !== null,
+                    'repairPaid' => $building->repair_paid,
+                    'shape' => $shape,
+                    'x' => $x,
+                    'y' => $y,
+                    'width' => $width,
+                    'height' => $height,
+                ];
+            });
 
         return response()->json([
             'city' => [
@@ -79,6 +90,7 @@ class CityController extends Controller
                 'stationedTroops' => $city->stationed_troops,
                 'defensePower' => $city->defense_power,
                 'protectionUntil' => $city->protection_until?->toIso8601String(),
+                'worldSize' => CityLayouts::worldSize(),
                 'buildings' => $buildings,
             ],
         ]);

@@ -323,48 +323,50 @@ Requiere autenticación. Opciones para crear partida: duraciones y multiplicador
 
 ### `GET /api/city`
 
-Requiere autenticación. Devuelve la ciudad del jugador con todos sus datos.
+Requiere autenticación. Devuelve la ciudad del jugador con todos sus datos. Las coordenadas `shape,x,y,width,height` y `worldSize` **no se leen de la tabla `buildings`** — la tabla solo guarda `level/damage/repair_*`; el controlador las resuelve contra el SSOT `App\Support\CityLayouts` y las inyecta en la respuesta. `StartingConfig::buildings()` es alias deprecado.
 
 **Respuesta 200**
 
 ```json
 {
     "city": {
-        "name": "Mi Ciudad",
+        "name": "Principal",
         "resources": {
-            "gold": 1000,
-            "wood": 500,
-            "stone": 300,
-            "iron": 200,
-            "food": 800
+            "gold": 12450,
+            "wood": 8300,
+            "stone": 6200,
+            "iron": 4100,
+            "food": 9700
         },
         "perHour": {
-            "gold": 50,
-            "wood": 30,
-            "stone": 20,
-            "iron": 15,
-            "food": 40
+            "gold": 109,
+            "wood": 85,
+            "stone": 60,
+            "iron": 35,
+            "food": 105
         },
-        "population": 100,
-        "happiness": 85,
-        "defense": 150,
-        "stationedTroops": 50,
-        "defensePower": 500,
+        "population": 340,
+        "happiness": 72,
+        "defense": 230,
+        "stationedTroops": 124,
+        "defensePower": 3330,
         "protectionUntil": "2026-08-20T12:00:00+00:00",
+        "worldSize": { "width": 2048, "height": 1024 },
         "buildings": [
             {
-                "key": "townhall",
+                "id": "0199aabb-...-uuid",
+                "key": "ayuntamiento",
                 "name": "Ayuntamiento",
-                "category": "core",
+                "category": "Principal",
                 "level": 3,
                 "damage": 0,
                 "repairing": false,
                 "repairPaid": false,
-                "shape": "rect",
-                "x": 0,
-                "y": 0,
-                "width": 2,
-                "height": 2
+                "shape": "diamond",
+                "x": 916,
+                "y": 336,
+                "width": 328,
+                "height": 184
             }
         ]
     }
@@ -432,6 +434,13 @@ Requiere autenticación. Elimina una conversación.
 | `401`  | Token ausente, inválido o revocado. `{ "message": "Unauthenticated." }`                          |
 | `422`  | Validación fallida: `{ "message": "...", "errors": { "campo": ["..."] } }` (mensajes en español) |
 | `429`  | Demasiados intentos en `login` o `register`.                                                     |
+
+## Coordenadas y mapas (SSOT)
+
+* **Fichero único:** `app/Support/CityLayouts.php` — `const WORLD_SIZE`, `plots(map='bosque')` y `plotForKey(key, map)`. Único lugar para mover edificios o añadir mapas/edificios. `StartingConfig::buildings(map)` delega allí.
+* **Tabla `buildings`:** columnas `id, city_id, building_type_id, level, damage, repair_started_at, repair_paid` — sin `shape,x,y,width,height`.
+* **Front:** `front-tgotg/game/plots.ts` deprecado a stub; `CityScene` lee `getCityBuildings()/getWorldSize()` de `game/city-data.ts` alimentados por `GET /api/city`. Validación `zod` en `front-tgotg/lib/validations/city.ts`.
+* **Nuevo mapa:** añade `case 'desierto' => [...]` en `CityLayouts::plots()` y propaga el `map` a `WorldController::store`, `DemoWorldSeeder` y `CityController::show` sin nueva migración.
 
 ## Usuario administrador (seeder)
 
