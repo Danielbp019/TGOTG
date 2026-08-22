@@ -58,13 +58,14 @@ export function ServerClock() {
   }, [authLoading, user])
 
   React.useEffect(() => {
+    if (authLoading || !user) return
     const timer = window.setInterval(() => {
       setTime(
         formatTime(new Date(Date.now() + serverOffset.current), timeFormat)
       )
     }, 1000)
     return () => window.clearInterval(timer)
-  }, [timeFormat])
+  }, [authLoading, user, timeFormat])
 
   return (
     <div className="flex flex-col gap-1">

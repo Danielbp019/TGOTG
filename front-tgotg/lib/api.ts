@@ -307,8 +307,8 @@ export function fetchGameOptions() {
   return apiFetch<GameOptionsPayload>('/game-options')
 }
 
-export function fetchCity() {
-  return apiFetch<{ city: CityPayload }>('/city')
+export function fetchCity(signal?: AbortSignal) {
+  return apiFetch<{ city: CityPayload }>('/city', { signal } as RequestInit)
 }
 
 export function repairBuilding(buildingId: string, type: 'paid' | 'auto') {

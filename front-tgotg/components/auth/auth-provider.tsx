@@ -52,9 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribe = subscribeToUnauthorized(() => {
       setUser(null)
-      if (pathname !== '/login' && pathname !== '/register') {
-        router.replace('/login')
-      }
     })
 
     return () => {

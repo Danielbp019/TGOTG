@@ -1,11 +1,6 @@
 'use client'
 
-import * as React from 'react'
-
-import { useAuth } from '@/components/auth/auth-provider'
-import type { BlessingPayload } from '@/lib/api'
-import { fetchMyBlessing } from '@/lib/api'
-import { subscribeToBlessingChanges } from '@/lib/blessing'
+import { useMyBlessing } from '@/hooks/use-my-blessing'
 import {
   Tooltip,
   TooltipContent,
@@ -14,26 +9,7 @@ import {
 import { blessingIcons } from '@/data/icons'
 
 export function BlessingBadge() {
-  const { user, isLoading: authLoading } = useAuth()
-  const [blessing, setBlessing] = React.useState<BlessingPayload | null>(null)
-
-  React.useEffect(() => {
-    if (authLoading || !user) {
-      setBlessing(null)
-      return
-    }
-    const refresh = () => {
-      fetchMyBlessing()
-        .then((response) => setBlessing(response.blessing))
-        .catch(() => setBlessing(null))
-    }
-    const timer = window.setTimeout(refresh, 0)
-    const unsubscribe = subscribeToBlessingChanges(refresh)
-    return () => {
-      window.clearTimeout(timer)
-      unsubscribe()
-    }
-  }, [authLoading, user])
+  const { blessing } = useMyBlessing()
 
   if (!blessing) return null
 

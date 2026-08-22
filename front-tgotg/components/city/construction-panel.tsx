@@ -61,15 +61,7 @@ function formatDuration(minutes: number): string {
   return m ? `${h}h ${m}min` : `${h}h`
 }
 
-function useCountdown(finishesAt: string | null): string | null {
-  const [now, setNow] = React.useState(() => Date.now())
-
-  React.useEffect(() => {
-    if (!finishesAt) return
-    const id = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(id)
-  }, [finishesAt])
-
+function formatCountdown(finishesAt: string | null, now: number): string | null {
   if (!finishesAt) return null
   const diff = new Date(finishesAt).getTime() - now
   if (diff <= 0) return '00:00'
@@ -90,6 +82,7 @@ function ConstructionRow({
   upgradeFinishesAt,
   maxLevel,
   isBusy,
+  now,
   onUpgrade,
 }: {
   building: BuildingTypePayload
@@ -100,11 +93,12 @@ function ConstructionRow({
   upgradeFinishesAt: string | null
   maxLevel: number
   isBusy: boolean
+  now: number
   onUpgrade: () => void
 }) {
   const nextLevel = level + 1
   const cost = buildingCostAtLevel(building.key, nextLevel)
-  const countdown = useCountdown(upgradeFinishesAt)
+  const countdown = formatCountdown(upgradeFinishesAt, now)
   const category = isBuildingCategory(building.category) ? building.category : 'Principal'
   const Icon = buildingIcons[building.key] ?? Building2
 
@@ -183,6 +177,18 @@ export function ConstructionPanel() {
   const [catalog, setCatalog] = React.useState<BuildingTypePayload[] | null>(null)
   const [upgradingKey, setUpgradingKey] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [now, setNow] = React.useState(() => Date.now())
+
+  const hasAnyUpgrading = React.useMemo(
+    () => city?.buildings.some((b) => b.upgrading) ?? false,
+    [city]
+  )
+
+  React.useEffect(() => {
+    if (!hasAnyUpgrading) return
+    const id = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(id)
+  }, [hasAnyUpgrading])
 
   React.useEffect(() => {
     if (authLoading || !user) return
@@ -260,6 +266,7 @@ export function ConstructionPanel() {
                   upgradeFinishesAt={cityBuilding?.upgradeFinishesAt ?? null}
                   maxLevel={building.max_level}
                   isBusy={upgradingKey === building.key}
+                  now={now}
                   onUpgrade={() => handleUpgrade(building)}
                 />
               )

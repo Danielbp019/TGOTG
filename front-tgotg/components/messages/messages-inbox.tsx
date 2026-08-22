@@ -121,7 +121,7 @@ export function MessagesInbox() {
   }, [authLoading, user])
 
   React.useEffect(() => {
-    if (!selectedId) return
+    if (authLoading || !user || !selectedId) return
     let active = true
 
     fetchConversation(selectedId)
@@ -140,7 +140,7 @@ export function MessagesInbox() {
     return () => {
       active = false
     }
-  }, [selectedId])
+  }, [authLoading, user, selectedId])
 
   function handleSelect(id: string) {
     setSelectedId(id)

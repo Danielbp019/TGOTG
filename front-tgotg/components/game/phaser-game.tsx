@@ -32,9 +32,11 @@ export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
     }))
 
     useEffect(() => {
-      if (!containerRef.current) return
-
       setCityBuildings(buildings)
+    }, [buildings])
+
+    useEffect(() => {
+      if (!containerRef.current) return
 
       gameRef.current = new Phaser.Game({
         ...gameConfig,
@@ -49,10 +51,14 @@ export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
 
       return () => {
         EventBus.off('current-scene-ready', handleSceneReady)
+        try {
+          const sound = (gameRef.current as unknown as { sound?: { context?: AudioContext; stopAll?: () => void } })?.sound
+          if (sound?.context?.state !== 'closed') sound?.stopAll?.()
+        } catch {}
         gameRef.current?.destroy(true)
         gameRef.current = null
       }
-    }, [currentActiveScene, buildings])
+    }, [currentActiveScene])
 
     return <div ref={containerRef} className="size-full" id="game-container" />
   }

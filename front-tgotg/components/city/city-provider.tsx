@@ -23,18 +23,20 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<ApiError | null>(null)
   const [version, setVersion] = React.useState(0)
+  const userId = user?.id ?? null
 
-  const load = React.useCallback(async () => {
-    if (authLoading || !user) return
+  const load = React.useCallback(async (signal?: AbortSignal) => {
+    if (authLoading || !userId) return
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetchCity()
+      const response = await fetchCity(signal)
       setCity(response.city)
       setCityBuildings(response.city.buildings)
       if (response.city.worldSize) setWorldSize(response.city.worldSize)
       setVersion((current) => current + 1)
     } catch (caught) {
+      if (caught instanceof DOMException && caught.name === 'AbortError') return
       if (caught instanceof ApiError) {
         if (caught.status === 401) {
           setCity(null)
@@ -46,18 +48,17 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [authLoading, user])
+  }, [authLoading, userId])
 
   React.useEffect(() => {
-    if (authLoading || !user) {
+    if (authLoading || !userId) {
       setIsLoading(false)
       return
     }
-    const timer = window.setTimeout(() => {
-      load()
-    }, 0)
-    return () => window.clearTimeout(timer)
-  }, [authLoading, user, load])
+    const controller = new AbortController()
+    load(controller.signal)
+    return () => controller.abort()
+  }, [authLoading, userId, load])
 
   const hasUpgrading = React.useMemo(
     () => city?.buildings.some((b) => b.upgrading) ?? false,

@@ -14,19 +14,16 @@ import {
 } from '@/components/ui/dialog'
 import { blessingIcons } from '@/data/icons'
 import { useAuth } from '@/components/auth/auth-provider'
+import { useMyBlessing } from '@/hooks/use-my-blessing'
 import type { BlessingPayload } from '@/lib/api'
-import {
-  ApiError,
-  fetchBlessings,
-  fetchMyBlessing,
-  updateMyBlessing,
-} from '@/lib/api'
+import { ApiError, fetchBlessings, updateMyBlessing } from '@/lib/api'
 import { notifyBlessingChanged } from '@/lib/blessing'
 import { blessingSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
 export function BlessingDialog() {
   const { user, isLoading: authLoading } = useAuth()
+  const { blessing: myBlessing, inGame, hasLoaded } = useMyBlessing()
   const [open, setOpen] = React.useState(false)
   const [blessings, setBlessings] = React.useState<BlessingPayload[]>([])
   const [selectedId, setSelectedId] = React.useState<string | undefined>()
@@ -44,18 +41,17 @@ export function BlessingDialog() {
       })
       .catch(() => {})
 
-    fetchMyBlessing()
-      .then((response) => {
-        if (!active) return
-        if (!response.in_game || response.blessing) return
-        setOpen(true)
-      })
-      .catch(() => {})
-
     return () => {
       active = false
     }
   }, [authLoading, user])
+
+  React.useEffect(() => {
+    if (authLoading || !user || !hasLoaded) return
+    if (inGame && !myBlessing) {
+      setOpen(true)
+    }
+  }, [authLoading, user, hasLoaded, inGame, myBlessing])
 
   function handleOpenChange(next: boolean) {
     if (next) return
