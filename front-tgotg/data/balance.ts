@@ -86,7 +86,7 @@ export const TERRAIN_LABELS: Record<string, string> = {
   llano: 'Llano',
 }
 
-/** Costos base (nivel 1) por edificio. Los materiales crecen ×1,6 por nivel. */
+/** Costos base (nivel 1) por edificio. Oro y materiales crecen ×1,6 por nivel. */
 export const BUILDING_BASE_COSTS: Record<string, BuildingCost> = {
   ayuntamiento: { gold: 4000, wood: 800, stone: 600, iron: 200, minutes: 120 },
   muralla: { gold: 3000, wood: 600, stone: 1000, iron: 150, minutes: 90 },
@@ -112,7 +112,7 @@ export const BUILDING_REPAIR_MATERIAL: Record<string, ResourceKey> = {
   laboratorio: 'iron',
 }
 
-/** Costo del nivel n (1-5): materiales base × 1,6^(n-1), oro constante. */
+/** Costo del nivel n (1-5): oro y materiales base × 1,6^(n-1), tiempo ×1,5^(n-1). */
 export function buildingCostAtLevel(key: string, level: number): BuildingCost | null {
   const base = BUILDING_BASE_COSTS[key]
   if (!base || level < 1 || level > 5) return null
@@ -123,7 +123,7 @@ export function buildingCostAtLevel(key: string, level: number): BuildingCost | 
   const round10 = (value: number) => Math.round(value / 10) * 10
 
   return {
-    gold: base.gold,
+    gold: round10(base.gold * factor),
     wood: round10(base.wood * factor),
     stone: round10(base.stone * factor),
     iron: round10(base.iron * factor),

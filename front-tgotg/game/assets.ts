@@ -23,24 +23,29 @@ export const BUILDING_ASSET_BASE: Record<
   foso: null,
 }
 
+export function buildingLevelToAssetLevel(level: number): number {
+  const map: Record<number, number> = { 1: 2, 2: 2, 3: 3, 4: 4, 5: 5 }
+  return map[level] ?? Math.max(2, Math.min(5, level))
+}
+
 export function buildingAssetPath(
   key: string,
   level: number,
-  damage: number
+  damage: number,
+  opts: { upgrading?: boolean } = {}
 ): string | null {
   const entry = BUILDING_ASSET_BASE[key as BuildingType] ?? null
   if (!entry) return null
 
-  // Nivel 0 (no construido) → muestra nivel 1 atenuado; el CityScene aplica alpha
-  const safeLevel = Math.max(1, Math.min(5, level || 1))
-
-  // Si tiene daño visible (>30%), mostrar variante destruida cuando exista
   const isDestroyed = damage >= 30
-  const file = isDestroyed
-    ? `${entry.prefix}Destruido.png`
-    : `${entry.prefix}${safeLevel}.png`
+  if (isDestroyed) return `/game/buildings/${entry.folder}/${entry.prefix}Destruido.png`
 
-  return `/game/buildings/${entry.folder}/${file}`
+  if (opts.upgrading) return `/game/buildings/${entry.folder}/${entry.prefix}1.png`
+
+  if (level === 0) return null
+
+  const assetLevel = buildingLevelToAssetLevel(Math.max(1, Math.min(5, level)))
+  return `/game/buildings/${entry.folder}/${entry.prefix}${assetLevel}.png`
 }
 
 /**

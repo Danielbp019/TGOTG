@@ -58,9 +58,6 @@
 
 - [ ] Reglas de producción de recursos.
 - [ ] El ayuntamiento determina el nivel máximo del resto de construcciones (ej. ayuntamiento 5 → construcciones 5).
-- [ ] Niveles de edificios.
-- [ ] Sistema de daño.
-- [ ] Sistema de reparación.
 - [ ] Sistema de turnos/acciones: número fijo de turnos/acciones cada cierto tiempo, acumulables.
 - [ ] La producción de recursos puede ligarse al reparto de turnos/acciones.
 - [ ] Comercio de recursos con el propio sistema (intercambiar unos recursos por otros).
@@ -86,18 +83,15 @@
 - [ ] No mostrar ciudades con demasiada diferencia de nivel.
 - [ ] PvP.
 - [ ] Crear alianzas y enviar recursos entre jugadores de la misma alianza.
-- [ ] Mensajería.
 
 ## Partidas
 
-- [ ] Panel de inicio de partida: duraciones, multiplicadores y bendiciones de los dioses.
 - [ ] Al terminar la partida, resumen de la mejor civilización por estadísticas.
 - [ ] Antes de comenzar otra partida, borrar todos los datos (inicio limpio).
 
 ## Ciudad y Phaser
 
-- [ ] Estados visuales de edificios (construcción, dañado, destruido): validar el sistema con el Ayuntamiento y reutilizarlo en el resto.
-- [ ] Reparación y mejora (`repairing`, `upgrading`) si se necesitan.
+- [ ] Variantes visuales por bioma/estilo si se añaden nuevos mapas.
 
 ## Backend (ETAPA 8 - en progreso)
 
@@ -106,7 +100,7 @@ Laravel proyecto corriendo con routes API implementadas:
 - Autenticación Sanctum: register, login, logout, user actual
 - World: crear/terminar contienda, duración y multiplicadores
 - City: mostrar ciudad con recursos, producción por hora, edificios
-- Building: reparación (paid/auto), progreso automático
+- Building: reparación (paid/auto) + mejora/construcción con cola temporizada (coste ×1.6, tiempo ×1.5, nivel máx 5), progreso automático
 - System: bendiciones, civilizaciones, tipos de edificio, opciones de juego
 - Mensajería: conversaciones y mensajes entre jugadores
 - Pendiente: reglas completas de producción, ejército y combate

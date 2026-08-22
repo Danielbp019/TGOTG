@@ -49,6 +49,15 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(timer)
   }, [load])
 
+  React.useEffect(() => {
+    const hasUpgrading = city?.buildings.some((b) => b.upgrading) ?? false
+    if (!hasUpgrading) return
+    const id = window.setInterval(() => {
+      load()
+    }, 5000)
+    return () => window.clearInterval(id)
+  }, [city, load])
+
   const value = React.useMemo(
     () => ({ city, isLoading, error, version, reload: load }),
     [city, isLoading, error, version, load]

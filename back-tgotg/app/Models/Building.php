@@ -23,6 +23,9 @@ class Building extends Model
         'damage',
         'repair_started_at',
         'repair_paid',
+        'upgrade_started_at',
+        'upgrade_finishes_at',
+        'upgrade_target_level',
     ];
 
     /**
@@ -44,6 +47,9 @@ class Building extends Model
             'damage' => 'integer',
             'repair_started_at' => 'datetime',
             'repair_paid' => 'boolean',
+            'upgrade_started_at' => 'datetime',
+            'upgrade_finishes_at' => 'datetime',
+            'upgrade_target_level' => 'integer',
         ];
     }
 

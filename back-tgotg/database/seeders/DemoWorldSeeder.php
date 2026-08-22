@@ -61,7 +61,7 @@ class DemoWorldSeeder extends Seeder
             Building::create([
                 'city_id' => $city->id,
                 'building_type_id' => BuildingType::where('key', $building['key'])->value('id'),
-                'level' => $building['level'],
+                'level' => $building['key'] === 'ayuntamiento' ? 1 : 0,
             ]);
         }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Concerns\ResolvesCurrentPlayer;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\City;
+use App\Support\BuildingCosts;
 use App\Support\CityLayouts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class CityController extends Controller
         }
 
         $this->applyRepairProgress($city);
+        $this->applyUpgradeProgress($city);
 
         $speedMultiplier = (float) $player->world->speed_multiplier;
 
@@ -59,6 +61,8 @@ class CityController extends Controller
                     'damage' => $building->damage,
                     'repairing' => $building->repair_started_at !== null,
                     'repairPaid' => $building->repair_paid,
+                    'upgrading' => $building->upgrade_finishes_at !== null,
+                    'upgradeFinishesAt' => $building->upgrade_finishes_at?->toIso8601String(),
                     'shape' => $shape,
                     'x' => $x,
                     'y' => $y,
@@ -92,6 +96,148 @@ class CityController extends Controller
                 'protectionUntil' => $city->protection_until?->toIso8601String(),
                 'worldSize' => CityLayouts::worldSize(),
                 'buildings' => $buildings,
+            ],
+        ]);
+    }
+
+    public function upgrade(Request $request, Building $building): JsonResponse
+    {
+        $player = $this->currentPlayer($request->user()->id);
+
+        if ($player === null) {
+            return response()->json([
+                'message' => __('No tienes una civilización en la contienda actual.'),
+            ], 404);
+        }
+
+        $city = $building->city;
+
+        if ($city === null || $city->player_id !== $player->id) {
+            return response()->json([
+                'message' => __('Ese edificio no pertenece a tu ciudad.'),
+            ], 403);
+        }
+
+        // Sincroniza upgrades terminados antes de validar
+        $city->load('buildings.buildingType');
+        $this->applyUpgradeProgress($city);
+        $building->refresh();
+
+        if ($building->damage > 0) {
+            return response()->json([
+                'message' => __('Ese edificio está dañado. Repáralo antes de mejorarlo.'),
+            ], 422);
+        }
+
+        if ($building->repair_started_at !== null) {
+            return response()->json([
+                'message' => __('Ese edificio está en reparación. Espera a que termine.'),
+            ], 409);
+        }
+
+        if ($building->upgrade_finishes_at !== null) {
+            return response()->json([
+                'message' => __('Ese edificio ya tiene una mejora en curso.'),
+            ], 409);
+        }
+
+        $maxLevel = (int) $building->buildingType->max_level;
+
+        if ($building->level >= $maxLevel) {
+            return response()->json([
+                'message' => __('Ese edificio ya está al nivel máximo.'),
+            ], 422);
+        }
+
+        $nextLevel = $building->level + 1;
+        $cost = BuildingCosts::costForLevel($building->buildingType, $nextLevel);
+
+        // Atajo para pruebas: ?instant=1 en debug o FAST_BUILD_FACTOR en env
+        $isInstant = $request->query('instant') === '1' && config('app.debug');
+        $fastFactor = (float) env('FAST_BUILD_FACTOR', 0);
+
+        if (
+            $city->gold < $cost['gold']
+            || $city->wood < $cost['wood']
+            || $city->stone < $cost['stone']
+            || $city->iron < $cost['iron']
+        ) {
+            return response()->json([
+                'message' => __('No tienes suficientes recursos para mejorar ese edificio.'),
+                'cost' => $cost,
+            ], 422);
+        }
+
+        if ($isInstant) {
+            DB::transaction(function () use ($city, $building, $cost, $nextLevel): void {
+                $city->decrement('gold', $cost['gold']);
+                $city->decrement('wood', $cost['wood']);
+                $city->decrement('stone', $cost['stone']);
+                $city->decrement('iron', $cost['iron']);
+
+                $building->update([
+                    'level' => $nextLevel,
+                ]);
+
+                $this->applyProductionForUpgrade($city, $building->buildingType->key);
+            });
+
+            $building->refresh();
+
+            return response()->json([
+                'building' => [
+                    'id' => $building->id,
+                    'key' => $building->buildingType->key,
+                    'level' => $building->level,
+                    'upgrading' => false,
+                    'upgradeFinishesAt' => null,
+                ],
+            ]);
+        }
+
+        $minutes = $cost['minutes'];
+
+        if ($fastFactor > 0 && $fastFactor < 1) {
+            $minutes = (int) max(1, round($minutes * $fastFactor));
+            // Para pruebas muy rápidas: 1 minuto real ≈ segundos si factor 0.01
+            // Si quieres segundos exactos, usa FAST_BUILD_FACTOR=0.016 (1min→1s)
+        }
+
+        $speedMultiplier = (float) $player->world->speed_multiplier;
+        // El tiempo se acorta con la velocidad del mundo
+        $effectiveMinutes = $speedMultiplier > 0 ? $minutes / $speedMultiplier : $minutes;
+        $finishesAt = now()->addMinutes($effectiveMinutes);
+
+        // Si FAST_BUILD_FACTOR muy pequeño, permite finishes en segundos
+        if ($fastFactor > 0 && $fastFactor < 0.02) {
+            $effectiveSeconds = (int) max(5, round($effectiveMinutes * 60));
+            $finishesAt = now()->addSeconds($effectiveSeconds);
+        }
+
+        DB::transaction(function () use ($city, $building, $cost, $nextLevel, $finishesAt): void {
+            $city->decrement('gold', $cost['gold']);
+            $city->decrement('wood', $cost['wood']);
+            $city->decrement('stone', $cost['stone']);
+            $city->decrement('iron', $cost['iron']);
+
+            $building->update([
+                'upgrade_started_at' => now(),
+                'upgrade_finishes_at' => $finishesAt,
+                'upgrade_target_level' => $nextLevel,
+            ]);
+        });
+
+        $building->refresh();
+
+        return response()->json([
+            'building' => [
+                'id' => $building->id,
+                'key' => $building->buildingType->key,
+                'level' => $building->level,
+                'upgrading' => true,
+                'upgradeFinishesAt' => $building->upgrade_finishes_at?->toIso8601String(),
+                'targetLevel' => $nextLevel,
+                'cost' => $cost,
             ],
         ]);
     }
@@ -231,6 +377,51 @@ class CityController extends Controller
                     'damage' => $building->damage - $repaired,
                 ]);
             }
+        }
+    }
+
+    private function applyUpgradeProgress(City $city): void
+    {
+        $now = now();
+
+        foreach ($city->buildings as $building) {
+            if ($building->upgrade_finishes_at === null || $building->upgrade_target_level === null) {
+                continue;
+            }
+
+            if ($now->lessThan($building->upgrade_finishes_at)) {
+                continue;
+            }
+
+            $target = (int) $building->upgrade_target_level;
+
+            $building->update([
+                'level' => $target,
+                'upgrade_started_at' => null,
+                'upgrade_finishes_at' => null,
+                'upgrade_target_level' => null,
+            ]);
+
+            $this->applyProductionForUpgrade($city, $building->buildingType->key);
+        }
+    }
+
+    private function applyProductionForUpgrade(City $city, string $buildingKey): void
+    {
+        $perLevel = config('game_balance.production.per_level.'.$buildingKey);
+
+        if (! is_array($perLevel)) {
+            return;
+        }
+
+        foreach ($perLevel as $resource => $amount) {
+            $column = $resource.'_per_hour';
+
+            if (! in_array($column, ['wood_per_hour', 'stone_per_hour', 'iron_per_hour', 'food_per_hour'], true)) {
+                continue;
+            }
+
+            $city->increment($column, (int) $amount);
         }
     }
 }

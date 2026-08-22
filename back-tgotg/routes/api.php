@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/game-options', [SystemController::class, 'gameOptions']);
     Route::get('/city', [CityController::class, 'show']);
     Route::post('/city/buildings/{building}/repair', [CityController::class, 'repair']);
+    Route::post('/city/buildings/{building}/upgrade', [CityController::class, 'upgrade']);
     Route::post('/worlds', [WorldController::class, 'store']);
 
     Route::get('/conversations', [MessageController::class, 'index']);

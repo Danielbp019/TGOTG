@@ -57,6 +57,7 @@ Authorization: Bearer <token>
 | POST   | `/api/conversations`                         | Sí   | Crea una nueva conversación con un mensaje inicial.                      |
 | GET    | `/api/conversations/{conversation}`          | Sí   | Obtiene una conversación con sus mensajes.                               |
 | POST   | `/api/conversations/{conversation}/messages` | Sí   | Envía un mensaje en una conversación existente.                          |
+| POST   | `/api/city/buildings/{building}/upgrade`      | Sí   | Inicia la mejora/construcción de un edificio (cola temporizada).          |
 | DELETE | `/api/conversations/{conversation}`          | Sí   | Elimina una conversación.                                                |
 
 ### `GET /api/ping`
@@ -383,6 +384,32 @@ Requiere autenticación. Inicia la reparación de un edificio.
 | ------ | ---------------------------- |
 | `type` | obligatorio, `paid` o `auto` |
 
+### `POST /api/city/buildings/{building}/upgrade`
+
+Requiere autenticación. Inicia la construcción o mejora de un edificio. Coste y tiempo escalan por nivel: materiales y oro `×1.6^(n-1)` (redondeo a decenas) y minutos `×1.5^(n-1)` según `config/game_balance.php` vía `BuildingCosts::costForLevel()`. El tiempo se divide por `speed_multiplier` del mundo.
+
+**Reglas:** nivel `< max_level (5)`, `damage == 0`, sin `repair` ni `upgrade` en curso, recursos suficientes. Múltiples edificios pueden estar en cola en paralelo. La producción (`per_level` en `game_balance.production`) se aplica al completarse el nivel, no al iniciarlo.
+
+**Respuesta 200 (cola):**
+
+```json
+{
+  "building": {
+    "id": "uuid",
+    "key": "granja",
+    "level": 0,
+    "upgrading": true,
+    "upgradeFinishesAt": "2026-08-22T12:30:00+00:00",
+    "targetLevel": 1,
+    "cost": { "gold": 1500, "wood": 600, "stone": 100, "iron": 0, "minutes": 45 }
+  }
+}
+```
+
+**Errores:** `422` nivel máximo / dañado / recursos insuficientes; `409` ya en reparación o mejora; `403` edificio ajeno.
+
+**Atajos para pruebas:** con `APP_DEBUG=true`, `POST .../upgrade?instant=1` completa instantáneamente (sin cola). Alternativamente `FAST_BUILD_FACTOR` en `.env` (ver Variables de entorno).
+
 ### `POST /api/worlds`
 
 Requiere autenticación. Crea una nueva contienda (partida).
@@ -438,9 +465,15 @@ Requiere autenticación. Elimina una conversación.
 ## Coordenadas y mapas (SSOT)
 
 * **Fichero único:** `app/Support/CityLayouts.php` — `const WORLD_SIZE`, `plots(map='bosque')` y `plotForKey(key, map)`. Único lugar para mover edificios o añadir mapas/edificios. `StartingConfig::buildings(map)` delega allí.
-* **Tabla `buildings`:** columnas `id, city_id, building_type_id, level, damage, repair_started_at, repair_paid` — sin `shape,x,y,width,height`.
+* **Tabla `buildings`:** columnas `id, city_id, building_type_id, level, damage, repair_started_at, repair_paid, upgrade_started_at, upgrade_finishes_at, upgrade_target_level` — sin `shape,x,y,width,height`.
 * **Front:** `front-tgotg/game/plots.ts` deprecado a stub; `CityScene` lee `getCityBuildings()/getWorldSize()` de `game/city-data.ts` alimentados por `GET /api/city`. Validación `zod` en `front-tgotg/lib/validations/city.ts`.
 * **Nuevo mapa:** añade `case 'desierto' => [...]` en `CityLayouts::plots()` y propaga el `map` a `WorldController::store`, `DemoWorldSeeder` y `CityController::show` sin nueva migración.
+
+## Variables de entorno
+
+| Variable | Descripción |
+| -------- | ----------- |
+| `FAST_BUILD_FACTOR` | Atajo para pruebas de la cola de construcción. `0` = desactivado (cola real: `minutos = base ×1.5^(n-1) ÷ speed_multiplier`). `0.1` = 10% del tiempo (60min→6min), `0.02` = 2% (60min→~1.2min). Valores `<0.02` convierten minutos a segundos (mín 5s) para pruebas rápidas. Solo surte efecto con `APP_DEBUG=true` o en entorno `local/testing`; en `production` déjalo en `0`. Alternativa: `POST /city/buildings/{id}/upgrade?instant=1` con `APP_DEBUG=true` para completar instantáneamente sin descontar tiempo. Por defecto `0`. Ver `.env.example` para ejemplo comentado. |
 
 ## Usuario administrador (seeder)
 

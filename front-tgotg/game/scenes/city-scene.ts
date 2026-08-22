@@ -13,6 +13,7 @@ interface CitySlot {
   name: string
   level: number
   damage: number
+  upgrading: boolean
   x: number
   y: number
   shape: PlotShape
@@ -28,6 +29,7 @@ function toSlots(
     name: building.name,
     level: building.level,
     damage: building.damage ?? 0,
+    upgrading: building.upgrading ?? false,
     x: building.x,
     y: building.y,
     shape: building.shape,
@@ -180,8 +182,15 @@ export class CityScene extends Phaser.Scene {
     slots.forEach((slot) => {
       const x = slot.x
       const y = slot.y
-      const assetPath = buildingAssetPath(slot.type, slot.level, slot.damage)
+      const assetPath = buildingAssetPath(slot.type, slot.level, slot.damage, {
+        upgrading: slot.upgrading,
+      })
       const hasSprite = !!assetPath && this.textures.exists(assetPath)
+
+      // Nivel 0 sin construcción y sin cola -> invisible (no se renderiza)
+      if (!hasSprite && slot.level === 0 && !slot.upgrading) {
+        return
+      }
 
       let building: Phaser.GameObjects.Container
 
@@ -191,11 +200,6 @@ export class CityScene extends Phaser.Scene {
           .image(0, 0, assetPath)
           .setOrigin(0.5, 1)
           .setScale(scale)
-
-        // Nivel 0 (no construido) más tenue
-        if (slot.level === 0) {
-          image.setAlpha(0.55)
-        }
 
         building = this.add.container(x, y, [image])
         building.setSize(slot.width, slot.height)
@@ -322,12 +326,7 @@ export class CityScene extends Phaser.Scene {
   }
 
   private hideBuilding(building: Phaser.GameObjects.Container) {
-    const slot = building.getData('slot') as CitySlot
-    if (slot.level === 0 && building.getData('hasSprite')) {
-      building.setAlpha(0.55)
-    } else {
-      building.setAlpha(1)
-    }
+    building.setAlpha(1)
     this.hideTooltip()
   }
 

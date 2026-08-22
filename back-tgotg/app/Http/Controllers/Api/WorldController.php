@@ -86,7 +86,7 @@ class WorldController extends Controller
             Building::create([
                 'city_id' => $city->id,
                 'building_type_id' => BuildingType::where('key', $plot['key'])->value('id'),
-                'level' => $plot['level'],
+                'level' => $plot['key'] === 'ayuntamiento' ? 1 : 0,
             ]);
         }
 

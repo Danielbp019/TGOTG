@@ -74,10 +74,10 @@ test('devuelve la ciudad del jugador actual con sus edificios', function () {
         ->assertJsonPath('city.buildings.0.key', 'ayuntamiento')
         ->assertJsonPath('city.buildings.0.level', 3)
         ->assertJsonPath('city.buildings.0.shape', 'diamond')
-        ->assertJsonPath('city.buildings.0.x', 916)
-        ->assertJsonPath('city.buildings.0.y', 336)
-        ->assertJsonPath('city.buildings.0.width', 328)
-        ->assertJsonPath('city.buildings.0.height', 184);
+        ->assertJsonPath('city.buildings.0.x', 970)
+        ->assertJsonPath('city.buildings.0.y', 290)
+        ->assertJsonPath('city.buildings.0.width', 340)
+        ->assertJsonPath('city.buildings.0.height', 340);
 });
 
 test('la producción horaria aplica el multiplicador de velocidad del mundo', function () {

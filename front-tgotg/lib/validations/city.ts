@@ -9,6 +9,8 @@ export const cityBuildingSchema = z.object({
   damage: z.number().int().min(0).max(100),
   repairing: z.boolean(),
   repairPaid: z.boolean(),
+  upgrading: z.boolean(),
+  upgradeFinishesAt: z.string().nullable(),
   shape: z.enum(['rect', 'diamond']),
   x: z.number().int(),
   y: z.number().int(),

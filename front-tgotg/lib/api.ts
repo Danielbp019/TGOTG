@@ -76,6 +76,8 @@ export interface CityBuilding {
   damage: number
   repairing: boolean
   repairPaid: boolean
+  upgrading: boolean
+  upgradeFinishesAt: string | null
   shape: PlotShape
   x: number
   y: number
@@ -320,6 +322,18 @@ export function repairBuilding(buildingId: string, type: 'paid' | 'auto') {
   }>(`/city/buildings/${buildingId}/repair`, {
     method: 'POST',
     body: JSON.stringify({ type }),
+  })
+}
+
+export function upgradeBuilding(buildingId: string, instant?: boolean) {
+  const query = instant ? '?instant=1' : ''
+  return apiFetch<{
+    building: Pick<CityBuilding, 'id' | 'level' | 'upgrading' | 'upgradeFinishesAt'> & {
+      targetLevel?: number
+      cost?: { gold: number; wood: number; stone: number; iron: number; minutes: number }
+    }
+  }>(`/city/buildings/${buildingId}/upgrade${query}`, {
+    method: 'POST',
   })
 }
 

@@ -19,6 +19,9 @@ return new class extends Migration
             $table->unsignedTinyInteger('damage')->default(0);
             $table->timestamp('repair_started_at')->nullable();
             $table->boolean('repair_paid')->default(false);
+            $table->timestamp('upgrade_started_at')->nullable();
+            $table->timestamp('upgrade_finishes_at')->nullable();
+            $table->unsignedTinyInteger('upgrade_target_level')->nullable();
             $table->unique(['city_id', 'building_type_id']);
             $table->timestamps();
         });
