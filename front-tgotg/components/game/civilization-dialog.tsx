@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { civilizationIcons } from '@/data/icons'
+import { useAuth } from '@/components/auth/auth-provider'
 import type { CivilizationPayload } from '@/lib/api'
 import {
   ApiError,
@@ -25,6 +26,7 @@ import { civilizationSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
 export function CivilizationDialog() {
+  const { user, isLoading: authLoading } = useAuth()
   const [open, setOpen] = React.useState(false)
   const [civilizations, setCivilizations] = React.useState<
     CivilizationPayload[]
@@ -34,6 +36,7 @@ export function CivilizationDialog() {
   const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
+    if (authLoading || !user) return
     let active = true
 
     fetchCivilizations()
@@ -54,7 +57,7 @@ export function CivilizationDialog() {
     return () => {
       active = false
     }
-  }, [])
+  }, [authLoading, user])
 
   function handleOpenChange(next: boolean) {
     if (next) return

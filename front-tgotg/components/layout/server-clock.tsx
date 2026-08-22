@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { useAuth } from '@/components/auth/auth-provider'
 import { fetchServerTime } from '@/lib/api'
 import {
   getSavedTimeFormat,
@@ -19,11 +20,13 @@ function formatTime(date: Date, format: TimeFormat) {
 }
 
 export function ServerClock() {
+  const { user, isLoading: authLoading } = useAuth()
   const [time, setTime] = React.useState<string | null>(null)
   const [timeFormat, setTimeFormat] = React.useState<TimeFormat>('24h')
   const serverOffset = React.useRef(0)
 
   React.useEffect(() => {
+    if (authLoading || !user) return
     let active = true
 
     const initialFormat = getSavedTimeFormat()
@@ -52,7 +55,7 @@ export function ServerClock() {
       active = false
       unsubscribe()
     }
-  }, [])
+  }, [authLoading, user])
 
   React.useEffect(() => {
     const timer = window.setInterval(() => {

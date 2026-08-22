@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useAuth } from '@/components/auth/auth-provider'
 import { useCity } from '@/components/city/city-provider'
 import type { GameOptionPayload } from '@/lib/api'
 import { ApiError, createWorld, fetchGameOptions } from '@/lib/api'
@@ -30,7 +31,10 @@ export function WorldConfigPanel() {
   const [saving, setSaving] = React.useState(false)
   const [started, setStarted] = React.useState(false)
 
+  const { user, isLoading: authLoading } = useAuth()
+
   React.useEffect(() => {
+    if (authLoading || !user) return
     let active = true
 
     fetchGameOptions()
@@ -48,7 +52,7 @@ export function WorldConfigPanel() {
     return () => {
       active = false
     }
-  }, [])
+  }, [authLoading, user])
 
   async function handleStart() {
     if (!durationId || !multiplierId) return

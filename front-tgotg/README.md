@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend — El Juego de los Dioses
 
-## Getting Started
+Interfaz del juego. App moderna con estética medieval, construida con **Next.js 16.3.0**, **React 19.2.8**, **Phaser 4.2.1**, **Tailwind 4.3.3** y **shadcn/ui (base-nova, neutral)**.
 
-First, run the development server:
+> Next 16: la protección de rutas vive en `proxy.ts` (reemplaza a `middleware.ts`). Ver `proxy.ts` + `AGENTS.md`.
+
+---
+
+## Prerrequisitos
+
+- **Node LTS** + **pnpm 11.22.0** (no uses `npm` ni `yarn` en este repo).
+- Backend corriendo en `http://localhost:8000` (`back-dev.cmd` en `back-tgotg/`) con MariaDB `tgotg_game` migrada y seedeada.
+
+---
+
+## Instalación y arranque
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# desde front-tgotg/
+pnpm install
+cp .env.example .env   # ajusta si tu back no está en localhost:8000
+pnpm dev               # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+pnpm build   # compilación producción (Turbopack)
+pnpm start   # servir build
+pnpm lint    # eslint (next/core-web-vitals)
+pnpm format  # prettier --write .
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Variables de entorno
 
-## Learn More
+| Variable              | Para qué sirve                                                                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL` | URL base de la API. Por defecto `http://localhost:8000/api` (ver `.env.example`). Debe coincidir con `APP_URL` del back para que la cookie funcione. |
 
-To learn more about Next.js, take a look at the following resources:
+La sesión es una cookie `HttpOnly` llamada `tgotg_token` que pone el backend al hacer `login`/`register`. El navegador la envía solo si el front usa `fetch(..., { credentials: "include" })` — ya está configurado en `lib/api.ts`. No la busques en `localStorage`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Rutas
 
-## Deploy on Vercel
+```
+app/layout.tsx                → Root (lang="es", fuentes Geist, TooltipProvider + AuthProvider)
+proxy.ts                      → guard server-side: protege "/" , "/mensajes/*" , "/configuracion/*" si no hay cookie tgotg_token; redirige "/login" y "/register" a "/" si ya hay sesión
+app/(game)/layout.tsx         → CityProvider + GameShell + BlessingDialog + CivilizationDialog
+app/(game)/page.tsx           → Ciudad: CityCanvas (60vh) + CityStatus + ConstructionPanel
+app/(game)/mensajes/page.tsx  → MessagesInbox
+app/(game)/configuracion/page.tsx → WorldConfigPanel (solo admin)
+app/(auth)/layout.tsx         → layout centrado medieval (max-w-sm)
+app/(auth)/login/page.tsx     → LoginForm
+app/(auth)/register/page.tsx  → RegisterForm
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Ver detalle de endpoints de API en `../back-tgotg/README.md`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Arquitectura React ↔ Phaser
+
+Regla de oro del proyecto: **React no pinta el mundo y Phaser no pinta UI**.
+
+- **React** = interfaz, navegación, estado, validaciones.
+- **Phaser** = render del mundo isométrico.
+
+Puente único:
+
+```
+CityProvider (GET /api/city) → game/city-data.ts (setCityBuildings / setWorldSize)
+       ↓
+CityCanvas → phaser-game.tsx (new Phaser.Game) → game/scenes/city-scene.ts
+```
+
+- `game/main.ts` crea el `GameConfig` (`AUTO`, `Scale.FIT`, `2048×1024`, `background #1e2a1e`).
+- `game/assets.ts` mapea sprites `public/game/buildings/*` (`{prefijo}1..5.png` + `Destruido.png`, `1` es construcción, `2` se reutiliza para nivel 1 y 2).
+- `game/plots.ts` está deprecado: las coordenadas vienen del SSOT del back `App\Support\CityLayouts` vía `GET /api/city`.
+- `EventBus` (`game/event-bus.ts`) solo para `current-scene-ready`.
+
+No mezcles lógica de UI dentro de `city-scene.ts` y viceversa.
+
+---
+
+## Estructura de carpetas
+
+```
+front-tgotg/
+  app/                 # App Router (route groups (game) y (auth), layout, proxy)
+  components/
+    layout/            # GameShell, Sidebar, ServerClock
+    navigation/        # MainMenu
+    city/              # city-provider, city-status, construction-panel, level-bar
+    game/              # city-canvas, phaser-game, world-config-panel, blessing-*
+    resources/         # ResourceBar
+    auth/              # auth-provider, login-form, register-form
+    messages/          # messages-inbox, conversation-list, chat-viewer
+    account/           # account-header, account-settings-dialog
+    ui/                # shadcn/ui (button, card, dialog, sheet, tabs…)
+  game/                # Phaser (main, scenes/city-scene, assets, city-data, event-bus)
+  data/                # resources, menu, icons, balance
+  types/               # ResourceKey, BuildingType, PlotShape, Chat*
+  lib/
+    api.ts             # wrapper fetch (XSRF, credentials:include, ApiError, 401 → tgotg:unauthorized)
+    validations/       # zod (auth, city, messages, account, new-game) con z.infer
+    blessing.ts        # evento tgotg:blessing-changed
+    settings.ts        # TimeFormat 24h/12h en localStorage
+    utils.ts           # cn (clsx + tailwind-merge)
+  hooks/               # alias reservado (ver components.json), lógica hoy en providers
+  public/game/         # terreno + edificios 1024×1024
+```
+
+---
+
+## Autenticación (resumen humano)
+
+- El backend emite `Set-Cookie: tgotg_token=...; HttpOnly; SameSite=Lax` al hacer `POST /api/auth/login` o `register`.
+- El front no guarda el token en JS. `proxy.ts` lee la cookie en el servidor y decide redirigir (`/ → /login` si no hay cookie, `/login → /` si la hay).
+- `AuthProvider` hidrata el usuario con `GET /api/user` usando la cookie. Mientras `isLoading` no fetchea ciudad ni bendiciones.
+- Todos los diálogos/paneles que llaman a la API (`CityProvider`, `BlessingDialog`, `CivilizationDialog`, `ServerClock`, `ConstructionPanel`, etc.) esperan a `user` antes de fetchear → cero `api/*` en `/login`.
+- Como respaldo para Postman/tests sigue funcionando `Authorization: Bearer <token>` si lo envías a mano.
+
+---
+
+## Validaciones y estilo
+
+- **zod obligatorio** en el front: esquemas en `lib/validations/` y tipos con `z.infer` (`AGENTS.md`).
+- **Estética medieval** coherente; iconos `lucide-react` provisionales (no emojis).
+- **Tailwind 4** (`app/globals.css` + `@import "tailwindcss"`), sin `tailwind.config.ts`; PostCSS es `@tailwindcss/postcss`.
+- **shadcn/ui** `style: base-nova`, `baseColor: neutral`, `cssVariables: true` (`components.json`).
+- **Formato**: `prettier` (`singleQuote, semi:false`) + `prettier-plugin-tailwindcss`; `eslint-config-next` + `eslint-config-prettier`.
+
+---
+
+## Troubleshooting
+
+| Síntoma                                  | Qué mirar                                                                                                                                    |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `401 Sesión caducada` en bucle           | Revisa `back-tgotg/.env` → `SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000` y `SESSION_DOMAIN=localhost`. Borra cookies y re-loguea. |
+| `CORS blocked` / `Set-Cookie` no aparece | Back debe tener `supports_credentials: true` y front `NEXT_PUBLIC_API_URL` debe apuntar al mismo host/puerto del back.                       |
+| `proxy` no redirige                      | Verifica que existe `proxy.ts` (no `middleware.ts`) y su `config.matcher` incluye `"/", "/login", "/mensajes/:path*"`.                       |
+| Phaser no carga sprites                  | Revisa `public/game/buildings/*` y añade `?debugPlots` o pulsar `P` en la ciudad para ver parcelas.                                          |
+| `pnpm build` falla por tipos             | Corre `pnpm lint` y `pnpm format:check` antes; valida `zod` en `lib/validations/city.ts`.                                                    |
+
+---
+
+Ver API completa en `../back-tgotg/README.md`.

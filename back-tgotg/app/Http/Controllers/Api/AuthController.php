@@ -24,10 +24,24 @@ class AuthController extends Controller
         $user = User::create($data);
         $user->refresh();
 
-        return response()->json([
-            'token' => $user->createToken('auth-token')->plainTextToken,
-            'user' => $this->userPayload($user),
-        ], 201);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()
+            ->json([
+                'token' => $token,
+                'user' => $this->userPayload($user),
+            ], 201)
+            ->withCookie(cookie(
+                'tgotg_token',
+                $token,
+                60 * 24,
+                '/',
+                null,
+                (bool) env('SESSION_SECURE_COOKIE', false),
+                true,
+                false,
+                env('SESSION_SAME_SITE', 'lax')
+            ));
     }
 
     public function login(Request $request): JsonResponse
@@ -44,18 +58,33 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+        $token = $user->createToken('auth-token')->plainTextToken;
 
-        return response()->json([
-            'token' => $user->createToken('auth-token')->plainTextToken,
-            'user' => $this->userPayload($user),
-        ]);
+        return response()
+            ->json([
+                'token' => $token,
+                'user' => $this->userPayload($user),
+            ])
+            ->withCookie(cookie(
+                'tgotg_token',
+                $token,
+                60 * 24,
+                '/',
+                null,
+                (bool) env('SESSION_SECURE_COOKIE', false),
+                true,
+                false,
+                env('SESSION_SAME_SITE', 'lax')
+            ));
     }
 
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => __('Sesión cerrada correctamente.')]);
+        return response()
+            ->json(['message' => __('Sesión cerrada correctamente.')])
+            ->withoutCookie('tgotg_token');
     }
 
     public function me(Request $request): JsonResponse

@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { useAuth } from '@/components/auth/auth-provider'
 import type { BlessingPayload } from '@/lib/api'
 import { fetchMyBlessing } from '@/lib/api'
 import { subscribeToBlessingChanges } from '@/lib/blessing'
@@ -13,9 +14,14 @@ import {
 import { blessingIcons } from '@/data/icons'
 
 export function BlessingBadge() {
+  const { user, isLoading: authLoading } = useAuth()
   const [blessing, setBlessing] = React.useState<BlessingPayload | null>(null)
 
   React.useEffect(() => {
+    if (authLoading || !user) {
+      setBlessing(null)
+      return
+    }
     const refresh = () => {
       fetchMyBlessing()
         .then((response) => setBlessing(response.blessing))
@@ -27,7 +33,7 @@ export function BlessingBadge() {
       window.clearTimeout(timer)
       unsubscribe()
     }
-  }, [])
+  }, [authLoading, user])
 
   if (!blessing) return null
 

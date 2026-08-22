@@ -7,6 +7,7 @@ import type {
   ConversationDetailPayload,
   ConversationSummaryPayload,
 } from '@/lib/api'
+import { useAuth } from '@/components/auth/auth-provider'
 import {
   ApiError,
   createConversation,
@@ -79,6 +80,7 @@ function detailToChat(detail: ConversationDetailPayload): ChatConversation {
 }
 
 export function MessagesInbox() {
+  const { user, isLoading: authLoading } = useAuth()
   const [conversations, setConversations] = React.useState<ChatConversation[]>(
     []
   )
@@ -89,6 +91,10 @@ export function MessagesInbox() {
   const [error, setError] = React.useState<string | undefined>()
 
   React.useEffect(() => {
+    if (authLoading || !user) {
+      setLoading(false)
+      return
+    }
     let active = true
 
     fetchConversations()
@@ -112,7 +118,7 @@ export function MessagesInbox() {
     return () => {
       active = false
     }
-  }, [])
+  }, [authLoading, user])
 
   React.useEffect(() => {
     if (!selectedId) return

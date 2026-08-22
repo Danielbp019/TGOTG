@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { blessingIcons } from '@/data/icons'
+import { useAuth } from '@/components/auth/auth-provider'
 import type { BlessingPayload } from '@/lib/api'
 import {
   ApiError,
@@ -25,6 +26,7 @@ import { blessingSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
 export function BlessingDialog() {
+  const { user, isLoading: authLoading } = useAuth()
   const [open, setOpen] = React.useState(false)
   const [blessings, setBlessings] = React.useState<BlessingPayload[]>([])
   const [selectedId, setSelectedId] = React.useState<string | undefined>()
@@ -32,6 +34,7 @@ export function BlessingDialog() {
   const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
+    if (authLoading || !user) return
     let active = true
 
     fetchBlessings()
@@ -52,7 +55,7 @@ export function BlessingDialog() {
     return () => {
       active = false
     }
-  }, [])
+  }, [authLoading, user])
 
   function handleOpenChange(next: boolean) {
     if (next) return

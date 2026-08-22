@@ -2,7 +2,6 @@ import type { PlotShape, ResourceKey } from '@/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
-const TOKEN_STORAGE_KEY = 'tgotg:auth-token'
 const UNAUTHORIZED_EVENT = 'tgotg:unauthorized'
 
 export interface AuthUser {
@@ -13,8 +12,8 @@ export interface AuthUser {
 }
 
 export interface AuthResponse {
-  token: string
   user: AuthUser
+  token?: string
 }
 
 export interface BlessingPayload {
@@ -153,27 +152,25 @@ export class ApiError extends Error {
   }
 }
 
-export function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return window.localStorage.getItem(TOKEN_STORAGE_KEY)
-}
-
-export function setToken(token: string) {
-  window.localStorage.setItem(TOKEN_STORAGE_KEY, token)
-}
-
-export function clearToken() {
-  window.localStorage.removeItem(TOKEN_STORAGE_KEY)
-}
+let lastUnauthorizedAt = 0
 
 export function notifyUnauthorized() {
   if (typeof window === 'undefined') return
+  const now = Date.now()
+  if (now - lastUnauthorizedAt < 1000) return
+  lastUnauthorizedAt = now
   window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT))
 }
 
 export function subscribeToUnauthorized(callback: () => void) {
   window.addEventListener(UNAUTHORIZED_EVENT, callback)
   return () => window.removeEventListener(UNAUTHORIZED_EVENT, callback)
+}
+
+function getXsrfToken(): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/)
+  return match ? decodeURIComponent(match[1]) : null
 }
 
 export async function apiFetch<T>(
@@ -186,15 +183,16 @@ export async function apiFetch<T>(
     headers.set('Content-Type', 'application/json')
   }
 
-  const token = getToken()
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`)
-  }
+  const xsrf = getXsrfToken()
+  if (xsrf) headers.set('X-XSRF-TOKEN', xsrf)
 
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers })
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  })
 
   if (response.status === 401) {
-    clearToken()
     notifyUnauthorized()
     throw new ApiError(401, 'Sesión caducada. Inicia sesión de nuevo.')
   }

@@ -60,34 +60,4 @@ Cada construcción tiene un propósito dentro de tu civilización:
 
 ---
 
-## Instalación
-
-### Requisitos previos
-
-- **Frontend**: [Node.js](https://nodejs.org) y [pnpm](https://pnpm.io).
-- **Backend**: [PHP 8.x](https://www.php.net), [Composer](https://getcomposer.org) y [MariaDB](https://mariadb.org).
-
-### Frontend
-
-```bash
-cd front-tgotg
-pnpm install
-pnpm dev
-```
-
-Abre [http://localhost:3000](http://localhost:3000).
-
-### Backend
-
-```bash
-cd back-tgotg
-composer install
-cp .env.example .env        # configura tus credenciales de base de datos
-php artisan key:generate
-php artisan migrate --seed
-php artisan serve
-```
-
----
-
 Hecho para los dioses y las civilizaciones que los veneran. ¡Que comience la guerra!

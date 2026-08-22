@@ -4,13 +4,10 @@ import * as React from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 
 import {
-  clearToken,
   fetchMe,
-  getToken,
   loginRequest,
   logoutRequest,
   registerRequest,
-  setToken,
   subscribeToUnauthorized,
   type AuthUser,
 } from '@/lib/api'
@@ -36,24 +33,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [user, setUser] = React.useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
+  const hasRedirectedRef = React.useRef(false)
 
   React.useEffect(() => {
     let active = true
     const timer = window.setTimeout(() => {
-      if (!getToken()) {
-        if (active) setIsLoading(false)
-        return
-      }
-
       fetchMe()
         .then((current) => {
           if (active) setUser(current)
         })
         .catch(() => {
-          if (active) {
-            clearToken()
-            setUser(null)
-          }
+          if (active) setUser(null)
         })
         .finally(() => {
           if (active) setIsLoading(false)
@@ -62,7 +52,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribe = subscribeToUnauthorized(() => {
       setUser(null)
-      router.replace('/login')
+      if (pathname !== '/login' && pathname !== '/register') {
+        router.replace('/login')
+      }
     })
 
     return () => {
@@ -70,24 +62,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.clearTimeout(timer)
       unsubscribe()
     }
-  }, [router])
+  }, [])
 
   React.useEffect(() => {
     if (isLoading) return
 
     const isAuthRoute = pathname === '/login' || pathname === '/register'
     if (!user && !isAuthRoute) {
-      router.replace('/login')
+      if (!hasRedirectedRef.current) {
+        hasRedirectedRef.current = true
+        router.replace('/login')
+      }
     } else if (user && isAuthRoute) {
-      router.replace('/')
+      if (!hasRedirectedRef.current) {
+        hasRedirectedRef.current = true
+        router.replace('/')
+      }
+    } else {
+      hasRedirectedRef.current = false
     }
   }, [isLoading, pathname, router, user])
 
   const login = React.useCallback(
     async (email: string, password: string) => {
-      const { token, user: authenticated } = await loginRequest(email, password)
-      setToken(token)
+      const { user: authenticated } = await loginRequest(email, password)
       setUser(authenticated)
+      hasRedirectedRef.current = true
       router.replace('/')
     },
     [router]
@@ -100,9 +100,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: string
       password_confirmation: string
     }) => {
-      const { token, user: created } = await registerRequest(data)
-      setToken(token)
+      const { user: created } = await registerRequest(data)
       setUser(created)
+      hasRedirectedRef.current = true
       router.replace('/')
     },
     [router]
@@ -112,10 +112,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await logoutRequest()
     } catch {
-      // El token puede haber sido revocado ya (p. ej. cuenta eliminada).
+      // Sesión ya expirada.
     } finally {
-      clearToken()
       setUser(null)
+      hasRedirectedRef.current = true
       router.replace('/login')
     }
   }, [router])

@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useAuth } from '@/components/auth/auth-provider'
 import { buildingIcons } from '@/data/icons'
 import { buildingCostAtLevel } from '@/data/balance'
 import { ApiError, fetchBuildingTypes, upgradeBuilding, type BuildingTypePayload, type CityBuilding } from '@/lib/api'
@@ -178,11 +179,13 @@ function ConstructionRow({
 
 export function ConstructionPanel() {
   const { city, isLoading, reload } = useCity()
+  const { user, isLoading: authLoading } = useAuth()
   const [catalog, setCatalog] = React.useState<BuildingTypePayload[] | null>(null)
   const [upgradingKey, setUpgradingKey] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
+    if (authLoading || !user) return
     let active = true
 
     fetchBuildingTypes()
@@ -196,7 +199,7 @@ export function ConstructionPanel() {
     return () => {
       active = false
     }
-  }, [])
+  }, [authLoading, user])
 
   const buildingMap = React.useMemo(() => {
     if (!city) return new Map<string, CityBuilding>()

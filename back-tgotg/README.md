@@ -13,31 +13,33 @@ back-dev.cmd
 Lanza Laravel en `http://127.0.0.1:8000`. La base de datos es **MariaDB** (`tgotg_game`).
 
 - **URL base**: `http://127.0.0.1:8000/api`
-- **CORS**: permite peticiones desde `http://localhost:3000` y `http://127.0.0.1:3000` (frontend Next.js).
+- **CORS**: permite peticiones desde `http://localhost:3000` y `http://127.0.0.1:3000` (frontend Next.js) con `supports_credentials: true`.
+    - En `.env` deben estar: `SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000` y `SESSION_DOMAIN=localhost` (ver Variables de entorno). Sin esto el navegador bloquea la cookie de sesión y verás `401`.
+- **Frontend**: debe llamar a la API con `credentials: "include"` para que el navegador envíe la cookie `tgotg_token` automáticamente.
 
 ## Autenticación
 
-Sanctum en modo **Bearer token**:
+La API usa **Sanctum con cookie `HttpOnly`** (recomendado para el navegador). Es más seguro que guardar el token en `localStorage` porque JavaScript no puede leer la cookie.
 
-1. En `register` o `login` se devuelve un `token` opaco.
-2. Las rutas protegidas requieren la cabecera:
+**Cómo funciona (flujo normal del navegador):**
 
-```
-Authorization: Bearer <token>
-```
+1. `POST /api/auth/register` o `POST /api/auth/login` → el servidor crea un token interno, lo guarda en la base y lo envía al navegador como cookie:
+   `Set-Cookie: tgotg_token=1|abc...; HttpOnly; SameSite=Lax; Path=/` (dura 24h). Además devuelve `{ user }` (y `token` opcional para compatibilidad).
+2. En cada petición siguiente el navegador envía la cookie automáticamente (si el frontend usa `fetch(..., { credentials: "include" })`). El middleware `AttachTokenFromCookie` la convierte en `Authorization: Bearer <token>` para que Sanctum autentique. No necesitas añadir la cabecera a mano.
+3. `POST /api/auth/logout` revoca el token en la base y borra la cookie (`Set-Cookie: tgotg_token=; Max-Age=0`).
 
-3. `logout` revoca el token actual; a partir de ese momento deja de ser válido.
+**¿Y `Authorization: Bearer`?** Sigue funcionando como respaldo (útil para Postman, tests `actingAs` o apps externas). Si envías `Authorization: Bearer 1|abc...` el servidor lo usa directamente y no necesita la cookie. En el navegador real, usa la cookie.
 
-> Los tokens caducan a las **24 horas** (`SANCTUM_TOKEN_EXPIRATION`). Los tokens expirados se eliminan de la base de datos diariamente con el comando programado `sanctum:prune-expired`.
+> Los tokens caducan a las **24 horas** (`SANCTUM_TOKEN_EXPIRATION`). Los expirados se borran a diario con `sanctum:prune-expired`. Si ves `401 Sesión caducada` en el front, el `middleware/proxy` te redirige a `/login` y el `ApiError` dispara `tgotg:unauthorized`.
 
 ## Endpoints
 
 | Método | Ruta                                         | Auth | Descripción                                                              |
 | ------ | -------------------------------------------- | ---- | ------------------------------------------------------------------------ |
 | GET    | `/api/ping`                                  | No   | Comprobación de que la API responde.                                     |
-| POST   | `/api/auth/register`                         | No   | Crea una cuenta y devuelve un token.                                     |
-| POST   | `/api/auth/login`                            | No   | Inicia sesión y devuelve un token.                                       |
-| POST   | `/api/auth/logout`                           | Sí   | Cierra sesión y revoca el token actual.                                  |
+| POST   | `/api/auth/register`                         | No   | Crea una cuenta y deja la sesión en cookie `tgotg_token`.                |
+| POST   | `/api/auth/login`                            | No   | Inicia sesión y deja la sesión en cookie `tgotg_token`.                  |
+| POST   | `/api/auth/logout`                           | Sí   | Cierra sesión, revoca el token y borra la cookie.                        |
 | GET    | `/api/user`                                  | Sí   | Devuelve los datos del usuario autenticado.                              |
 | PUT    | `/api/account/profile`                       | Sí   | Actualiza nick y/o contraseña del usuario autenticado.                   |
 | DELETE | `/api/account`                               | Sí   | Elimina la cuenta y todos sus datos.                                     |
@@ -57,7 +59,7 @@ Authorization: Bearer <token>
 | POST   | `/api/conversations`                         | Sí   | Crea una nueva conversación con un mensaje inicial.                      |
 | GET    | `/api/conversations/{conversation}`          | Sí   | Obtiene una conversación con sus mensajes.                               |
 | POST   | `/api/conversations/{conversation}/messages` | Sí   | Envía un mensaje en una conversación existente.                          |
-| POST   | `/api/city/buildings/{building}/upgrade`      | Sí   | Inicia la mejora/construcción de un edificio (cola temporizada).          |
+| POST   | `/api/city/buildings/{building}/upgrade`     | Sí   | Inicia la mejora/construcción de un edificio (cola temporizada).         |
 | DELETE | `/api/conversations/{conversation}`          | Sí   | Elimina una conversación.                                                |
 
 ### `GET /api/ping`
@@ -324,7 +326,7 @@ Requiere autenticación. Opciones para crear partida: duraciones y multiplicador
 
 ### `GET /api/city`
 
-Requiere autenticación. Devuelve la ciudad del jugador con todos sus datos. Las coordenadas `shape,x,y,width,height` y `worldSize` **no se leen de la tabla `buildings`** — la tabla solo guarda `level/damage/repair_*`; el controlador las resuelve contra el SSOT `App\Support\CityLayouts` y las inyecta en la respuesta. `StartingConfig::buildings()` es alias deprecado.
+Requiere autenticación (cookie `tgotg_token` o `Authorization: Bearer`). Devuelve la ciudad del jugador con todos sus datos. Las coordenadas `shape,x,y,width,height` y `worldSize` **no se leen de la tabla `buildings`** — la tabla solo guarda `level/damage/repair_*/upgrade_*`; el controlador las resuelve contra el SSOT `App\Support\CityLayouts` y las inyecta en la respuesta. `StartingConfig::buildings()` es alias deprecado.
 
 **Respuesta 200**
 
@@ -359,15 +361,17 @@ Requiere autenticación. Devuelve la ciudad del jugador con todos sus datos. Las
                 "key": "ayuntamiento",
                 "name": "Ayuntamiento",
                 "category": "Principal",
-                "level": 3,
+                "level": 1,
                 "damage": 0,
                 "repairing": false,
                 "repairPaid": false,
+                "upgrading": false,
+                "upgradeFinishesAt": null,
                 "shape": "diamond",
-                "x": 916,
-                "y": 336,
-                "width": 328,
-                "height": 184
+                "x": 970,
+                "y": 290,
+                "width": 340,
+                "height": 340
             }
         ]
     }
@@ -394,15 +398,21 @@ Requiere autenticación. Inicia la construcción o mejora de un edificio. Coste 
 
 ```json
 {
-  "building": {
-    "id": "uuid",
-    "key": "granja",
-    "level": 0,
-    "upgrading": true,
-    "upgradeFinishesAt": "2026-08-22T12:30:00+00:00",
-    "targetLevel": 1,
-    "cost": { "gold": 1500, "wood": 600, "stone": 100, "iron": 0, "minutes": 45 }
-  }
+    "building": {
+        "id": "uuid",
+        "key": "granja",
+        "level": 0,
+        "upgrading": true,
+        "upgradeFinishesAt": "2026-08-22T12:30:00+00:00",
+        "targetLevel": 1,
+        "cost": {
+            "gold": 1500,
+            "wood": 600,
+            "stone": 100,
+            "iron": 0,
+            "minutes": 45
+        }
+    }
 }
 ```
 
@@ -464,16 +474,23 @@ Requiere autenticación. Elimina una conversación.
 
 ## Coordenadas y mapas (SSOT)
 
-* **Fichero único:** `app/Support/CityLayouts.php` — `const WORLD_SIZE`, `plots(map='bosque')` y `plotForKey(key, map)`. Único lugar para mover edificios o añadir mapas/edificios. `StartingConfig::buildings(map)` delega allí.
-* **Tabla `buildings`:** columnas `id, city_id, building_type_id, level, damage, repair_started_at, repair_paid, upgrade_started_at, upgrade_finishes_at, upgrade_target_level` — sin `shape,x,y,width,height`.
-* **Front:** `front-tgotg/game/plots.ts` deprecado a stub; `CityScene` lee `getCityBuildings()/getWorldSize()` de `game/city-data.ts` alimentados por `GET /api/city`. Validación `zod` en `front-tgotg/lib/validations/city.ts`.
-* **Nuevo mapa:** añade `case 'desierto' => [...]` en `CityLayouts::plots()` y propaga el `map` a `WorldController::store`, `DemoWorldSeeder` y `CityController::show` sin nueva migración.
+- **Fichero único:** `app/Support/CityLayouts.php` — `const WORLD_SIZE`, `plots(map='bosque')` y `plotForKey(key, map)`. Único lugar para mover edificios o añadir mapas/edificios. `StartingConfig::buildings(map)` delega allí.
+- **Tabla `buildings`:** columnas `id, city_id, building_type_id, level, damage, repair_started_at, repair_paid, upgrade_started_at, upgrade_finishes_at, upgrade_target_level` — sin `shape,x,y,width,height`.
+- **Front:** `front-tgotg/game/plots.ts` deprecado a stub; `CityScene` lee `getCityBuildings()/getWorldSize()` de `game/city-data.ts` alimentados por `GET /api/city`. Validación `zod` en `front-tgotg/lib/validations/city.ts`.
+- **Nuevo mapa:** añade `case 'desierto' => [...]` en `CityLayouts::plots()` y propaga el `map` a `WorldController::store`, `DemoWorldSeeder` y `CityController::show` sin nueva migración.
 
 ## Variables de entorno
 
-| Variable | Descripción |
-| -------- | ----------- |
-| `FAST_BUILD_FACTOR` | Atajo para pruebas de la cola de construcción. `0` = desactivado (cola real: `minutos = base ×1.5^(n-1) ÷ speed_multiplier`). `0.1` = 10% del tiempo (60min→6min), `0.02` = 2% (60min→~1.2min). Valores `<0.02` convierten minutos a segundos (mín 5s) para pruebas rápidas. Solo surte efecto con `APP_DEBUG=true` o en entorno `local/testing`; en `production` déjalo en `0`. Alternativa: `POST /city/buildings/{id}/upgrade?instant=1` con `APP_DEBUG=true` para completar instantáneamente sin descontar tiempo. Por defecto `0`. Ver `.env.example` para ejemplo comentado. |
+Estas variables están en `back-tgotg/.env` (ver `.env.example`). Si algo no funciona tras un `401` revisa primero aquí.
+
+| Variable                   | Para qué sirve                                                                                                                                                                                                                                                                                                                                 | Valor recomendado                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `SANCTUM_STATEFUL_DOMAINS` | De qué dominios el navegador puede enviar la cookie de sesión. Debe incluir el front.                                                                                                                                                                                                                                                          | `localhost:3000,127.0.0.1:3000` en local        |
+| `SESSION_DOMAIN`           | Dominio de la cookie `tgotg_token`.                                                                                                                                                                                                                                                                                                            | `localhost` en local                            |
+| `SESSION_SAME_SITE`        | Protección CSRF de la cookie.                                                                                                                                                                                                                                                                                                                  | `lax`                                           |
+| `SESSION_SECURE_COOKIE`    | Si es `true` la cookie solo viaja por HTTPS.                                                                                                                                                                                                                                                                                                   | `false` en local (`http`), `true` en producción |
+| `FAST_BUILD_FACTOR`        | Atajo para probar la cola de construcción sin esperar horas. `0` = tiempo real (`minutos = base ×1.5^(n-1) ÷ speed_multiplier`). `0.1` = 10% (60min→6min), `0.02` = 2% (60min→~1min), `<0.02` = segundos (mín 5s). Solo con `APP_DEBUG=true`; en producción déjalo en `0`. Alternativa puntual: `POST /city/buildings/{id}/upgrade?instant=1`. | `0`                                             |
+| `SANCTUM_TOKEN_EXPIRATION` | Cuánto dura la sesión antes de caducar.                                                                                                                                                                                                                                                                                                        | `1440` (24h)                                    |
 
 ## Usuario administrador (seeder)
 

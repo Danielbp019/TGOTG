@@ -4,6 +4,7 @@ import * as React from 'react'
 import { setCityBuildings, setWorldSize } from '@/game/city-data'
 import type { CityPayload } from '@/lib/api'
 import { ApiError, fetchCity } from '@/lib/api'
+import { useAuth } from '@/components/auth/auth-provider'
 
 interface CityContextValue {
   city: CityPayload | null
@@ -17,12 +18,14 @@ interface CityContextValue {
 const CityContext = React.createContext<CityContextValue | null>(null)
 
 export function CityProvider({ children }: { children: React.ReactNode }) {
+  const { user, isLoading: authLoading } = useAuth()
   const [city, setCity] = React.useState<CityPayload | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<ApiError | null>(null)
   const [version, setVersion] = React.useState(0)
 
   const load = React.useCallback(async () => {
+    if (authLoading || !user) return
     setIsLoading(true)
     setError(null)
     try {
@@ -33,6 +36,9 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
       setVersion((current) => current + 1)
     } catch (caught) {
       if (caught instanceof ApiError) {
+        if (caught.status === 401) {
+          setCity(null)
+        }
         setError(caught)
       } else {
         setError(new ApiError(500, 'No se pudo cargar la ciudad.'))
@@ -40,23 +46,31 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [authLoading, user])
 
   React.useEffect(() => {
+    if (authLoading || !user) {
+      setIsLoading(false)
+      return
+    }
     const timer = window.setTimeout(() => {
       load()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [load])
+  }, [authLoading, user, load])
+
+  const hasUpgrading = React.useMemo(
+    () => city?.buildings.some((b) => b.upgrading) ?? false,
+    [city]
+  )
 
   React.useEffect(() => {
-    const hasUpgrading = city?.buildings.some((b) => b.upgrading) ?? false
     if (!hasUpgrading) return
     const id = window.setInterval(() => {
       load()
     }, 5000)
     return () => window.clearInterval(id)
-  }, [city, load])
+  }, [hasUpgrading, load])
 
   const value = React.useMemo(
     () => ({ city, isLoading, error, version, reload: load }),
