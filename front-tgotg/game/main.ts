@@ -9,7 +9,6 @@ const FALLBACK_WORLD_SIZE = { width: 2048, height: 1024 } as const
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  backgroundColor: '#1e2a1e',
   audio: { noAudio: true },
   scale: {
     mode: Phaser.Scale.FIT,
@@ -17,5 +16,6 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     width: FALLBACK_WORLD_SIZE.width,
     height: FALLBACK_WORLD_SIZE.height,
   },
+  backgroundColor: '#000000',
   scene: [CityScene],
 }
