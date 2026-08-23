@@ -47,6 +47,11 @@ export class CityScene extends Phaser.Scene {
   private readonly spriteSize = 1024
 
   private tooltip?: Phaser.GameObjects.Container
+  private fixedPanel?: Phaser.GameObjects.Container
+  private fixedBg?: Phaser.GameObjects.Rectangle
+  private fixedNameText?: Phaser.GameObjects.Text
+  private fixedLevelText?: Phaser.GameObjects.Text
+  private fixedStarsText?: Phaser.GameObjects.Text
   private debugPlots?: Phaser.GameObjects.Graphics
   private showDebugPlots = false
 
@@ -83,6 +88,7 @@ export class CityScene extends Phaser.Scene {
     this.createPlots(slots)
     this.createBuildings(slots)
     this.createTooltip()
+    this.createFixedPanel()
     this.setupDebugToggle()
 
     EventBus.emit('current-scene-ready', this)
@@ -165,6 +171,36 @@ export class CityScene extends Phaser.Scene {
     return [px, py + this.skewY * dx]
   }
 
+  /** Polígono interactivo con las mismas coordenadas sheareadas que CityLayouts (bottom-center). */
+  private hitPolygonForSlot(slot: CitySlot): Phaser.Geom.Polygon {
+    if (slot.shape === 'rect') {
+      const halfW = slot.width / 2
+      const h = slot.height
+      const points: Array<[number, number]> = [
+        [-halfW, 0],
+        [halfW, 0],
+        [halfW, -h],
+        [-halfW, -h],
+      ]
+      const sheared = points.map(
+        ([px, py]) => new Phaser.Math.Vector2(px, py + this.skewY * px)
+      )
+      return new Phaser.Geom.Polygon(sheared)
+    }
+    const halfW = slot.width / 2
+    const halfH = slot.height / 2
+    const points: Array<[number, number]> = [
+      [0, -slot.height],
+      [halfW, -halfH],
+      [0, 0],
+      [-halfW, -halfH],
+    ]
+    const sheared = points.map(
+      ([px, py]) => new Phaser.Math.Vector2(px, py + this.skewY * px)
+    )
+    return new Phaser.Geom.Polygon(sheared)
+  }
+
   /** Escala para que sprite 1024 quepa en parcela con margen natural (parcelas medidas ~340×185) */
   private buildingScale(slot: CitySlot): number {
     if (slot.shape === 'diamond') {
@@ -202,29 +238,43 @@ export class CityScene extends Phaser.Scene {
           .setScale(scale)
 
         building = this.add.container(x, y, [image])
-        building.setSize(slot.width, slot.height)
         building.setDepth(y)
+
+        // Hitbox silueta: rect del sprite visible (abarc a todo el edificio)
+        const hitW = image.displayWidth * 0.92
+        const hitH = image.displayHeight * 0.9
+        const hitRect = new Phaser.Geom.Rectangle(
+          -hitW / 2,
+          -hitH,
+          hitW,
+          hitH
+        )
+        image.setInteractive(hitRect, Phaser.Geom.Rectangle.Contains)
+        image.setData('slot', slot)
+        image.setData('hasSprite', hasSprite)
+        image.on('pointerover', () => this.showBuilding(image as unknown as Phaser.GameObjects.Container))
+        image.on('pointerout', () => this.hideBuilding(image as unknown as Phaser.GameObjects.Container))
+
+        // Fallback parcela para no perder hover en suelo alrededor del sprite
+        const hitPolygon = this.hitPolygonForSlot(slot)
+        building.setSize(slot.width, slot.height)
+        building.setData('slot', slot)
+        building.setData('hasSprite', hasSprite)
+        building.setInteractive(hitPolygon, Phaser.Geom.Polygon.Contains)
+        building.on('pointerover', () => this.showBuilding(building))
+        building.on('pointerout', () => this.hideBuilding(building))
       } else {
         // Placeholder defensivo (muralla/foso) o fallback interior sin sprite
         building = this.createDefensivePlaceholder(slot)
         building.setDepth(y)
+        building.setData('slot', slot)
+        building.setData('hasSprite', hasSprite)
+        building.setData('assetPath', assetPath)
+        const hitPolygon = this.hitPolygonForSlot(slot)
+        building.setInteractive(hitPolygon, Phaser.Geom.Polygon.Contains)
+        building.on('pointerover', () => this.showBuilding(building))
+        building.on('pointerout', () => this.hideBuilding(building))
       }
-
-      building.setData('slot', slot)
-      building.setData('hasSprite', hasSprite)
-      building.setData('assetPath', assetPath)
-      building.setInteractive(
-        new Phaser.Geom.Rectangle(
-          -slot.width / 2,
-          -slot.height,
-          slot.width,
-          slot.height
-        ),
-        Phaser.Geom.Rectangle.Contains
-      )
-
-      building.on('pointerover', () => this.showBuilding(building))
-      building.on('pointerout', () => this.hideBuilding(building))
     })
   }
 
@@ -318,22 +368,95 @@ export class CityScene extends Phaser.Scene {
       building.setAlpha(0.85)
     }
     const slot = building.getData('slot') as CitySlot
-    const hasSprite = building.getData('hasSprite') as boolean
-    // Tooltip por encima del sprite escalado, no de la parcela cruda
-    const scale = hasSprite ? this.buildingScale(slot) : 1
-    const visualHeight = hasSprite ? this.spriteSize * scale * 0.72 : slot.height
-    this.showTooltip(slot, building.x, building.y - visualHeight - 28)
+    this.updateFixedPanel(slot)
   }
 
   private hideBuilding(building: Phaser.GameObjects.Container) {
     building.setAlpha(1)
-    this.hideTooltip()
+    this.hideFixedPanel()
   }
 
   private createTooltip() {
     this.tooltip = this.add.container(0, 0)
     this.tooltip.setDepth(100)
     this.tooltip.setVisible(false)
+  }
+
+  private createFixedPanel() {
+    const size = 180
+    const padding = 12
+    const cam = this.cameras.main
+
+    const bg = this.add
+      .rectangle(0, 0, size, size, 0x1a241a, 0.94)
+      .setStrokeStyle(2, 0x8b7d6b)
+      .setOrigin(0.5)
+
+    const nameText = this.add
+      .text(0, -48, '', {
+        color: '#f5efe0',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '22px',
+        fontStyle: 'bold',
+        align: 'center',
+        wordWrap: { width: size - 20 },
+      })
+      .setOrigin(0.5)
+
+    const levelText = this.add
+      .text(0, 0, '', {
+        color: '#d8cbb0',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '18px',
+        align: 'center',
+      })
+      .setOrigin(0.5)
+
+    const starsText = this.add
+      .text(0, 36, '', {
+        color: '#e9c46a',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '22px',
+        align: 'center',
+      })
+      .setOrigin(0.5)
+
+    const container = this.add.container(0, 0, [bg, nameText, levelText, starsText])
+    container.setDepth(101)
+    container.setScrollFactor(0)
+    bg.setScrollFactor(0)
+    nameText.setScrollFactor(0)
+    levelText.setScrollFactor(0)
+    starsText.setScrollFactor(0)
+    container.setVisible(false)
+    this.fixedPanel = container
+    this.fixedBg = bg
+    this.fixedNameText = nameText
+    this.fixedLevelText = levelText
+    this.fixedStarsText = starsText
+
+    const x = padding + size / 2
+    const y = cam.height - padding - size / 2
+    container.setPosition(x, y)
+
+    this.scale.on('resize', () => {
+      const c = this.cameras.main
+      container.setPosition(padding + size / 2, c.height - padding - size / 2)
+    })
+  }
+
+  private updateFixedPanel(slot: CitySlot) {
+    if (!this.fixedPanel || !this.fixedBg || !this.fixedNameText || !this.fixedLevelText || !this.fixedStarsText) return
+    const stars = '★'.repeat(Math.min(slot.level, this.maxStars))
+    const emptyStars = '☆'.repeat(this.maxStars - stars.length)
+    this.fixedNameText.setText(slot.name)
+    this.fixedLevelText.setText(`Nivel ${slot.level}`)
+    this.fixedStarsText.setText(`${stars}${emptyStars}`)
+    this.fixedPanel.setVisible(true)
+  }
+
+  private hideFixedPanel() {
+    this.fixedPanel?.setVisible(false)
   }
 
   private showTooltip(slot: CitySlot, x: number, y: number) {
