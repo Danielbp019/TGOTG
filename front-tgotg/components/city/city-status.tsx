@@ -5,35 +5,25 @@ import { useCity } from '@/components/city/city-provider'
 import { resources } from '@/data/resources'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import type { ResourceKey } from '@/types'
 import { useEffect, useState } from 'react'
-
-const productionKeys: ResourceKey[] = ['gold', 'wood', 'stone', 'iron', 'food']
-
-function deriveArmyOverall(stationedTroops: number, defensePower: number) {
-  if (stationedTroops === 0) return 'Sin tropas'
-  if (defensePower >= 300) return 'Preparado'
-  if (defensePower >= 100) return 'En formación'
-  return 'Débil'
-}
+import type { ResourceKey } from '@/types'
 
 export function CityStatus() {
   const { city, isLoading } = useCity()
   const [protectionRemaining, setProtectionRemaining] = useState<number | null>(null)
 
   useEffect(() => {
-    if (!city?.protectionUntil) {
-      setProtectionRemaining(null)
-      return
-    }
-    const until = new Date(city.protectionUntil)
-    const now = new Date()
-    const diffMs = until.getTime() - now.getTime()
-    if (diffMs > 0) {
-      setProtectionRemaining(Math.ceil(diffMs / (1000 * 60 * 60))) // hours
-    } else {
-      setProtectionRemaining(0)
-    }
+    const timer = window.setTimeout(() => {
+      if (!city?.protectionUntil) {
+        setProtectionRemaining(null)
+        return
+      }
+
+      const diffMs = new Date(city.protectionUntil).getTime() - Date.now()
+      setProtectionRemaining(diffMs > 0 ? Math.ceil(diffMs / (1000 * 60 * 60)) : 0)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [city?.protectionUntil])
 
   const productionKeys: ResourceKey[] = ['gold', 'wood', 'stone', 'iron', 'food']

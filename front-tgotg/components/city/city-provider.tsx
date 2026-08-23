@@ -25,57 +25,79 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
   const [version, setVersion] = React.useState(0)
   const userId = user?.id ?? null
 
-  const load = React.useCallback(async (signal?: AbortSignal) => {
-    if (authLoading || !userId) return
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await fetchCity(signal)
-      setCity(response.city)
-      setCityBuildings(response.city.buildings)
-      if (response.city.worldSize) setWorldSize(response.city.worldSize)
-      setVersion((current) => current + 1)
-    } catch (caught) {
-      if (caught instanceof DOMException && caught.name === 'AbortError') return
-      if (caught instanceof ApiError) {
-        if (caught.status === 401) {
-          setCity(null)
+  const load = React.useCallback(
+    async (signal?: AbortSignal) => {
+      if (authLoading || !userId) return
+      setIsLoading(true)
+      setError(null)
+      try {
+        const response = await fetchCity(signal)
+        setCity(response.city)
+        setCityBuildings(response.city.buildings)
+        if (response.city.worldSize) setWorldSize(response.city.worldSize)
+        setVersion((current) => current + 1)
+      } catch (caught) {
+        if (caught instanceof DOMException && caught.name === 'AbortError') return
+        if (caught instanceof ApiError) {
+          if (caught.status === 401) {
+            setCity(null)
+          }
+          setError(caught)
+        } else {
+          setError(new ApiError(500, 'No se pudo cargar la ciudad.'))
         }
-        setError(caught)
-      } else {
-        setError(new ApiError(500, 'No se pudo cargar la ciudad.'))
+      } finally {
+        setIsLoading(false)
       }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [authLoading, userId])
-
-  React.useEffect(() => {
-    if (authLoading || !userId) {
-      setIsLoading(false)
-      return
-    }
-    const controller = new AbortController()
-    load(controller.signal)
-    return () => controller.abort()
-  }, [authLoading, userId, load])
-
-  const hasUpgrading = React.useMemo(
-    () => city?.buildings.some((b) => b.upgrading) ?? false,
-    [city]
+    },
+    [authLoading, userId]
   )
 
+  const reload = load
+
   React.useEffect(() => {
-    if (!hasUpgrading) return
+    if (authLoading || !userId) return
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => {
+      void load(controller.signal)
+    }, 0)
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [authLoading, userId, load])
+
+  // Recarga cuando termina la mejora más próxima; un temporizador de 1 s
+  // evita depender del reloj del cliente para programar la petición.
+  const nextUpgradeAt = React.useMemo(() => {
+    const times = (city?.buildings ?? [])
+      .map((building) => building.upgradeFinishesAt)
+      .filter((finish): finish is string => Boolean(finish))
+      .map((finish) => new Date(finish).getTime())
+
+    return times.length > 0 ? Math.min(...times) : null
+  }, [city])
+
+  React.useEffect(() => {
+    if (!nextUpgradeAt) return
+
+    let reloading = false
+
     const id = window.setInterval(() => {
-      load()
-    }, 5000)
+      if (reloading || Date.now() < nextUpgradeAt + 2000) return
+
+      reloading = true
+      void load().finally(() => {
+        reloading = false
+      })
+    }, 1000)
+
     return () => window.clearInterval(id)
-  }, [hasUpgrading, load])
+  }, [nextUpgradeAt, load])
 
   const value = React.useMemo(
-    () => ({ city, isLoading, error, version, reload: load }),
-    [city, isLoading, error, version, load]
+    () => ({ city, isLoading, error, version, reload }),
+    [city, isLoading, error, version, reload]
   )
 
   return <CityContext.Provider value={value}>{children}</CityContext.Provider>

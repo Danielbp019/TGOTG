@@ -110,13 +110,13 @@ class CityController extends Controller
             ], 404);
         }
 
-        $city = $building->city;
-
-        if ($city === null || $city->player_id !== $player->id) {
+        if ($request->user()->cannot('manage', $building)) {
             return response()->json([
                 'message' => __('Ese edificio no pertenece a tu ciudad.'),
             ], 403);
         }
+
+        $city = $building->city;
 
         // Sincroniza upgrades terminados antes de validar
         $city->load('buildings.buildingType');
@@ -152,16 +152,64 @@ class CityController extends Controller
         $nextLevel = $building->level + 1;
         $cost = BuildingCosts::costForLevel($building->buildingType, $nextLevel);
 
-        // Atajo para pruebas: ?instant=1 en debug o FAST_BUILD_FACTOR en env
+        // Atajo para pruebas: ?instant=1 solo en debug o FAST_BUILD_FACTOR en config
         $isInstant = $request->query('instant') === '1' && config('app.debug');
-        $fastFactor = (float) env('FAST_BUILD_FACTOR', 0);
+        $fastFactor = (float) config('game_balance.fast_build_factor');
 
-        if (
-            $city->gold < $cost['gold']
-            || $city->wood < $cost['wood']
-            || $city->stone < $cost['stone']
-            || $city->iron < $cost['iron']
-        ) {
+        $finishesAt = null;
+
+        if (! $isInstant) {
+            $minutes = $cost['minutes'];
+
+            if ($fastFactor > 0 && $fastFactor < 1) {
+                $minutes = (int) max(1, round($minutes * $fastFactor));
+            }
+
+            $speedMultiplier = (float) $player->world->speed_multiplier;
+
+            // El tiempo se acorta con la velocidad del mundo
+            $effectiveMinutes = $speedMultiplier > 0 ? $minutes / $speedMultiplier : $minutes;
+            $finishesAt = now()->addMinutes($effectiveMinutes);
+
+            // Factor muy pequeño: finaliza en segundos en lugar de minutos
+            if ($fastFactor > 0 && $fastFactor < 0.02) {
+                $effectiveSeconds = (int) max(5, round($effectiveMinutes * 60));
+                $finishesAt = now()->addSeconds($effectiveSeconds);
+            }
+        }
+
+        $sufficient = DB::transaction(function () use ($city, $building, $cost, $nextLevel, $isInstant, $finishesAt): bool {
+            $lockedCity = City::whereKey($city->id)->lockForUpdate()->first();
+
+            if (
+                $lockedCity->gold < $cost['gold']
+                || $lockedCity->wood < $cost['wood']
+                || $lockedCity->stone < $cost['stone']
+                || $lockedCity->iron < $cost['iron']
+            ) {
+                return false;
+            }
+
+            $lockedCity->decrement('gold', $cost['gold']);
+            $lockedCity->decrement('wood', $cost['wood']);
+            $lockedCity->decrement('stone', $cost['stone']);
+            $lockedCity->decrement('iron', $cost['iron']);
+
+            if ($isInstant) {
+                $building->update(['level' => $nextLevel]);
+                $this->applyProductionForUpgrade($lockedCity, $building->buildingType->key);
+            } else {
+                $building->update([
+                    'upgrade_started_at' => now(),
+                    'upgrade_finishes_at' => $finishesAt,
+                    'upgrade_target_level' => $nextLevel,
+                ]);
+            }
+
+            return true;
+        });
+
+        if (! $sufficient) {
             return response()->json([
                 'message' => __('No tienes suficientes recursos para mejorar ese edificio.'),
                 'cost' => $cost,
@@ -169,19 +217,6 @@ class CityController extends Controller
         }
 
         if ($isInstant) {
-            DB::transaction(function () use ($city, $building, $cost, $nextLevel): void {
-                $city->decrement('gold', $cost['gold']);
-                $city->decrement('wood', $cost['wood']);
-                $city->decrement('stone', $cost['stone']);
-                $city->decrement('iron', $cost['iron']);
-
-                $building->update([
-                    'level' => $nextLevel,
-                ]);
-
-                $this->applyProductionForUpgrade($city, $building->buildingType->key);
-            });
-
             $building->refresh();
 
             return response()->json([
@@ -194,38 +229,6 @@ class CityController extends Controller
                 ],
             ]);
         }
-
-        $minutes = $cost['minutes'];
-
-        if ($fastFactor > 0 && $fastFactor < 1) {
-            $minutes = (int) max(1, round($minutes * $fastFactor));
-            // Para pruebas muy rápidas: 1 minuto real ≈ segundos si factor 0.01
-            // Si quieres segundos exactos, usa FAST_BUILD_FACTOR=0.016 (1min→1s)
-        }
-
-        $speedMultiplier = (float) $player->world->speed_multiplier;
-        // El tiempo se acorta con la velocidad del mundo
-        $effectiveMinutes = $speedMultiplier > 0 ? $minutes / $speedMultiplier : $minutes;
-        $finishesAt = now()->addMinutes($effectiveMinutes);
-
-        // Si FAST_BUILD_FACTOR muy pequeño, permite finishes en segundos
-        if ($fastFactor > 0 && $fastFactor < 0.02) {
-            $effectiveSeconds = (int) max(5, round($effectiveMinutes * 60));
-            $finishesAt = now()->addSeconds($effectiveSeconds);
-        }
-
-        DB::transaction(function () use ($city, $building, $cost, $nextLevel, $finishesAt): void {
-            $city->decrement('gold', $cost['gold']);
-            $city->decrement('wood', $cost['wood']);
-            $city->decrement('stone', $cost['stone']);
-            $city->decrement('iron', $cost['iron']);
-
-            $building->update([
-                'upgrade_started_at' => now(),
-                'upgrade_finishes_at' => $finishesAt,
-                'upgrade_target_level' => $nextLevel,
-            ]);
-        });
 
         $building->refresh();
 
@@ -262,13 +265,13 @@ class CityController extends Controller
             ], 404);
         }
 
-        $city = $building->city;
-
-        if ($city === null || $city->player_id !== $player->id) {
+        if ($request->user()->cannot('manage', $building)) {
             return response()->json([
                 'message' => __('Ese edificio no pertenece a tu ciudad.'),
             ], 403);
         }
+
+        $city = $building->city;
 
         if ($building->damage <= 0) {
             return response()->json([
@@ -284,23 +287,35 @@ class CityController extends Controller
 
         $paid = $data['type'] === 'paid';
 
-        DB::transaction(function () use ($city, $building, $paid) {
+        $sufficient = DB::transaction(function () use ($city, $building, $paid): bool {
             if ($paid) {
+                $lockedCity = City::whereKey($city->id)->lockForUpdate()->first();
                 $cost = $this->repairCost($building);
 
-                if ($city->gold < $cost['gold'] || $city->{$cost['repair_material']} < $cost['material_amount']) {
-                    abort(422, __('No tienes suficientes recursos para reparar ese edificio.'));
+                if (
+                    $lockedCity->gold < $cost['gold']
+                    || $lockedCity->{$cost['repair_material']} < $cost['material_amount']
+                ) {
+                    return false;
                 }
 
-                $city->decrement('gold', $cost['gold']);
-                $city->decrement($cost['repair_material'], $cost['material_amount']);
+                $lockedCity->decrement('gold', $cost['gold']);
+                $lockedCity->decrement($cost['repair_material'], $cost['material_amount']);
             }
 
             $building->update([
                 'repair_started_at' => now(),
                 'repair_paid' => $paid,
             ]);
+
+            return true;
         });
+
+        if (! $sufficient) {
+            return response()->json([
+                'message' => __('No tienes suficientes recursos para reparar ese edificio.'),
+            ], 422);
+        }
 
         return response()->json([
             'building' => [

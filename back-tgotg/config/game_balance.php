@@ -94,9 +94,13 @@ return [
     ],
 
     'protection' => [
-        // Horas de escudo tras perder una batalla defensiva (÷ velocidad del mundo)
+        // Horas de escudo tras perder una batalla defensiva (× velocidad del mundo)
         'hours' => 12,
     ],
+
+    // Factor de aceleración de construcciones para pruebas (0 = desactivado).
+    // Solo funciona con APP_DEBUG=true; atajo puntual: POST .../upgrade?instant=1
+    'fast_build_factor' => env('FAST_BUILD_FACTOR', 0),
 
     'terrain' => [
         'pradera' => ['food' => 0.10],

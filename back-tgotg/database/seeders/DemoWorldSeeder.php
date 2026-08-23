@@ -26,8 +26,9 @@ class DemoWorldSeeder extends Seeder
     {
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
-            ['nick' => 'Dios Supremo', 'role' => 'admin', 'password' => Hash::make('password')]
+            ['nick' => 'Dios Supremo', 'password' => Hash::make('password')]
         );
+        $admin->forceFill(['role' => 'admin'])->save();
 
         if (World::where('status', 'running')->exists()) {
             return;

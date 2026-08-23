@@ -18,7 +18,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
     Route::put('/account/profile', [AccountController::class, 'updateProfile']);
@@ -37,9 +37,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/city/buildings/{building}/upgrade', [CityController::class, 'upgrade']);
     Route::post('/worlds', [WorldController::class, 'store']);
 
-    Route::get('/conversations', [MessageController::class, 'index']);
-    Route::post('/conversations', [MessageController::class, 'store']);
-    Route::get('/conversations/{conversation}', [MessageController::class, 'show']);
-    Route::post('/conversations/{conversation}/messages', [MessageController::class, 'sendMessage']);
-    Route::delete('/conversations/{conversation}', [MessageController::class, 'destroy']);
+    Route::middleware('throttle:30,1')->group(function () {
+        Route::get('/conversations', [MessageController::class, 'index']);
+        Route::post('/conversations', [MessageController::class, 'store']);
+        Route::get('/conversations/{conversation}', [MessageController::class, 'show']);
+        Route::post('/conversations/{conversation}/messages', [MessageController::class, 'sendMessage']);
+        Route::delete('/conversations/{conversation}', [MessageController::class, 'destroy']);
+    });
 });

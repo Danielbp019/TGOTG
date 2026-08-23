@@ -24,11 +24,16 @@ class MessageController extends Controller
 
         $userId = $request->user()->id;
 
-        $conversations = Conversation::where('world_id', $world->id)
+        $conversations = Conversation::query()
+            ->where('world_id', $world->id)
             ->where(fn ($query) => $query
                 ->where('user_one_id', $userId)
                 ->orWhere('user_two_id', $userId))
-            ->with(['messages', 'userOne', 'userTwo'])
+            ->with(['userOne', 'userTwo', 'lastMessage'])
+            ->withCount(['messages as unread_count' => fn ($query) => $query
+                ->where('sender_id', '!=', $userId)
+                ->whereNull('read_at'),
+            ])
             ->orderByDesc('last_message_at')
             ->get();
 
@@ -41,21 +46,26 @@ class MessageController extends Controller
 
     public function show(Request $request, Conversation $conversation): JsonResponse
     {
-        $userId = $request->user()->id;
-        $conversation = $this->ownConversation($conversation, $userId);
+        $user = $request->user();
 
-        if ($conversation === null) {
+        if ($user->cannot('participate', $conversation)) {
             return response()->json([
                 'message' => __('La conversación no existe.'),
             ], 404);
         }
+
+        $userId = $user->id;
 
         $conversation->messages()
             ->where('sender_id', '!=', $userId)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        $conversation->load(['messages', 'userOne', 'userTwo']);
+        $conversation->load([
+            'messages' => fn ($query) => $query->orderBy('created_at'),
+            'userOne',
+            'userTwo',
+        ]);
 
         return response()->json([
             'conversation' => $this->detailPayload($conversation, $userId),
@@ -66,7 +76,9 @@ class MessageController extends Controller
     {
         $userId = $request->user()->id;
 
-        if ($this->currentPlayer($userId) === null) {
+        $player = $this->currentPlayer($userId);
+
+        if ($player === null) {
             return response()->json([
                 'message' => __('Debes estar en la contienda para enviar mensajes.'),
             ], 422);
@@ -77,7 +89,7 @@ class MessageController extends Controller
             'body' => ['required', 'string', 'max:2000'],
         ]);
 
-        $world = $this->currentWorld();
+        $world = $player->world;
         $recipient = User::where('nick', $data['recipient_nick'])
             ->whereHas('players', fn ($query) => $query->where('world_id', $world->id))
             ->where('id', '!=', $userId)
@@ -100,10 +112,9 @@ class MessageController extends Controller
 
     public function sendMessage(Request $request, Conversation $conversation): JsonResponse
     {
-        $userId = $request->user()->id;
-        $conversation = $this->ownConversation($conversation, $userId);
+        $user = $request->user();
 
-        if ($conversation === null) {
+        if ($user->cannot('participate', $conversation)) {
             return response()->json([
                 'message' => __('La conversación no existe.'),
             ], 404);
@@ -113,19 +124,16 @@ class MessageController extends Controller
             'body' => ['required', 'string', 'max:2000'],
         ]);
 
-        $this->appendMessage($conversation, $userId, $data['body']);
+        $this->appendMessage($conversation, $user->id, $data['body']);
 
         return response()->json([
-            'conversation' => $this->detailPayload($conversation, $userId),
+            'conversation' => $this->detailPayload($conversation, $user->id),
         ], 201);
     }
 
     public function destroy(Request $request, Conversation $conversation): JsonResponse
     {
-        $userId = $request->user()->id;
-        $conversation = $this->ownConversation($conversation, $userId);
-
-        if ($conversation === null) {
+        if ($request->user()->cannot('participate', $conversation)) {
             return response()->json([
                 'message' => __('La conversación no existe.'),
             ], 404);
@@ -136,25 +144,6 @@ class MessageController extends Controller
         return response()->json([
             'message' => __('Conversación eliminada.'),
         ]);
-    }
-
-    private function ownConversation(Conversation $conversation, string $userId): ?Conversation
-    {
-        $world = $this->currentWorld();
-
-        if ($world === null) {
-            return null;
-        }
-
-        if ($conversation->world_id !== $world->id) {
-            return null;
-        }
-
-        if ($conversation->user_one_id !== $userId && $conversation->user_two_id !== $userId) {
-            return null;
-        }
-
-        return $conversation;
     }
 
     private function findOrCreateConversation(string $worldId, string $userId, string $recipientId): Conversation
@@ -204,7 +193,7 @@ class MessageController extends Controller
      */
     private function summaryPayload(Conversation $conversation, string $userId): array
     {
-        $last = $conversation->messages->sortByDesc('created_at')->first();
+        $last = $conversation->lastMessage;
 
         return [
             'id' => $conversation->id,
@@ -216,10 +205,7 @@ class MessageController extends Controller
                 'sentAt' => $last->created_at->toIso8601String(),
                 'fromMe' => $last->sender_id === $userId,
             ] : null,
-            'unreadCount' => $conversation->messages
-                ->where('sender_id', '!=', $userId)
-                ->whereNull('read_at')
-                ->count(),
+            'unreadCount' => $conversation->unread_count,
         ];
     }
 
@@ -234,7 +220,6 @@ class MessageController extends Controller
                 'nick' => $this->otherParticipant($conversation, $userId)->nick,
             ],
             'messages' => $conversation->messages
-                ->sortBy('created_at')
                 ->map(
                     fn (Message $message) => [
                         'id' => $message->id,

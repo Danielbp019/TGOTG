@@ -48,9 +48,10 @@ export function BlessingDialog() {
 
   React.useEffect(() => {
     if (authLoading || !user || !hasLoaded) return
-    if (inGame && !myBlessing) {
-      setOpen(true)
-    }
+    if (!inGame || myBlessing) return
+
+    const t = window.setTimeout(() => setOpen(true), 0)
+    return () => window.clearTimeout(t)
   }, [authLoading, user, hasLoaded, inGame, myBlessing])
 
   function handleOpenChange(next: boolean) {

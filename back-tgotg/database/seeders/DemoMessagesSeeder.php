@@ -64,7 +64,7 @@ class DemoMessagesSeeder extends Seeder
         foreach ($gods as $god) {
             $user = User::firstOrCreate(
                 ['email' => $god['email']],
-                ['nick' => $god['nick'], 'role' => 'player', 'password' => Hash::make('password')]
+                ['nick' => $god['nick'], 'password' => Hash::make('password')]
             );
 
             Player::firstOrCreate(

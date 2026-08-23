@@ -92,8 +92,8 @@ export function MessagesInbox() {
 
   React.useEffect(() => {
     if (authLoading || !user) {
-      setLoading(false)
-      return
+      const t = window.setTimeout(() => setLoading(false), 0)
+      return () => window.clearTimeout(t)
     }
     let active = true
 

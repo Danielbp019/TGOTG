@@ -13,6 +13,8 @@ use App\Support\CityLayouts;
 use App\Support\StartingConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class WorldController extends Controller
 {
@@ -46,48 +48,67 @@ class WorldController extends Controller
         $admin = $request->user();
         $now = now();
 
-        World::where('status', 'running')->get()->each(function (World $world) use ($now): void {
-            $world->update([
-                'status' => 'finished',
-                'ended_at' => $now,
-            ]);
+        $lock = Cache::lock('tgotg:world-create-lock', 10);
 
-            $world->players()->delete();
-        });
+        if (! $lock->get()) {
+            return response()->json([
+                'message' => __('Ya se está iniciando una contienda. Inténtalo en unos segundos.'),
+            ], 409);
+        }
 
-        $world = World::create([
-            'status' => 'running',
-            'duration_days' => (int) $duration->value,
-            'speed_multiplier' => $multiplier->value,
-            'started_at' => $now,
-            'ended_at' => $now->copy()->addDays((int) $duration->value),
-            'created_by' => $admin->id,
-        ]);
+        try {
+            $world = DB::transaction(function () use ($admin, $now, $duration, $multiplier): World {
+                $runningWorldIds = World::where('status', 'running')->pluck('id');
 
-        $player = Player::create([
-            'world_id' => $world->id,
-            'user_id' => $admin->id,
-            'gold' => StartingConfig::cityValues()['gold'],
-            'wood' => StartingConfig::cityValues()['wood'],
-            'stone' => StartingConfig::cityValues()['stone'],
-            'iron' => StartingConfig::cityValues()['iron'],
-            'food' => StartingConfig::cityValues()['food'],
-        ]);
+                World::whereIn('id', $runningWorldIds)->update([
+                    'status' => 'finished',
+                    'ended_at' => $now,
+                ]);
 
-        $city = City::create(array_merge(
-            StartingConfig::cityValues(),
-            [
-                'player_id' => $player->id,
-                'world_id' => $world->id,
-            ]
-        ));
+                Player::whereIn('world_id', $runningWorldIds)->delete();
 
-        foreach (CityLayouts::plots() as $plot) {
-            Building::create([
-                'city_id' => $city->id,
-                'building_type_id' => BuildingType::where('key', $plot['key'])->value('id'),
-                'level' => $plot['key'] === 'ayuntamiento' ? 1 : 0,
-            ]);
+                $world = World::create([
+                    'status' => 'running',
+                    'duration_days' => (int) $duration->value,
+                    'speed_multiplier' => $multiplier->value,
+                    'started_at' => $now,
+                    'ended_at' => $now->copy()->addDays((int) $duration->value),
+                    'created_by' => $admin->id,
+                ]);
+
+                $player = Player::create([
+                    'world_id' => $world->id,
+                    'user_id' => $admin->id,
+                    'gold' => StartingConfig::cityValues()['gold'],
+                    'wood' => StartingConfig::cityValues()['wood'],
+                    'stone' => StartingConfig::cityValues()['stone'],
+                    'iron' => StartingConfig::cityValues()['iron'],
+                    'food' => StartingConfig::cityValues()['food'],
+                ]);
+
+                $city = City::create(array_merge(
+                    StartingConfig::cityValues(),
+                    [
+                        'player_id' => $player->id,
+                        'world_id' => $world->id,
+                    ]
+                ));
+
+                $plotKeys = array_column(CityLayouts::plots(), 'key');
+                $typeIdsByPlotKey = BuildingType::whereIn('key', $plotKeys)->pluck('id', 'key');
+
+                foreach (CityLayouts::plots() as $plot) {
+                    Building::create([
+                        'city_id' => $city->id,
+                        'building_type_id' => $typeIdsByPlotKey[$plot['key']] ?? null,
+                        'level' => $plot['key'] === 'ayuntamiento' ? 1 : 0,
+                    ]);
+                }
+
+                return $world;
+            });
+        } finally {
+            $lock->release();
         }
 
         return response()->json([

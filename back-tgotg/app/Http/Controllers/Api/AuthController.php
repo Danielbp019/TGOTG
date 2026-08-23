@@ -37,10 +37,10 @@ class AuthController extends Controller
                 60 * 24,
                 '/',
                 null,
-                (bool) env('SESSION_SECURE_COOKIE', false),
+                (bool) config('session.secure'),
                 true,
                 false,
-                env('SESSION_SAME_SITE', 'lax')
+                config('session.same_site')
             ));
     }
 
@@ -71,10 +71,10 @@ class AuthController extends Controller
                 60 * 24,
                 '/',
                 null,
-                (bool) env('SESSION_SECURE_COOKIE', false),
+                (bool) config('session.secure'),
                 true,
                 false,
-                env('SESSION_SAME_SITE', 'lax')
+                config('session.same_site')
             ));
     }
 

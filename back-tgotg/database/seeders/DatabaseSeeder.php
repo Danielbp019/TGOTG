@@ -18,8 +18,8 @@ class DatabaseSeeder extends Seeder
     {
         User::firstOrCreate(
             ['email' => 'admin@example.com'],
-            ['nick' => 'Dios Supremo', 'role' => 'admin', 'password' => Hash::make('password')]
-        );
+            ['nick' => 'Dios Supremo', 'password' => Hash::make('password')]
+        )->forceFill(['role' => 'admin'])->save();
 
         $this->call([
             CivilizationSeeder::class,

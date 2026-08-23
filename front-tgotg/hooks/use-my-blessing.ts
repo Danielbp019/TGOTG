@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { fetchMyBlessing, type BlessingPayload, type MyBlessingResponse } from '@/lib/api'
+import { fetchMyBlessing, type MyBlessingResponse } from '@/lib/api'
 import { useAuth } from '@/components/auth/auth-provider'
 import { subscribeToBlessingChanges } from '@/lib/blessing'
 
@@ -44,12 +44,10 @@ export function useMyBlessing() {
 
   React.useEffect(() => {
     if (authLoading || !user) {
-      setData(undefined)
-      return
+      const t = window.setTimeout(() => setData(undefined), 0)
+      return () => window.clearTimeout(t)
     }
-    if (cachedResponse !== undefined) {
-      setData(cachedResponse)
-    }
+
     const t = window.setTimeout(refresh, 0)
     const unsub = subscribeToBlessingChanges(refresh)
     return () => {

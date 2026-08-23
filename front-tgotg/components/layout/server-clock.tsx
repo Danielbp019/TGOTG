@@ -29,9 +29,11 @@ export function ServerClock() {
     if (authLoading || !user) return
     let active = true
 
-    const initialFormat = getSavedTimeFormat()
-    setTimeFormat(initialFormat)
-    setTime(formatTime(new Date(), initialFormat))
+    const initial = window.setTimeout(() => {
+      const initialFormat = getSavedTimeFormat()
+      setTimeFormat(initialFormat)
+      setTime(formatTime(new Date(), initialFormat))
+    }, 0)
 
     fetchServerTime()
       .then((serverTime) => {
@@ -53,6 +55,7 @@ export function ServerClock() {
 
     return () => {
       active = false
+      window.clearTimeout(initial)
       unsubscribe()
     }
   }, [authLoading, user])

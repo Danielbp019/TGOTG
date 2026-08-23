@@ -7,11 +7,21 @@ use App\Models\World;
 
 trait ResolvesCurrentPlayer
 {
+    protected ?World $resolvedWorld = null;
+
+    protected bool $worldResolved = false;
+
     protected function currentWorld(): ?World
     {
-        return World::where('status', 'running')
-            ->latest('started_at')
-            ->first();
+        if (! $this->worldResolved) {
+            $this->resolvedWorld = World::where('status', 'running')
+                ->latest('started_at')
+                ->first();
+
+            $this->worldResolved = true;
+        }
+
+        return $this->resolvedWorld;
     }
 
     protected function currentPlayer(string $userId): ?Player
