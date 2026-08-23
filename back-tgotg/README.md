@@ -13,8 +13,8 @@ back-dev.cmd
 Lanza Laravel en `http://127.0.0.1:8000`. La base de datos es **MariaDB** (`tgotg_game`).
 
 - **URL base**: `http://127.0.0.1:8000/api`
-- **CORS**: permite peticiones desde `http://localhost:3000` y `http://127.0.0.1:3000` (frontend Next.js) con `supports_credentials: true`.
-    - En `.env` deben estar: `SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000` y `SESSION_DOMAIN=localhost` (ver Variables de entorno). Sin esto el navegador bloquea la cookie de sesión y verás `401`.
+- **CORS**: configurable por la variable `CORS_ALLOWED_ORIGINS` (por defecto `http://localhost:3000,http://127.0.0.1:3000`) con `supports_credentials: true`.
+    - En `.env` deben estar: `SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000`, `SESSION_DOMAIN=localhost` y `CORS_ALLOWED_ORIGINS` apuntando al front (ver Variables de entorno). Sin esto el navegador bloquea la cookie de sesión y verás `401`.
 - **Frontend**: debe llamar a la API con `credentials: "include"` para que el navegador envíe la cookie `tgotg_token` automáticamente.
 
 ## Autenticación
@@ -31,6 +31,31 @@ La API usa **Sanctum con cookie `HttpOnly`** (recomendado para el navegador). Es
 **¿Y `Authorization: Bearer`?** Sigue funcionando como respaldo (útil para Postman, tests `actingAs` o apps externas). Si envías `Authorization: Bearer 1|abc...` el servidor lo usa directamente y no necesita la cookie. En el navegador real, usa la cookie.
 
 > Los tokens caducan a las **24 horas** (`SANCTUM_TOKEN_EXPIRATION`). Los expirados se borran a diario con `sanctum:prune-expired`. Si ves `401 Sesión caducada` en el front, el `middleware/proxy` te redirige a `/login` y el `ApiError` dispara `tgotg:unauthorized`.
+
+## Autorización (Policies)
+
+La comprobación de propiedad no se hace "a mano" en los controladores; vive en policies:
+
+- `BuildingPolicy::manage` — un edificio solo se repara/mejora si pertenece a la ciudad del jugador en la contienda `running` actual (`403` en caso contrario).
+- `ConversationPolicy::participate` — solo los dos participantes de una conversación pueden leerla, escribir o borrarla (`404`, para no revelar existencia).
+
+## Rate limiting
+
+| Grupo                           | Límite  |
+| ------------------------------- | ------- | ----- |
+| `POST /api/auth/register        | login`  | 6/min |
+| Resto de endpoints autenticados | 120/min |
+| Endpoints de mensajería         | 30/min  |
+
+Al superarlo la API responde `429`.
+
+## Integridad y concurrencia
+
+Las operaciones que tocan recursos del juego son atómicas:
+
+- **Mejora/reparación de edificios** (`CityController`): la validación de recursos y los descuentos ocurren dentro de una transacción con `lockForUpdate` sobre la fila de la ciudad → peticiones paralelas no pueden duplicar gastos ni dejar recursos en negativo.
+- **Creación de mundo** (`WorldController::store`): cierra mundos anteriores, borra sus jugadores (cascada) y crea el nuevo mundo/player/ciudad/edificios dentro de una sola transacción protegida con `Cache::lock('tgotg:world-create-lock')`; si otra creación está en curso responde `409`.
+- El mundo "actual" se memoiza por petición (`ResolvesCurrentPlayer`) para no repetir consultas.
 
 ## Endpoints
 
@@ -392,7 +417,7 @@ Requiere autenticación. Inicia la reparación de un edificio.
 
 Requiere autenticación. Inicia la construcción o mejora de un edificio. Coste y tiempo escalan por nivel: materiales y oro `×1.6^(n-1)` (redondeo a decenas) y minutos `×1.5^(n-1)` según `config/game_balance.php` vía `BuildingCosts::costForLevel()`. El tiempo se divide por `speed_multiplier` del mundo.
 
-**Reglas:** nivel `< max_level (5)`, `damage == 0`, sin `repair` ni `upgrade` en curso, recursos suficientes. Múltiples edificios pueden estar en cola en paralelo. La producción (`per_level` en `game_balance.production`) se aplica al completarse el nivel, no al iniciarlo.
+**Reglas:** nivel `< max_level (5)`, `damage == 0`, sin `repair` ni `upgrade` en curso, recursos suficientes (verificados con `lockForUpdate` dentro de la transacción). Múltiples edificios pueden estar en cola en paralelo. La producción (`per_level` en `game_balance.production`) se aplica al completarse el nivel, no al iniciarlo.
 
 **Respuesta 200 (cola):**
 
@@ -418,7 +443,7 @@ Requiere autenticación. Inicia la construcción o mejora de un edificio. Coste 
 
 **Errores:** `422` nivel máximo / dañado / recursos insuficientes; `409` ya en reparación o mejora; `403` edificio ajeno.
 
-**Atajos para pruebas:** con `APP_DEBUG=true`, `POST .../upgrade?instant=1` completa instantáneamente (sin cola). Alternativamente `FAST_BUILD_FACTOR` en `.env` (ver Variables de entorno).
+**Atajos para pruebas:** con `APP_DEBUG=true`, `POST .../upgrade?instant=1` completa instantáneamente (sin cola). Alternativamente `FAST_BUILD_FACTOR` en `.env` (ver Variables de entorno), que se lee vía `config('game_balance.fast_build_factor')` (compatible con `config:cache`).
 
 ### `POST /api/worlds`
 
@@ -433,7 +458,7 @@ Requiere autenticación. Crea una nueva contienda (partida).
 
 ### `GET /api/conversations`
 
-Requiere autenticación. Lista las conversaciones del jugador autenticado.
+Requiere autenticación. Lista las conversaciones del jugador autenticado. Optimizada: usa `lastMessage` (`latestOfMany`) y un subcontaje SQL para los no leídos — no carga todos los mensajes de cada conversación.
 
 ### `POST /api/conversations`
 
@@ -466,11 +491,11 @@ Requiere autenticación. Elimina una conversación.
 
 ## Errores comunes
 
-| Código | Situación                                                                                        |
-| ------ | ------------------------------------------------------------------------------------------------ |
-| `401`  | Token ausente, inválido o revocado. `{ "message": "Unauthenticated." }`                          |
-| `422`  | Validación fallida: `{ "message": "...", "errors": { "campo": ["..."] } }` (mensajes en español) |
-| `429`  | Demasiados intentos en `login` o `register`.                                                     |
+| Código | Situación                                                                                                      |
+| ------ | -------------------------------------------------------------------------------------------------------------- |
+| `401`  | Token ausente, inválido o revocado. `{ "message": "Unauthenticated." }`                                        |
+| `422`  | Validación fallida: `{ "message": "...", "errors": { "campo": ["..."] } }` (mensajes en español)               |
+| `429`  | Demasiadas peticiones: `login`/`register` (6/min), mensajería (30/min), resto de la API autenticada (120/min). |
 
 ## Coordenadas y mapas (SSOT)
 
@@ -483,14 +508,15 @@ Requiere autenticación. Elimina una conversación.
 
 Estas variables están en `back-tgotg/.env` (ver `.env.example`). Si algo no funciona tras un `401` revisa primero aquí.
 
-| Variable                   | Para qué sirve                                                                                                                                                                                                                                                                                                                                 | Valor recomendado                               |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `SANCTUM_STATEFUL_DOMAINS` | De qué dominios el navegador puede enviar la cookie de sesión. Debe incluir el front.                                                                                                                                                                                                                                                          | `localhost:3000,127.0.0.1:3000` en local        |
-| `SESSION_DOMAIN`           | Dominio de la cookie `tgotg_token`.                                                                                                                                                                                                                                                                                                            | `localhost` en local                            |
-| `SESSION_SAME_SITE`        | Protección CSRF de la cookie.                                                                                                                                                                                                                                                                                                                  | `lax`                                           |
-| `SESSION_SECURE_COOKIE`    | Si es `true` la cookie solo viaja por HTTPS.                                                                                                                                                                                                                                                                                                   | `false` en local (`http`), `true` en producción |
-| `FAST_BUILD_FACTOR`        | Atajo para probar la cola de construcción sin esperar horas. `0` = tiempo real (`minutos = base ×1.5^(n-1) ÷ speed_multiplier`). `0.1` = 10% (60min→6min), `0.02` = 2% (60min→~1min), `<0.02` = segundos (mín 5s). Solo con `APP_DEBUG=true`; en producción déjalo en `0`. Alternativa puntual: `POST /city/buildings/{id}/upgrade?instant=1`. | `0`                                             |
-| `SANCTUM_TOKEN_EXPIRATION` | Cuánto dura la sesión antes de caducar.                                                                                                                                                                                                                                                                                                        | `1440` (24h)                                    |
+| Variable                   | Para qué sirve                                                                                                                                                                                                                                                                                                                                         | Valor recomendado                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `CORS_ALLOWED_ORIGINS`     | Orígenes que puede llamar a la API (separados por coma). Se lee en `config/cors.php`.                                                                                                                                                                                                                                                                  | `http://localhost:3000,http://127.0.0.1:3000`   |
+| `SANCTUM_STATEFUL_DOMAINS` | De qué dominios el navegador puede enviar la cookie de sesión. Debe incluir el front.                                                                                                                                                                                                                                                                  | `localhost:3000,127.0.0.1:3000` en local        |
+| `SESSION_DOMAIN`           | Dominio de la cookie `tgotg_token`.                                                                                                                                                                                                                                                                                                                    | `localhost` en local                            |
+| `SESSION_SAME_SITE`        | Protección CSRF de la cookie. Se lee vía `config('session.same_site')`.                                                                                                                                                                                                                                                                                | `lax`                                           |
+| `SESSION_SECURE_COOKIE`    | Si es `true` la cookie solo viaja por HTTPS. Se lee vía `config('session.secure')`.                                                                                                                                                                                                                                                                    | `false` en local (`http`), `true` en producción |
+| `FAST_BUILD_FACTOR`        | Atajo para probar la cola de construcción sin esperar horas. `0` = tiempo real (`minutos = base ×1.5^(n-1) ÷ speed_multiplier`). `0.1` = 10% (60min→6min), `0.02` = 2% (60min→~1min), `<0.02` = segundos (mín 5s). Solo con `APP_DEBUG=true`; en producción déjalo en `0`. Se lee vía `config('game_balance.fast_build_factor')` (no `env()` directo). | `0`                                             |
+| `SANCTUM_TOKEN_EXPIRATION` | Cuánto dura la sesión antes de caducar.                                                                                                                                                                                                                                                                                                                | `1440` (24h)                                    |
 
 ## Usuario administrador (seeder)
 
@@ -501,4 +527,4 @@ Estas variables están en `back-tgotg/.env` (ver `.env.example`). Si algo no fun
 - **contraseña**: `password`
 - **rol**: `admin`
 
-> El rol `admin` solo se asigna por seeder; el registro público siempre crea usuarios `player`.
+> El rol `admin` solo se asigna por seeder con `forceFill(['role' => 'admin'])`: `role` **no** está en `$fillable` del modelo `User`, así que ninguna petición HTTP puede alterarlo. El registro público siempre crea usuarios `player`.

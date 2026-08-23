@@ -47,7 +47,7 @@ La sesión es una cookie `HttpOnly` llamada `tgotg_token` que pone el backend al
 app/layout.tsx                → Root (lang="es", fuentes Geist, TooltipProvider + AuthProvider)
 proxy.ts                      → guard server-side: protege "/" , "/mensajes/*" , "/configuracion/*" si no hay cookie tgotg_token; redirige "/login" y "/register" a "/" si ya hay sesión
 app/(game)/layout.tsx         → CityProvider + GameShell + BlessingDialog + CivilizationDialog
-app/(game)/page.tsx           → Ciudad: CityCanvas (60vh) + CityStatus + ConstructionPanel
+app/(game)/page.tsx           → Ciudad: CityCanvas (75vh, min-h-96) + CityStatus + ConstructionPanel
 app/(game)/mensajes/page.tsx  → MessagesInbox
 app/(game)/configuracion/page.tsx → WorldConfigPanel (solo admin)
 app/(auth)/layout.tsx         → layout centrado medieval (max-w-sm)
@@ -78,6 +78,18 @@ CityCanvas → phaser-game.tsx (new Phaser.Game) → game/scenes/city-scene.ts
 - `game/assets.ts` mapea sprites `public/game/buildings/*` (`{prefijo}1..5.png` + `Destruido.png`, `1` es construcción, `2` se reutiliza para nivel 1 y 2).
 - `game/plots.ts` está deprecado: las coordenadas vienen del SSOT del back `App\Support\CityLayouts` vía `GET /api/city`.
 - `EventBus` (`game/event-bus.ts`) solo para `current-scene-ready`.
+- **Refresco de la ciudad sin polling**: `CityProvider` ya no consulta `/api/city` cada 5 s. Calcula el `upgradeFinishesAt` más próximo y programa la recarga para ese momento (chequeo local cada 1 s + buffer de 2 s por desfase de reloj). Cero peticiones mientras no haya mejoras en curso.
+
+### Modo debug de Phaser (ciudad)
+
+Dos capas independientes sobre la escena (`city-scene.ts`):
+
+| Tecla | Qué muestra                                                                                                                                       |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `O`   | Rejilla cartesiana: líneas cada 128 px, ejes rojos en el origen y etiquetas `(x, y)` en los cruces de 256 px                                      |
+| `P`   | Contornos amarillos de las parcelas con etiqueta `tipo (x, y)`, ancla del sprite (origin 0.5, 1) y readout en vivo de las coordenadas del puntero |
+
+Se pueden combinar; todo se dibuja a depth máximo y se limpia al alternar o al desmontar la escena. Útil para ajustar coordenadas en `App\Support\CityLayouts` (SSOT del back).
 
 No mezcles lógica de UI dentro de `city-scene.ts` y viceversa.
 
@@ -117,7 +129,7 @@ front-tgotg/
 
 - El backend emite `Set-Cookie: tgotg_token=...; HttpOnly; SameSite=Lax` al hacer `POST /api/auth/login` o `register`.
 - El front no guarda el token en JS. `proxy.ts` lee la cookie en el servidor y decide redirigir (`/ → /login` si no hay cookie, `/login → /` si la hay).
-- `AuthProvider` hidrata el usuario con `GET /api/user` usando la cookie. Mientras `isLoading` no fetchea ciudad ni bendiciones.
+- `AuthProvider` hidrata el usuario con `GET /api/user` usando la cookie, pero **solo en rutas de juego**: en `/login` y `/register` no hay llamada al backend (evita un `401` inútil cada vez que entras a `/` sin sesión; el proxy ya decidió por ti). Mientras `isLoading` no fetchea ciudad ni bendiciones.
 - Todos los diálogos/paneles que llaman a la API (`CityProvider`, `BlessingDialog`, `CivilizationDialog`, `ServerClock`, `ConstructionPanel`, etc.) esperan a `user` antes de fetchear → cero `api/*` en `/login`.
 - Como respaldo para Postman/tests sigue funcionando `Authorization: Bearer <token>` si lo envías a mano.
 
@@ -135,13 +147,13 @@ front-tgotg/
 
 ## Troubleshooting
 
-| Síntoma                                  | Qué mirar                                                                                                                                    |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `401 Sesión caducada` en bucle           | Revisa `back-tgotg/.env` → `SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000` y `SESSION_DOMAIN=localhost`. Borra cookies y re-loguea. |
-| `CORS blocked` / `Set-Cookie` no aparece | Back debe tener `supports_credentials: true` y front `NEXT_PUBLIC_API_URL` debe apuntar al mismo host/puerto del back.                       |
-| `proxy` no redirige                      | Verifica que existe `proxy.ts` (no `middleware.ts`) y su `config.matcher` incluye `"/", "/login", "/mensajes/:path*"`.                       |
-| Phaser no carga sprites                  | Revisa `public/game/buildings/*` y añade `?debugPlots` o pulsar `P` en la ciudad para ver parcelas.                                          |
-| `pnpm build` falla por tipos             | Corre `pnpm lint` y `pnpm format:check` antes; valida `zod` en `lib/validations/city.ts`.                                                    |
+| Síntoma                                  | Qué mirar                                                                                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `401 Sesión caducada` en bucle           | Revisa `back-tgotg/.env` → `SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000` y `SESSION_DOMAIN=localhost`. Borra cookies y re-loguea.      |
+| `CORS blocked` / `Set-Cookie` no aparece | Back debe tener `supports_credentials: true` y front `NEXT_PUBLIC_API_URL` debe apuntar al mismo host/puerto del back.                            |
+| `proxy` no redirige                      | Verifica que existe `proxy.ts` (no `middleware.ts`) y su `config.matcher` incluye `"/", "/login", "/mensajes/:path*"`.                            |
+| Phaser no carga sprites                  | Revisa `public/game/buildings/*`; en la ciudad pulsa `O` (rejilla + coordenadas) o `P` (contornos de parcelas y puntero) para depurar posiciones. |
+| `pnpm build` falla por tipos             | Corre `pnpm lint` y `pnpm format:check` antes; valida `zod` en `lib/validations/city.ts`.                                                         |
 
 ---
 

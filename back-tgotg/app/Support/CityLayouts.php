@@ -28,15 +28,15 @@ class CityLayouts
     {
         return match ($map) {
             default => [
-                ['key' => 'ayuntamiento', 'x' => 970, 'y' => 290, 'shape' => 'diamond', 'width' => 340, 'height' => 340],
-                ['key' => 'granja', 'x' => 1393, 'y' => 283, 'shape' => 'diamond', 'width' => 340, 'height' => 340],
-                ['key' => 'aserradero', 'x' => 1190, 'y' => 430, 'shape' => 'diamond', 'width' => 340, 'height' => 340],
-                ['key' => 'minaPiedra', 'x' => 1650, 'y' => 430, 'shape' => 'diamond', 'width' => 340, 'height' => 340],
-                ['key' => 'laboratorio', 'x' => 985, 'y' => 576, 'shape' => 'diamond', 'width' => 340, 'height' => 340],
-                ['key' => 'cuartel', 'x' => 1430, 'y' => 570, 'shape' => 'diamond', 'width' => 340, 'height' => 340],
-                ['key' => 'minaHierro', 'x' => 1670, 'y' => 710, 'shape' => 'diamond', 'width' => 340, 'height' => 340],
-                ['key' => 'muralla', 'x' => 432, 'y' => 536, 'shape' => 'rect', 'width' => 680, 'height' => 120],
-                ['key' => 'foso', 'x' => 780, 'y' => 860, 'shape' => 'rect', 'width' => 680, 'height' => 120],
+                ['key' => 'ayuntamiento', 'x' => 970, 'y' => 290, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
+                ['key' => 'granja', 'x' => 1393, 'y' => 283, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
+                ['key' => 'aserradero', 'x' => 1190, 'y' => 430, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
+                ['key' => 'minaPiedra', 'x' => 1650, 'y' => 430, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
+                ['key' => 'laboratorio', 'x' => 985, 'y' => 576, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
+                ['key' => 'cuartel', 'x' => 1430, 'y' => 570, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
+                ['key' => 'minaHierro', 'x' => 1670, 'y' => 710, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
+                ['key' => 'muralla', 'x' => 780, 'y' => 730, 'shape' => 'rect', 'width' => 600, 'height' => 130],
+                ['key' => 'foso', 'x' => 680, 'y' => 805, 'shape' => 'rect', 'width' => 600, 'height' => 130],
             ],
         };
     }
