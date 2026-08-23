@@ -26,6 +26,12 @@ interface AuthContextValue {
   updateUser: (user: AuthUser) => void
 }
 
+const AUTH_PATHS = ['/login', '/register']
+
+function isAuthPath(pathname: string): boolean {
+  return AUTH_PATHS.includes(pathname)
+}
+
 const AuthContext = React.createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -38,6 +44,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     let active = true
     const timer = window.setTimeout(() => {
+      if (isAuthPath(pathname)) {
+        if (active) {
+          setUser(null)
+          setIsLoading(false)
+        }
+        return
+      }
+
       fetchMe()
         .then((current) => {
           if (active) setUser(current)
@@ -59,12 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.clearTimeout(timer)
       unsubscribe()
     }
-  }, [])
+  }, [pathname])
 
   React.useEffect(() => {
     if (isLoading) return
 
-    const isAuthRoute = pathname === '/login' || pathname === '/register'
+    const isAuthRoute = isAuthPath(pathname)
     if (!user && !isAuthRoute) {
       if (!hasRedirectedRef.current) {
         hasRedirectedRef.current = true
