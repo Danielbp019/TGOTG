@@ -41,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html
       lang="es"
+      data-scroll-behavior="smooth"
       className={`${cinzel.variable} ${cinzelDecorative.variable} ${sourceSans.variable} ${plexMono.variable}`}
     >
       <body>
