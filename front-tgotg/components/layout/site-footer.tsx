@@ -1,3 +1,7 @@
+'use client'
+
+import { ArrowUp } from 'lucide-react'
+
 import { BrandMark } from '@/components/layout/brand-mark'
 
 export function SiteFooter() {
@@ -12,9 +16,19 @@ export function SiteFooter() {
           Hecho para los dioses y las civilizaciones que los veneran. ¡Que
           comience la guerra!
         </p>
-        <span className="bg-azure-dim text-azure rounded-full px-3 py-1.5 font-mono text-[0.68rem] tracking-[0.08em] uppercase">
-          En desarrollo activo
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="bg-azure-dim text-azure rounded-full px-3 py-1.5 font-mono text-[0.68rem] tracking-[0.08em] uppercase">
+            En desarrollo activo
+          </span>
+          <button
+            type="button"
+            aria-label="Volver arriba"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="border-stone-line text-muted-foreground hover:text-foreground hover:border-gold flex size-9 cursor-pointer items-center justify-center rounded-full border transition-colors"
+          >
+            <ArrowUp className="size-4" />
+          </button>
+        </div>
       </div>
     </footer>
   )

@@ -1,5 +1,6 @@
 import {
   Castle,
+  ScrollText,
   Swords,
   FlaskConical,
   Globe,
@@ -10,7 +11,8 @@ import {
 import type { MenuItem } from '@/types'
 
 export const mainMenu: MenuItem[] = [
-  { label: 'Ciudad', href: '/', icon: Castle },
+  { label: 'Resumen', href: '/', icon: ScrollText },
+  { label: 'Ciudad', href: '/ciudad', icon: Castle },
   { label: 'Ejército', href: '/ejercito', icon: Swords, disabled: true },
   {
     label: 'Investigación',
