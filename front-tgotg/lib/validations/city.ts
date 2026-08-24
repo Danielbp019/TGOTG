@@ -37,4 +37,16 @@ export const cityPayloadSchema = z.object({
   buildings: z.array(cityBuildingSchema),
 })
 
+export const createCitySchema = z.object({
+  nombre: z
+    .string()
+    .trim()
+    .min(3, 'El nombre debe tener al menos 3 caracteres')
+    .max(30, 'Máximo 30 caracteres'),
+  region: z.string().min(1, 'Selecciona una región'),
+  bioma: z.string().min(1, 'Elige un bioma para tu ciudad'),
+})
+
+export type CreateCityValues = z.infer<typeof createCitySchema>
+
 export type CityPayloadValues = z.infer<typeof cityPayloadSchema>

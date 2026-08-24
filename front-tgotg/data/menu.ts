@@ -1,5 +1,6 @@
 import {
   Castle,
+  Plus,
   ScrollText,
   Swords,
   FlaskConical,
@@ -12,7 +13,13 @@ import type { MenuItem } from '@/types'
 
 export const mainMenu: MenuItem[] = [
   { label: 'Resumen', href: '/', icon: ScrollText },
-  { label: 'Ciudad', href: '/ciudad', icon: Castle },
+  {
+    label: 'Ciudades',
+    href: '#ciudades',
+    icon: Castle,
+    defaultOpen: false,
+    children: [{ label: 'Crear nueva ciudad', href: '#crear-ciudad', icon: Plus }],
+  },
   { label: 'Ejército', href: '/ejercito', icon: Swords, disabled: true },
   {
     label: 'Investigación',

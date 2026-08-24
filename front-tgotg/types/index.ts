@@ -18,6 +18,8 @@ export interface MenuItem {
   disabled?: boolean
   /** Solo visible para el rol de administrador del mundo */
   adminOnly?: boolean
+  children?: MenuItem[]
+  defaultOpen?: boolean
 }
 
 export type BuildingType =
