@@ -65,7 +65,7 @@ Cada bioma otorga un bono de producción en su recurso asociado.
 | Bosque      | +10 % madera |
 | Montaña     | +10 % piedra |
 | Colina rica | +10 % hierro |
-| Río         | +10 % oro    |
+| Costa       | +10 % oro    |
 
 ### Razas (4 civilizaciones)
 

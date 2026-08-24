@@ -56,10 +56,10 @@ const biomes = [
     iconColor: 'text-ink-soft',
   },
   {
-    key: 'rio',
-    label: 'Río',
+    key: 'costa',
+    label: 'Costa',
     bonus: '+10 % oro',
-    description: 'Aguas prósperas que atraen comercio y tributos.',
+    description: 'Costas prósperas que atraen comercio y tributos.',
     icon: Droplets,
     iconColor: 'text-azure',
   },
@@ -198,7 +198,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
                 </li>
                 <li className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Droplets className="text-azure size-4" /> Río
+                    <Droplets className="text-azure size-4" /> Costa
                   </span>
                   <span className="text-muted-foreground">+10 % oro</span>
                 </li>

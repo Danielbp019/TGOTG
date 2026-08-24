@@ -107,6 +107,6 @@ return [
         'bosque' => ['wood' => 0.10],
         'montaña' => ['stone' => 0.10],
         'colinaRica' => ['iron' => 0.10],
-        'rio' => ['gold' => 0.10],
+        'costa' => ['gold' => 0.10],
     ],
 ];

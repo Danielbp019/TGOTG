@@ -72,7 +72,7 @@ export const BALANCE = {
     bosque: { wood: 0.1 },
     montaña: { stone: 0.1 },
     colinaRica: { iron: 0.1 },
-    rio: { gold: 0.1 },
+    costa: { gold: 0.1 },
   },
 }
 
@@ -81,7 +81,7 @@ export const TERRAIN_LABELS: Record<string, string> = {
   bosque: 'Bosque',
   montaña: 'Montaña',
   colinaRica: 'Colina rica',
-  rio: 'Río',
+  costa: 'Costa',
 }
 
 /** Costos base (nivel 1) por edificio. Oro y materiales crecen ×1,6 por nivel. */
