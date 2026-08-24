@@ -97,6 +97,14 @@ export function AccountSettingsDialog({
     onOpenChange(next)
   }
 
+  const [prevOpen, setPrevOpen] = React.useState(open)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (open) {
+      resetForm()
+    }
+  }
+
   function handleProfileField(
     field: keyof AccountProfileValues,
     value: string
