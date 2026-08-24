@@ -52,7 +52,11 @@ export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
       return () => {
         EventBus.off('current-scene-ready', handleSceneReady)
         try {
-          const sound = (gameRef.current as unknown as { sound?: { context?: AudioContext; stopAll?: () => void } })?.sound
+          const sound = (
+            gameRef.current as unknown as {
+              sound?: { context?: AudioContext; stopAll?: () => void }
+            }
+          )?.sound
           if (sound?.context?.state !== 'closed') sound?.stopAll?.()
         } catch {}
         gameRef.current?.destroy(true)

@@ -143,11 +143,7 @@ export function BlessingDialog() {
         {error && <p className="text-destructive text-xs">{error}</p>}
 
         <DialogFooter showCloseButton={false}>
-          <Button
-            onClick={handleConfirm}
-            disabled={saving}
-            className="w-full"
-          >
+          <Button onClick={handleConfirm} disabled={saving} className="w-full">
             {saving ? 'Guardando bendición…' : 'Aceptar bendición'}
           </Button>
         </DialogFooter>

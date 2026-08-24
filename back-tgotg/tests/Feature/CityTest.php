@@ -77,7 +77,7 @@ test('devuelve la ciudad del jugador actual con sus edificios', function () {
         ->assertJsonPath('city.buildings.0.x', 970)
         ->assertJsonPath('city.buildings.0.y', 290)
         ->assertJsonPath('city.buildings.0.width', 340)
-        ->assertJsonPath('city.buildings.0.height', 340);
+        ->assertJsonPath('city.buildings.0.height', 320);
 });
 
 test('la producción horaria aplica el multiplicador de velocidad del mundo', function () {

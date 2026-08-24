@@ -15,7 +15,9 @@ export const registerSchema = z
       .min(3, 'El nick debe tener al menos 3 caracteres')
       .max(24, 'El nick no puede superar 24 caracteres'),
     email: z.email('Introduce un correo válido'),
-    password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+    password: z
+      .string()
+      .min(8, 'La contraseña debe tener al menos 8 caracteres'),
     confirmPassword: z
       .string()
       .min(8, 'La contraseña debe tener al menos 8 caracteres'),

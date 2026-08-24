@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator'
 export function SidebarContent() {
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain">
+      <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain">
         <h1 className="font-heading px-3 text-lg font-bold">
           El Juego de los Dioses
         </h1>

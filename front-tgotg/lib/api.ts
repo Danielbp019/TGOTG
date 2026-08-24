@@ -326,9 +326,18 @@ export function repairBuilding(buildingId: string, type: 'paid' | 'auto') {
 export function upgradeBuilding(buildingId: string, instant?: boolean) {
   const query = instant ? '?instant=1' : ''
   return apiFetch<{
-    building: Pick<CityBuilding, 'id' | 'level' | 'upgrading' | 'upgradeFinishesAt'> & {
+    building: Pick<
+      CityBuilding,
+      'id' | 'level' | 'upgrading' | 'upgradeFinishesAt'
+    > & {
       targetLevel?: number
-      cost?: { gold: number; wood: number; stone: number; iron: number; minutes: number }
+      cost?: {
+        gold: number
+        wood: number
+        stone: number
+        iron: number
+        minutes: number
+      }
     }
   }>(`/city/buildings/${buildingId}/upgrade${query}`, {
     method: 'POST',

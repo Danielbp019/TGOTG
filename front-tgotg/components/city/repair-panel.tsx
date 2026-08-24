@@ -30,7 +30,9 @@ function repairCost(building: CityBuilding): RepairCost | null {
   const material = BUILDING_MATERIAL[building.key]
   if (!material || building.level < 1) return null
 
-  const points = Math.ceil((building.damage * buildingHp(building.key, building.level)) / 100)
+  const points = Math.ceil(
+    (building.damage * buildingHp(building.key, building.level)) / 100
+  )
 
   return {
     gold: points * BALANCE.repair.goldPerPoint,
@@ -56,7 +58,8 @@ export function RepairPanel() {
   const [busyKey, setBusyKey] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | undefined>()
 
-  const damaged = city?.buildings.filter((building) => building.damage > 0) ?? []
+  const damaged =
+    city?.buildings.filter((building) => building.damage > 0) ?? []
 
   async function handleRepair(building: CityBuilding, type: 'paid' | 'auto') {
     if (!city) return
@@ -78,9 +81,7 @@ export function RepairPanel() {
   }
 
   if (isLoading) {
-    return (
-      <p className="text-muted-foreground text-sm">Cargando daños…</p>
-    )
+    return <p className="text-muted-foreground text-sm">Cargando daños…</p>
   }
 
   return (
@@ -92,8 +93,8 @@ export function RepairPanel() {
         </CardTitle>
         <CardDescription>
           Tras un asedio los edificios quedan dañados y producen o defienden
-          menos. Paga oro y materiales para reparar rápido, o deja que se
-          repare solo lentamente.
+          menos. Paga oro y materiales para reparar rápido, o deja que se repare
+          solo lentamente.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -114,7 +115,9 @@ export function RepairPanel() {
                   className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center"
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    {Icon && <Icon className="text-muted-foreground size-5 shrink-0" />}
+                    {Icon && (
+                      <Icon className="text-muted-foreground size-5 shrink-0" />
+                    )}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">
                         {building.name}
@@ -124,7 +127,8 @@ export function RepairPanel() {
                         {building.repairing && (
                           <span className="text-primary">
                             {' '}
-                            · en reparación ({building.repairPaid ? 'rápida' : 'lenta'})
+                            · en reparación (
+                            {building.repairPaid ? 'rápida' : 'lenta'})
                           </span>
                         )}
                       </p>

@@ -10,7 +10,9 @@ import type { ResourceKey } from '@/types'
 
 export function CityStatus() {
   const { city, isLoading } = useCity()
-  const [protectionRemaining, setProtectionRemaining] = useState<number | null>(null)
+  const [protectionRemaining, setProtectionRemaining] = useState<number | null>(
+    null
+  )
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -20,13 +22,21 @@ export function CityStatus() {
       }
 
       const diffMs = new Date(city.protectionUntil).getTime() - Date.now()
-      setProtectionRemaining(diffMs > 0 ? Math.ceil(diffMs / (1000 * 60 * 60)) : 0)
+      setProtectionRemaining(
+        diffMs > 0 ? Math.ceil(diffMs / (1000 * 60 * 60)) : 0
+      )
     }, 0)
 
     return () => window.clearTimeout(timer)
   }, [city?.protectionUntil])
 
-  const productionKeys: ResourceKey[] = ['gold', 'wood', 'stone', 'iron', 'food']
+  const productionKeys: ResourceKey[] = [
+    'gold',
+    'wood',
+    'stone',
+    'iron',
+    'food',
+  ]
 
   function deriveArmyOverall(stationedTroops: number, defensePower: number) {
     if (stationedTroops === 0) return 'Sin tropas'
@@ -127,7 +137,8 @@ export function CityStatus() {
               </div>
               <div>
                 <span className="text-danger-600 text-xs font-medium">
-                  <ShieldCheck className="size-3.5" /> Tu ciudad está protegida contra ataques
+                  <ShieldCheck className="size-3.5" /> Tu ciudad está protegida
+                  contra ataques
                 </span>
               </div>
             </div>

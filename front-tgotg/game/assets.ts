@@ -43,13 +43,18 @@ export function buildingAssetPath(
   if (!entry) return null
 
   const isDestroyed = damage >= 30
-  if (isDestroyed) return `/game/buildings/${entry.folder}/${entry.prefix}Destruido.png`
+  if (isDestroyed)
+    return `/game/buildings/${entry.folder}/${entry.prefix}Destruido.png`
 
-  if (opts.upgrading) return `/game/buildings/${entry.folder}/${entry.prefix}1.png`
+  if (opts.upgrading)
+    return `/game/buildings/${entry.folder}/${entry.prefix}1.png`
 
   if (level === 0) return null
 
-  const assetLevel = buildingLevelToAssetLevel(key, Math.max(1, Math.min(5, level)))
+  const assetLevel = buildingLevelToAssetLevel(
+    key,
+    Math.max(1, Math.min(5, level))
+  )
   return `/game/buildings/${entry.folder}/${entry.prefix}${assetLevel}.png`
 }
 

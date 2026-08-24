@@ -20,6 +20,7 @@ export interface CityPlot {
   row: number
 }
 
-export const CITY_PLOTS: readonly CityPlot[] = [] as unknown as readonly CityPlot[]
+export const CITY_PLOTS: readonly CityPlot[] =
+  [] as unknown as readonly CityPlot[]
 
 export const PLOT_BY_KEY: Record<string, CityPlot> = {}

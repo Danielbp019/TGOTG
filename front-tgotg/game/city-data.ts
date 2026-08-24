@@ -1,7 +1,10 @@
 import type { CityBuilding } from '@/lib/api'
 
 let currentBuildings: CityBuilding[] = []
-let currentWorldSize: { width: number; height: number } = { width: 2048, height: 1024 }
+let currentWorldSize: { width: number; height: number } = {
+  width: 2048,
+  height: 1024,
+}
 
 export function setCityBuildings(buildings: CityBuilding[]) {
   currentBuildings = buildings

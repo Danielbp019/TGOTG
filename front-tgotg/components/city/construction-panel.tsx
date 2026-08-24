@@ -18,15 +18,17 @@ import {
 import { useAuth } from '@/components/auth/auth-provider'
 import { buildingIcons } from '@/data/icons'
 import { buildingCostAtLevel } from '@/data/balance'
-import { ApiError, fetchBuildingTypes, upgradeBuilding, type BuildingTypePayload, type CityBuilding } from '@/lib/api'
+import {
+  ApiError,
+  fetchBuildingTypes,
+  upgradeBuilding,
+  type BuildingTypePayload,
+  type CityBuilding,
+} from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 type BuildingCategory =
-  | 'Principal'
-  | 'Defensa'
-  | 'Recursos'
-  | 'Militar'
-  | 'Investigación'
+  'Principal' | 'Defensa' | 'Recursos' | 'Militar' | 'Investigación'
 
 const categoryVariants: Record<
   BuildingCategory,
@@ -40,12 +42,22 @@ const categoryVariants: Record<
 }
 
 function isBuildingCategory(value: string): value is BuildingCategory {
-  return ['Principal', 'Defensa', 'Recursos', 'Militar', 'Investigación'].includes(
-    value
-  )
+  return [
+    'Principal',
+    'Defensa',
+    'Recursos',
+    'Militar',
+    'Investigación',
+  ].includes(value)
 }
 
-function formatCost(cost: { gold: number; wood: number; stone: number; iron: number; minutes: number }): string {
+function formatCost(cost: {
+  gold: number
+  wood: number
+  stone: number
+  iron: number
+  minutes: number
+}): string {
   const parts: string[] = []
   if (cost.gold) parts.push(`${cost.gold} oro`)
   if (cost.wood) parts.push(`${cost.wood} madera`)
@@ -61,7 +73,10 @@ function formatDuration(minutes: number): string {
   return m ? `${h}h ${m}min` : `${h}h`
 }
 
-function formatCountdown(finishesAt: string | null, now: number): string | null {
+function formatCountdown(
+  finishesAt: string | null,
+  now: number
+): string | null {
   if (!finishesAt) return null
   const diff = new Date(finishesAt).getTime() - now
   if (diff <= 0) return '00:00'
@@ -69,7 +84,8 @@ function formatCountdown(finishesAt: string | null, now: number): string | null 
   const h = Math.floor(totalSec / 3600)
   const m = Math.floor((totalSec % 3600) / 60)
   const s = totalSec % 60
-  if (h > 0) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  if (h > 0)
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
@@ -99,7 +115,9 @@ function ConstructionRow({
   const nextLevel = level + 1
   const cost = buildingCostAtLevel(building.key, nextLevel)
   const countdown = formatCountdown(upgradeFinishesAt, now)
-  const category = isBuildingCategory(building.category) ? building.category : 'Principal'
+  const category = isBuildingCategory(building.category)
+    ? building.category
+    : 'Principal'
   const Icon = buildingIcons[building.key] ?? Building2
 
   let buttonLabel: string
@@ -110,7 +128,9 @@ function ConstructionRow({
     buttonLabel = 'Nivel máximo'
     disabled = true
   } else if (isUpgrading) {
-    buttonLabel = countdown ? `En construcción ${countdown}` : 'En construcción…'
+    buttonLabel = countdown
+      ? `En construcción ${countdown}`
+      : 'En construcción…'
     disabled = true
   } else if (isDestroyed) {
     buttonLabel = 'Repara primero'
@@ -132,7 +152,9 @@ function ConstructionRow({
         <Icon className="text-muted-foreground size-5 shrink-0" />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{building.name}</p>
-          <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">{building.description}</p>
+          <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
+            {building.description}
+          </p>
           <Badge variant={categoryVariants[category]} className="mt-1">
             {category}
           </Badge>
@@ -174,7 +196,9 @@ function ConstructionRow({
 export function ConstructionPanel() {
   const { city, isLoading, reload } = useCity()
   const { user, isLoading: authLoading } = useAuth()
-  const [catalog, setCatalog] = React.useState<BuildingTypePayload[] | null>(null)
+  const [catalog, setCatalog] = React.useState<BuildingTypePayload[] | null>(
+    null
+  )
   const [upgradingKey, setUpgradingKey] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [now, setNow] = React.useState(() => Date.now())
@@ -221,7 +245,10 @@ export function ConstructionPanel() {
       await upgradeBuilding(cityBuilding.id)
       await reload()
     } catch (caught) {
-      const msg = caught instanceof ApiError ? caught.message : 'No se pudo iniciar la mejora.'
+      const msg =
+        caught instanceof ApiError
+          ? caught.message
+          : 'No se pudo iniciar la mejora.'
       setError(msg)
     } finally {
       setUpgradingKey(null)
@@ -238,15 +265,19 @@ export function ConstructionPanel() {
         <CardHeader>
           <CardTitle>Construcción</CardTitle>
           <CardDescription>
-            Mejora tus edificios para aumentar su producción y desbloquear nuevas capacidades.
+            Mejora tus edificios para aumentar su producción y desbloquear
+            nuevas capacidades.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground flex items-center gap-2 text-xs">
             <Info className="size-3.5 shrink-0" />
-            Costes ×1,6 (oro, madera, piedra, hierro) y tiempo ×1,5 por nivel. Nivel máximo 5.
+            Costes ×1,6 (oro, madera, piedra, hierro) y tiempo ×1,5 por nivel.
+            Nivel máximo 5.
           </p>
-          {error ? <p className="text-destructive mt-2 text-xs">{error}</p> : null}
+          {error ? (
+            <p className="text-destructive mt-2 text-xs">{error}</p>
+          ) : null}
         </CardContent>
       </Card>
 

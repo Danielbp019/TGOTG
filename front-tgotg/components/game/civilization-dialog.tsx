@@ -101,8 +101,8 @@ export function CivilizationDialog() {
             Elige tu pueblo
           </DialogTitle>
           <DialogDescription>
-            Cada civilización otorga un bono permanente a tu pueblo durante
-            toda la partida. Esta decisión no se puede cambiar.
+            Cada civilización otorga un bono permanente a tu pueblo durante toda
+            la partida. Esta decisión no se puede cambiar.
           </DialogDescription>
         </DialogHeader>
 
@@ -147,11 +147,7 @@ export function CivilizationDialog() {
         {error && <p className="text-destructive text-xs">{error}</p>}
 
         <DialogFooter showCloseButton={false}>
-          <Button
-            onClick={handleConfirm}
-            disabled={saving}
-            className="w-full"
-          >
+          <Button onClick={handleConfirm} disabled={saving} className="w-full">
             {saving ? 'Eligiendo pueblo…' : 'Fundar mi civilización'}
           </Button>
         </DialogFooter>

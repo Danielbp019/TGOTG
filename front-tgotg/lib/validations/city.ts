@@ -30,7 +30,10 @@ export const cityPayloadSchema = z.object({
   stationedTroops: z.number().int(),
   defensePower: z.number().int(),
   protectionUntil: z.string().nullable(),
-  worldSize: z.object({ width: z.number().int().positive(), height: z.number().int().positive() }),
+  worldSize: z.object({
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+  }),
   buildings: z.array(cityBuildingSchema),
 })
 

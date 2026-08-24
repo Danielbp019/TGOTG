@@ -201,7 +201,9 @@ export function MessagesInbox() {
       return
     }
 
-    const index = conversations.findIndex((conversation) => conversation.id === id)
+    const index = conversations.findIndex(
+      (conversation) => conversation.id === id
+    )
     const next = conversations.filter((conversation) => conversation.id !== id)
     setConversations(next)
     if (selectedId === id) {

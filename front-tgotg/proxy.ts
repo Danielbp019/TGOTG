@@ -9,7 +9,9 @@ function isAuthRoute(pathname: string): boolean {
 
 function isProtected(pathname: string): boolean {
   if (pathname === '/') return true
-  return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+  return PROTECTED_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + '/')
+  )
 }
 
 export function proxy(request: NextRequest) {
@@ -34,5 +36,11 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/login', '/register', '/mensajes/:path*', '/configuracion/:path*'],
+  matcher: [
+    '/',
+    '/login',
+    '/register',
+    '/mensajes/:path*',
+    '/configuracion/:path*',
+  ],
 }

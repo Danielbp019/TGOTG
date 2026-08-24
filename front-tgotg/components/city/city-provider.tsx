@@ -37,7 +37,8 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
         if (response.city.worldSize) setWorldSize(response.city.worldSize)
         setVersion((current) => current + 1)
       } catch (caught) {
-        if (caught instanceof DOMException && caught.name === 'AbortError') return
+        if (caught instanceof DOMException && caught.name === 'AbortError')
+          return
         if (caught instanceof ApiError) {
           if (caught.status === 401) {
             setCity(null)

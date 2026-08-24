@@ -31,7 +31,9 @@ function fetchDeduped(): Promise<MyBlessingResponse> {
 
 export function useMyBlessing() {
   const { user, isLoading: authLoading } = useAuth()
-  const [data, setData] = React.useState<MyBlessingResponse | undefined>(cachedResponse)
+  const [data, setData] = React.useState<MyBlessingResponse | undefined>(
+    cachedResponse
+  )
 
   const refresh = React.useCallback(async () => {
     if (authLoading || !user) {

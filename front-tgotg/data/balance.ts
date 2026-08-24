@@ -113,7 +113,10 @@ export const BUILDING_REPAIR_MATERIAL: Record<string, ResourceKey> = {
 }
 
 /** Costo del nivel n (1-5): oro y materiales base × 1,6^(n-1), tiempo ×1,5^(n-1). */
-export function buildingCostAtLevel(key: string, level: number): BuildingCost | null {
+export function buildingCostAtLevel(
+  key: string,
+  level: number
+): BuildingCost | null {
   const base = BUILDING_BASE_COSTS[key]
   if (!base || level < 1 || level > 5) return null
 
@@ -153,9 +156,69 @@ export interface UnitType {
 }
 
 export const UNIT_TYPES: UnitType[] = [
-  { key: 'miliciano', name: 'Miliciano', tier: 1, attack: 25, defense: 25, goldCost: 50, foodCost: 20, ironCost: 10, foodUpkeep: 0.2, trainingMinutes: 5, requiredBarracksLevel: 1 },
-  { key: 'espadachin', name: 'Espadachín', tier: 2, attack: 50, defense: 55, goldCost: 120, foodCost: 35, ironCost: 25, foodUpkeep: 0.4, trainingMinutes: 10, requiredBarracksLevel: 2 },
-  { key: 'arquero', name: 'Arquero', tier: 3, attack: 85, defense: 95, goldCost: 260, foodCost: 60, ironCost: 55, foodUpkeep: 0.7, trainingMinutes: 20, requiredBarracksLevel: 3 },
-  { key: 'caballero', name: 'Caballero', tier: 4, attack: 180, defense: 130, goldCost: 550, foodCost: 110, ironCost: 120, foodUpkeep: 1.2, trainingMinutes: 40, requiredBarracksLevel: 4 },
-  { key: 'campeon', name: 'Campeón', tier: 5, attack: 380, defense: 300, goldCost: 1100, foodCost: 200, ironCost: 260, foodUpkeep: 2.0, trainingMinutes: 80, requiredBarracksLevel: 5 },
+  {
+    key: 'miliciano',
+    name: 'Miliciano',
+    tier: 1,
+    attack: 25,
+    defense: 25,
+    goldCost: 50,
+    foodCost: 20,
+    ironCost: 10,
+    foodUpkeep: 0.2,
+    trainingMinutes: 5,
+    requiredBarracksLevel: 1,
+  },
+  {
+    key: 'espadachin',
+    name: 'Espadachín',
+    tier: 2,
+    attack: 50,
+    defense: 55,
+    goldCost: 120,
+    foodCost: 35,
+    ironCost: 25,
+    foodUpkeep: 0.4,
+    trainingMinutes: 10,
+    requiredBarracksLevel: 2,
+  },
+  {
+    key: 'arquero',
+    name: 'Arquero',
+    tier: 3,
+    attack: 85,
+    defense: 95,
+    goldCost: 260,
+    foodCost: 60,
+    ironCost: 55,
+    foodUpkeep: 0.7,
+    trainingMinutes: 20,
+    requiredBarracksLevel: 3,
+  },
+  {
+    key: 'caballero',
+    name: 'Caballero',
+    tier: 4,
+    attack: 180,
+    defense: 130,
+    goldCost: 550,
+    foodCost: 110,
+    ironCost: 120,
+    foodUpkeep: 1.2,
+    trainingMinutes: 40,
+    requiredBarracksLevel: 4,
+  },
+  {
+    key: 'campeon',
+    name: 'Campeón',
+    tier: 5,
+    attack: 380,
+    defense: 300,
+    goldCost: 1100,
+    foodCost: 200,
+    ironCost: 260,
+    foodUpkeep: 2.0,
+    trainingMinutes: 80,
+    requiredBarracksLevel: 5,
+  },
 ]
