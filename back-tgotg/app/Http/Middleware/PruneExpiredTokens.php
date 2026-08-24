@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class PruneExpiredTokens
@@ -36,7 +36,11 @@ class PruneExpiredTokens
         }
 
         try {
-            Artisan::call('sanctum:prune-expired --hours=24');
+            DB::table('personal_access_tokens')
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<', now()->subHours(24))
+                ->delete();
+
             Cache::put(self::CACHE_KEY, now()->timestamp, now()->addDay());
         } catch (\Throwable $e) {
             // Nunca romper la petición si la limpieza falla.

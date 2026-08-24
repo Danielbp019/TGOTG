@@ -35,7 +35,7 @@ class CityLayouts
                 ['key' => 'laboratorio', 'x' => 985, 'y' => 576, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
                 ['key' => 'cuartel', 'x' => 1430, 'y' => 570, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
                 ['key' => 'minaHierro', 'x' => 1670, 'y' => 710, 'shape' => 'diamond', 'width' => 340, 'height' => 320],
-                ['key' => 'muralla', 'x' => 780, 'y' => 730, 'shape' => 'rect', 'width' => 600, 'height' => 130],
+                ['key' => 'muralla', 'x' => 775, 'y' => 740, 'shape' => 'rect', 'width' => 600, 'height' => 130],
                 ['key' => 'foso', 'x' => 680, 'y' => 805, 'shape' => 'rect', 'width' => 600, 'height' => 130],
             ],
         };
