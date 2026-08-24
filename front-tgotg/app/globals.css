@@ -4,9 +4,40 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --animate-draw: draw 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) 0.3s both;
+
+  @keyframes draw {
+    to {
+      width: 8rem;
+    }
+  }
+}
+
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
+  /* Tipografía */
+  --font-heading: var(--font-cinzel);
+  --font-deco: var(--font-cinzel-deco);
+  --font-sans: var(--font-source-sans);
+  --font-mono: var(--font-plex-mono);
+
+  /* Paleta medieval (tgotg-landing-login.html) */
+  --color-marble: #f3f1ec;
+  --color-marble-dim: #eae7de;
+  --color-parchment: #fbf9f3;
+  --color-ink: #1e2438;
+  --color-ink-soft: #3c4360;
+  --color-stone: #7c7869;
+  --color-stone-line: #dad5c7;
+  --color-azure: #2c4a7c;
+  --color-azure-dim: #e6ecf4;
+  --color-gold: #b8860b;
+  --color-gold-bright: #d4a017;
+  --color-gold-dim: #f4e9ce;
+  --color-wine: #7a2e3b;
+  --color-wine-dim: #f3e3e5;
+
+  /* Tokens semánticos shadcn/ui */
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -32,26 +63,28 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* marble / ink base; primary = tinta con texto oro (botón .btn-gold del mock) */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
+  --background: #f3f1ec;
+  --foreground: #1e2438;
+  --card: #fbf9f3;
+  --card-foreground: #1e2438;
+  --popover: #fbf9f3;
+  --popover-foreground: #1e2438;
+  --primary: #1e2438;
+  --primary-foreground: #f4e9ce;
+  --secondary: #eae7de;
+  --secondary-foreground: #1e2438;
+  --muted: #eae7de;
+  --muted-foreground: #7c7869;
+  --accent: #e6ecf4;
+  --accent-foreground: #2c4a7c;
+  --destructive: #7a2e3b;
+  --border: #dad5c7;
+  --input: #dad5c7;
+  --ring: #2c4a7c;
+  --radius: 0.75rem;
+  --tg-shadow-card: 0 30px 60px -34px rgb(30 36 56 / 0.35);
 }
 
 .dark {
@@ -79,10 +112,29 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
-    @apply font-sans;
+    @apply scroll-smooth font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at 12% 8%, rgb(44 74 124 / 0.05), transparent 42%),
+      radial-gradient(circle at 92% 4%, rgb(184 134 11 / 0.07), transparent 38%);
+    background-attachment: fixed;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading text-foreground;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
