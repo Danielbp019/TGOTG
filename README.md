@@ -53,6 +53,29 @@ Cada construcción tiene un propósito dentro de tu civilización:
 | Cuartel del ejército | Militar       | Entrena y aloja a tus tropas, tu garantía para defender y atacar.                     |
 | Laboratorio          | Investigación | El centro de la investigación, donde se desbloquean nuevas tecnologías y mejoras.     |
 
+## Biomas y razas
+
+### Biomas (5 tipos)
+
+Cada bioma otorga un bono de producción en su recurso asociado.
+
+| Bioma       | Bono         |
+| ----------- | ------------ |
+| Pradera     | +10 % comida |
+| Bosque      | +10 % madera |
+| Montaña     | +10 % piedra |
+| Colina rica | +10 % hierro |
+| Río         | +10 % oro    |
+
+### Razas (4 civilizaciones)
+
+| Raza    | Beneficio                            |
+| ------- | ------------------------------------ |
+| Humanos | +5 % a todos los recursos            |
+| Elfos   | +15 % comida y madera                |
+| Orcos   | +15 % poder de ataque                |
+| Enanos  | +10 % piedra y hierro, +10 % defensa |
+
 ## Tecnología
 
 - **Frontend** (`front-tgotg/`): React + TypeScript, Next.js, Tailwind CSS, shadcn/ui y Phaser 4 para la representación del mundo.

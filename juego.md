@@ -47,7 +47,6 @@
 
 ## Estilos y biomas
 
-- [ ] Definir al menos 3 estilos de ciudad.
 - [ ] Cada bioma otorga bonos extra de producción de algún recurso.
 - [ ] Diferentes especializaciones de recursos y ventajas de producción.
 - [ ] Sistema `bioma + estilo + edificio` que no duplique la lógica del juego.
