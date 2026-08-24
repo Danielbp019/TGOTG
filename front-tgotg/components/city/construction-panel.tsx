@@ -2,11 +2,10 @@
 
 import * as React from 'react'
 import { Building2, Clock3, Hammer, Info } from 'lucide-react'
-import type { VariantProps } from 'class-variance-authority'
 
 import { LevelBar } from '@/components/city/level-bar'
 import { useCity } from '@/components/city/city-provider'
-import { Badge, badgeVariants } from '@/components/ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -30,15 +29,12 @@ import { cn } from '@/lib/utils'
 type BuildingCategory =
   'Principal' | 'Defensa' | 'Recursos' | 'Militar' | 'Investigación'
 
-const categoryVariants: Record<
-  BuildingCategory,
-  NonNullable<VariantProps<typeof badgeVariants>['variant']>
-> = {
-  Principal: 'default',
-  Defensa: 'outline',
-  Recursos: 'secondary',
-  Militar: 'destructive',
-  Investigación: 'ghost',
+const categoryStyles: Record<BuildingCategory, string> = {
+  Principal: 'border border-white/25 bg-ink/50 text-[#DCDFEB]',
+  Defensa: 'bg-stone/25 text-black',
+  Recursos: 'bg-gold/20 text-black',
+  Militar: 'bg-wine/30 text-black',
+  Investigación: 'bg-azure/35 text-black',
 }
 
 function isBuildingCategory(value: string): value is BuildingCategory {
@@ -155,7 +151,7 @@ function ConstructionRow({
           <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
             {building.description}
           </p>
-          <Badge variant={categoryVariants[category]} className="mt-1">
+          <Badge className={cn('mt-1', categoryStyles[category])}>
             {category}
           </Badge>
           {cost && level < maxLevel ? (
