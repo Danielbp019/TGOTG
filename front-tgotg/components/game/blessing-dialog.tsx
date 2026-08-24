@@ -16,7 +16,7 @@ import { blessingIcons } from '@/data/icons'
 import { useAuth } from '@/components/auth/auth-provider'
 import { useMyBlessing } from '@/hooks/use-my-blessing'
 import type { BlessingPayload } from '@/lib/api'
-import { ApiError, fetchBlessings, updateMyBlessing } from '@/lib/api'
+import { ApiError, fetchBlessingsCached, updateMyBlessing } from '@/lib/api'
 import { notifyBlessingChanged } from '@/lib/blessing'
 import { blessingSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
@@ -34,7 +34,7 @@ export function BlessingDialog() {
     if (authLoading || !user) return
     let active = true
 
-    fetchBlessings()
+    fetchBlessingsCached()
       .then((response) => {
         if (!active) return
         setBlessings(response.blessings)

@@ -303,6 +303,39 @@ export function fetchBuildingTypes() {
   return apiFetch<{ building_types: BuildingTypePayload[] }>('/building-types')
 }
 
+const catalogCache = new Map<string, Promise<unknown>>()
+
+async function cachedFetch<T>(key: string, loader: () => Promise<T>): Promise<T> {
+  const cached = catalogCache.get(key)
+  if (cached) return cached as Promise<T>
+
+  const promise = loader().catch((error) => {
+    // Los fallos no se cachean: el siguiente montaje puede reintentar.
+    catalogCache.delete(key)
+    throw error
+  })
+
+  catalogCache.set(key, promise)
+  return promise
+}
+
+/** Invalida los catálogos en caché (p. ej. futuro evento de paso del día). */
+export function clearCatalogCache() {
+  catalogCache.clear()
+}
+
+export function fetchBuildingTypesCached() {
+  return cachedFetch('building-types', fetchBuildingTypes)
+}
+
+export function fetchBlessingsCached() {
+  return cachedFetch('blessings', fetchBlessings)
+}
+
+export function fetchCivilizationsCached() {
+  return cachedFetch('civilizations', fetchCivilizations)
+}
+
 export function fetchGameOptions() {
   return apiFetch<GameOptionsPayload>('/game-options')
 }

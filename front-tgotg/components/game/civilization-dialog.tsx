@@ -17,7 +17,7 @@ import { useAuth } from '@/components/auth/auth-provider'
 import type { CivilizationPayload } from '@/lib/api'
 import {
   ApiError,
-  fetchCivilizations,
+  fetchCivilizationsCached,
   fetchMyCivilization,
   updateMyCivilization,
 } from '@/lib/api'
@@ -39,7 +39,7 @@ export function CivilizationDialog() {
     if (authLoading || !user) return
     let active = true
 
-    fetchCivilizations()
+    fetchCivilizationsCached()
       .then((response) => {
         if (!active) return
         setCivilizations(response.civilizations)

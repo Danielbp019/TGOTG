@@ -37,8 +37,6 @@
 ## Frontend / UI
 
 - [ ] Al seleccionar "Ciudad" en el menú, mostrar el listado de ciudades disponibles.
-- [ ] Unificar la vista de ciudad con la de construcción (cada construcción pertenece a una ciudad).
-- [ ] En el panel de construcciones, mostrar un resumen de qué hace cada construcción.
 - [ ] Al conectarse, mostrar un resumen de lo sucedido con las ciudades (ataques, daños, ganancias por defensa exitosa).
 
 ## Ciudades y colonización
@@ -66,7 +64,6 @@
 ## Ejército y combate
 
 - [ ] Sistema de ejército.
-- [ ] Cinco tipos de tropas.
 - [ ] Reglas de combate (combates automáticos).
 - [ ] Cada ciudad produce tropas; por defecto quedan en guardia de la ciudad.
 - [ ] El jugador decide qué tropas mover al ejército; las del ejército no defienden la ciudad salvo que estén ubicadas en ella.

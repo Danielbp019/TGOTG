@@ -3,12 +3,12 @@
 import * as React from 'react'
 
 import { useAuth } from '@/components/auth/auth-provider'
-import { fetchServerTime } from '@/lib/api'
 import {
   getSavedTimeFormat,
   subscribeToTimeFormatChanges,
   type TimeFormat,
 } from '@/lib/settings'
+import { getServerOffsetMs } from '@/lib/server-time'
 
 function formatTime(date: Date, format: TimeFormat) {
   return date.toLocaleTimeString('es-ES', {
@@ -35,10 +35,10 @@ export function ServerClock() {
       setTime(formatTime(new Date(), initialFormat))
     }, 0)
 
-    fetchServerTime()
-      .then((serverTime) => {
+    getServerOffsetMs()
+      .then((offsetMs) => {
         if (!active) return
-        serverOffset.current = new Date(serverTime).getTime() - Date.now()
+        serverOffset.current = offsetMs
         setTime(
           formatTime(
             new Date(Date.now() + serverOffset.current),

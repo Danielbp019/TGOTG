@@ -20,7 +20,7 @@ import { buildingIcons } from '@/data/icons'
 import { buildingCostAtLevel } from '@/data/balance'
 import {
   ApiError,
-  fetchBuildingTypes,
+  fetchBuildingTypesCached,
   upgradeBuilding,
   type BuildingTypePayload,
   type CityBuilding,
@@ -218,7 +218,7 @@ export function ConstructionPanel() {
     if (authLoading || !user) return
     let active = true
 
-    fetchBuildingTypes()
+    fetchBuildingTypesCached()
       .then((response) => {
         if (active) setCatalog(response.building_types)
       })

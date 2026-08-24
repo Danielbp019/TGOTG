@@ -40,15 +40,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const hasRedirectedRef = React.useRef(false)
+  const hasLoadedRef = React.useRef(false)
 
   React.useEffect(() => {
+    // El usuario se resuelve una sola vez por sesión de página:
+    // los cambios de ruta no deben volver a consultar /api/user.
+    if (hasLoadedRef.current) return
+
     let active = true
     const timer = window.setTimeout(() => {
+      const finish = () => {
+        if (!active) return
+        hasLoadedRef.current = true
+        setIsLoading(false)
+      }
+
       if (isAuthPath(pathname)) {
-        if (active) {
-          setUser(null)
-          setIsLoading(false)
-        }
+        if (active) setUser(null)
+        finish()
         return
       }
 
@@ -59,9 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .catch(() => {
           if (active) setUser(null)
         })
-        .finally(() => {
-          if (active) setIsLoading(false)
-        })
+        .finally(finish)
     }, 0)
 
     const unsubscribe = subscribeToUnauthorized(() => {
