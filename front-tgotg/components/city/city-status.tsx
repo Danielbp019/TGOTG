@@ -82,7 +82,9 @@ export function CityStatus() {
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-muted-foreground flex items-center gap-2">
-                    <item.resource.icon className="size-4 shrink-0" />
+                    <item.resource.icon
+                      className={`size-4 shrink-0 ${item.resource.iconColor}`}
+                    />
                     {item.resource.label}
                   </span>
                   <span className="tabular-nums">+{item.perHour}/h</span>

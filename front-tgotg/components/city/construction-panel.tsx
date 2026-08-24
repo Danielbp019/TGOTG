@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Building2, Clock3, Hammer, Info } from 'lucide-react'
+import { Building2, Clock3, Hammer } from 'lucide-react'
 
 import { LevelBar } from '@/components/city/level-bar'
 import { useCity } from '@/components/city/city-provider'
@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useAuth } from '@/components/auth/auth-provider'
-import { buildingIcons } from '@/data/icons'
+import { buildingColors, buildingIcons } from '@/data/icons'
 import { buildingCostAtLevel } from '@/data/balance'
 import {
   ApiError,
@@ -145,7 +145,11 @@ function ConstructionRow({
   return (
     <li className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Icon className="text-muted-foreground size-5 shrink-0" />
+        <Icon
+          className={`size-5 shrink-0 ${
+            buildingColors[building.key] ?? 'text-muted-foreground'
+          }`}
+        />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{building.name}</p>
           <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
@@ -257,7 +261,7 @@ export function ConstructionPanel() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle>Construcción</CardTitle>
           <CardDescription>
@@ -265,20 +269,10 @@ export function ConstructionPanel() {
             nuevas capacidades.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground flex items-center gap-2 text-xs">
-            <Info className="size-3.5 shrink-0" />
-            Costes ×1,6 (oro, madera, piedra, hierro) y tiempo ×1,5 por nivel.
-            Nivel máximo 5.
-          </p>
-          {error ? (
-            <p className="text-destructive mt-2 text-xs">{error}</p>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <Card className="overflow-hidden">
         <CardContent className="divide-y px-0 py-0">
+          {error ? (
+            <p className="text-destructive px-4 pt-3 text-xs">{error}</p>
+          ) : null}
           <ul>
             {catalog.map((building) => {
               const cityBuilding = buildingMap.get(building.key)

@@ -36,6 +36,7 @@
   --color-gold-dim: #f4e9ce;
   --color-wine: #7a2e3b;
   --color-wine-dim: #f3e3e5;
+  --color-forest: #55703f;
 
   /* Tokens semánticos shadcn/ui */
   --color-ring: var(--ring);

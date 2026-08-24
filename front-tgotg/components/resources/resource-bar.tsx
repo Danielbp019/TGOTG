@@ -14,7 +14,9 @@ export function ResourceBar() {
           className="flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm"
         >
           <span className="text-muted-foreground flex items-center gap-3">
-            <resource.icon className="size-4 shrink-0" />
+            <resource.icon
+              className={`size-4 shrink-0 ${resource.iconColor}`}
+            />
             <span>{resource.label}</span>
           </span>
           <span className="flex items-baseline gap-2">

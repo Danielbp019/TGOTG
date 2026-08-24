@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { buildingIcons } from '@/data/icons'
+import { buildingColors, buildingIcons } from '@/data/icons'
 import { buildingHp } from '@/data/balance'
 import { BALANCE } from '@/data/balance'
 import { resources } from '@/data/resources'
@@ -116,7 +116,11 @@ export function RepairPanel() {
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     {Icon && (
-                      <Icon className="text-muted-foreground size-5 shrink-0" />
+                      <Icon
+                        className={`size-5 shrink-0 ${
+                          buildingColors[building.key] ?? 'text-muted-foreground'
+                        }`}
+                      />
                     )}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">
@@ -138,11 +142,19 @@ export function RepairPanel() {
                   {!building.repairing && cost && (
                     <div className="flex items-center gap-2 text-xs tabular-nums">
                       <span className="text-muted-foreground flex items-center gap-1">
-                        <resources.gold.icon className="size-3.5" />
+                        <resources.gold.icon
+                          className={`size-3.5 ${resources.gold.iconColor}`}
+                        />
                         {cost.gold.toLocaleString('es')}
                       </span>
                       <span className="text-muted-foreground flex items-center gap-1">
-                        {MaterialIcon && <MaterialIcon className="size-3.5" />}
+                        {MaterialIcon && (
+                          <MaterialIcon
+                            className={`size-3.5 ${
+                              resources[cost.material].iconColor
+                            }`}
+                          />
+                        )}
                         {cost.materialAmount.toLocaleString('es')}
                       </span>
                     </div>

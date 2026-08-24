@@ -28,6 +28,18 @@ export const buildingIcons: Record<string, LucideIcon> = {
   laboratorio: FlaskConical,
 }
 
+export const buildingColors: Record<string, string> = {
+  ayuntamiento: 'text-gold',
+  muralla: 'text-stone',
+  foso: 'text-azure',
+  granja: 'text-forest',
+  minaHierro: 'text-ink-soft',
+  minaPiedra: 'text-stone',
+  aserradero: 'text-wine',
+  cuartel: 'text-wine',
+  laboratorio: 'text-azure',
+}
+
 export const blessingIcons: Record<string, LucideIcon> = {
   'cosecha-abundante': Wheat,
   'forja-implacable': Hammer,

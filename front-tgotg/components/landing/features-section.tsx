@@ -1,16 +1,7 @@
-import type { ResourceKey } from '@/types'
 import { resources } from '@/data/resources'
 import { landingFeatures } from '@/data/landing'
 import { Eyebrow } from '@/components/landing/eyebrow'
 import { Reveal } from '@/components/landing/reveal'
-
-const resourceAccents: Record<ResourceKey, string> = {
-  gold: 'text-gold',
-  wood: 'text-wine',
-  stone: 'text-stone',
-  iron: 'text-azure',
-  food: 'text-gold',
-}
 
 export function FeaturesSection() {
   return (
@@ -63,7 +54,7 @@ export function FeaturesSection() {
                   <resource.icon
                     aria-hidden="true"
                     strokeWidth={1.6}
-                    className={`size-6 ${resourceAccents[resource.key]}`}
+                    className={`size-6 ${resource.iconColor}`}
                   />
                   <span className="text-sm font-semibold">
                     {resource.label}

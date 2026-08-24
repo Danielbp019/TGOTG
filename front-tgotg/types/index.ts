@@ -8,6 +8,7 @@ export interface Resource {
   amount: number
   perHour: number
   icon: LucideIcon
+  iconColor: string
 }
 
 export interface MenuItem {
