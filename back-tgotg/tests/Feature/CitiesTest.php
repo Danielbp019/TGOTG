@@ -45,12 +45,15 @@ test('no permite ver la ciudad de otro jugador', function () {
 test('devuelve la ciudad propia con su payload completo', function () {
     $user = User::factory()->create();
     $world = World::factory()->create(['status' => 'running']);
-    $player = Player::factory()->create(['world_id' => $world->id, 'user_id' => $user->id]);
+    $player = Player::factory()->create([
+        'world_id' => $world->id,
+        'user_id' => $user->id,
+        'gold' => 900,
+    ]);
     $city = City::factory()->create([
         'player_id' => $player->id,
         'world_id' => $world->id,
         'name' => 'Segunda',
-        'gold' => 500,
         'gold_per_hour' => 100,
     ]);
     $buildingType = BuildingType::factory()->create([
@@ -68,7 +71,7 @@ test('devuelve la ciudad propia con su payload completo', function () {
         ->getJson("/api/cities/{$city->id}")
         ->assertStatus(200)
         ->assertJsonPath('city.name', 'Segunda')
-        ->assertJsonPath('city.resources.gold', 500)
+        ->assertJsonPath('city.resources.gold', 900)
         ->assertJsonPath('city.perHour.gold', 100)
         ->assertJsonCount(1, 'city.buildings')
         ->assertJsonPath('city.buildings.0.key', 'ayuntamiento')

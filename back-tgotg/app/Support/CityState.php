@@ -26,6 +26,14 @@ class CityState
     }
 
     /**
+     * Suma la producción por nivel del edificio mejorado a la ciudad.
+     */
+    public static function applyProduction(City $city, string $buildingKey): void
+    {
+        self::applyProductionForUpgrade($city, $buildingKey);
+    }
+
+    /**
      * Serializa la ciudad completa para la API.
      *
      * @return array<string, mixed>
@@ -61,12 +69,13 @@ class CityState
 
         return [
             'name' => $city->name,
+            // Los recursos mostrados son los generales del jugador.
             'resources' => [
-                'gold' => $city->gold,
-                'wood' => $city->wood,
-                'stone' => $city->stone,
-                'iron' => $city->iron,
-                'food' => $city->food,
+                'gold' => (int) $player->gold,
+                'wood' => (int) $player->wood,
+                'stone' => (int) $player->stone,
+                'iron' => (int) $player->iron,
+                'food' => (int) $player->food,
             ],
             'perHour' => [
                 'gold' => (int) round($city->gold_per_hour * $speedMultiplier),

@@ -28,6 +28,7 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::get('/server-time', [SystemController::class, 'serverTime']);
     Route::get('/player/blessing', [PlayerController::class, 'blessing']);
     Route::put('/player/blessing', [PlayerController::class, 'updateBlessing']);
+    Route::get('/player/resources', [PlayerController::class, 'resources']);
     Route::get('/player/civilization', [PlayerController::class, 'civilization']);
     Route::put('/player/civilization', [PlayerController::class, 'updateCivilization']);
     Route::get('/blessings', [SystemController::class, 'blessings']);

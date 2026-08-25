@@ -281,6 +281,15 @@ export function fetchMyCivilization() {
   return apiFetch<MyCivilizationResponse>('/player/civilization')
 }
 
+export interface MyResourcesResponse {
+  in_game: boolean
+  resources: Record<ResourceKey, number> | null
+}
+
+export function fetchMyResources() {
+  return apiFetch<MyResourcesResponse>('/player/resources')
+}
+
 export function updateMyCivilization(key: string) {
   return apiFetch<{ civilization: CivilizationPayload }>(
     '/player/civilization',

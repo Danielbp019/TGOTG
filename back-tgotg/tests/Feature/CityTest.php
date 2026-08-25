@@ -35,12 +35,19 @@ test('un jugador sin ciudad tampoco tiene datos', function () {
 test('devuelve la ciudad del jugador actual con sus edificios', function () {
     $user = User::factory()->create();
     $world = World::factory()->create(['status' => 'running']);
-    $player = Player::factory()->create(['world_id' => $world->id, 'user_id' => $user->id]);
+    $player = Player::factory()->create([
+        'world_id' => $world->id,
+        'user_id' => $user->id,
+        'gold' => 12450,
+        'wood' => 8300,
+        'stone' => 6200,
+        'iron' => 4100,
+        'food' => 9700,
+    ]);
     $city = City::factory()->create([
         'player_id' => $player->id,
         'world_id' => $world->id,
         'name' => 'Principal',
-        'gold' => 12450,
         'gold_per_hour' => 120,
         'population' => 340,
         'happiness' => 72,
@@ -64,6 +71,7 @@ test('devuelve la ciudad del jugador actual con sus edificios', function () {
         ->assertStatus(200)
         ->assertJsonPath('city.name', 'Principal')
         ->assertJsonPath('city.resources.gold', 12450)
+        ->assertJsonPath('city.resources.food', 9700)
         ->assertJsonPath('city.perHour.gold', 120)
         ->assertJsonPath('city.population', 340)
         ->assertJsonPath('city.happiness', 72)
@@ -78,6 +86,30 @@ test('devuelve la ciudad del jugador actual con sus edificios', function () {
         ->assertJsonPath('city.buildings.0.y', 290)
         ->assertJsonPath('city.buildings.0.width', 340)
         ->assertJsonPath('city.buildings.0.height', 320);
+});
+
+test('los recursos del payload de ciudad son los generales del jugador', function () {
+    $user = User::factory()->create();
+    $world = World::factory()->create(['status' => 'running']);
+    $player = Player::factory()->create([
+        'world_id' => $world->id,
+        'user_id' => $user->id,
+        'gold' => 777,
+        'wood' => 555,
+    ]);
+    // La ciudad tiene columnas de recursos propias que deben ignorarse.
+    City::factory()->create([
+        'player_id' => $player->id,
+        'world_id' => $world->id,
+        'gold' => 123456,
+        'wood' => 654321,
+    ]);
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/city')
+        ->assertStatus(200)
+        ->assertJsonPath('city.resources.gold', 777)
+        ->assertJsonPath('city.resources.wood', 555);
 });
 
 test('la producción horaria aplica el multiplicador de velocidad del mundo', function () {

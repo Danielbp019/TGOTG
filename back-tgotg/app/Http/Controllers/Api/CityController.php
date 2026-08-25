@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Concerns\ResolvesCurrentPlayer;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\City;
+use App\Models\Player;
 use App\Support\BuildingCosts;
 use App\Support\CityState;
 use Illuminate\Http\JsonResponse;
@@ -121,26 +122,27 @@ class CityController extends Controller
             }
         }
 
-        $sufficient = DB::transaction(function () use ($city, $building, $cost, $nextLevel, $isInstant, $finishesAt): bool {
-            $lockedCity = City::whereKey($city->id)->lockForUpdate()->first();
+        // Todo gasto se paga con los recursos generales del jugador.
+        $sufficient = DB::transaction(function () use ($player, $building, $cost, $nextLevel, $isInstant, $finishesAt): bool {
+            $lockedPlayer = Player::whereKey($player->id)->lockForUpdate()->first();
 
             if (
-                $lockedCity->gold < $cost['gold']
-                || $lockedCity->wood < $cost['wood']
-                || $lockedCity->stone < $cost['stone']
-                || $lockedCity->iron < $cost['iron']
+                $lockedPlayer->gold < $cost['gold']
+                || $lockedPlayer->wood < $cost['wood']
+                || $lockedPlayer->stone < $cost['stone']
+                || $lockedPlayer->iron < $cost['iron']
             ) {
                 return false;
             }
 
-            $lockedCity->decrement('gold', $cost['gold']);
-            $lockedCity->decrement('wood', $cost['wood']);
-            $lockedCity->decrement('stone', $cost['stone']);
-            $lockedCity->decrement('iron', $cost['iron']);
+            $lockedPlayer->decrement('gold', $cost['gold']);
+            $lockedPlayer->decrement('wood', $cost['wood']);
+            $lockedPlayer->decrement('stone', $cost['stone']);
+            $lockedPlayer->decrement('iron', $cost['iron']);
 
             if ($isInstant) {
                 $building->update(['level' => $nextLevel]);
-                $this->applyProductionForUpgrade($lockedCity, $building->buildingType->key);
+                CityState::applyProduction($city, $building->buildingType->key);
             } else {
                 $building->update([
                     'upgrade_started_at' => now(),
@@ -230,20 +232,21 @@ class CityController extends Controller
 
         $paid = $data['type'] === 'paid';
 
-        $sufficient = DB::transaction(function () use ($city, $building, $paid): bool {
+        // El gasto de la reparación pagada sale de los recursos generales del jugador.
+        $sufficient = DB::transaction(function () use ($player, $building, $paid): bool {
             if ($paid) {
-                $lockedCity = City::whereKey($city->id)->lockForUpdate()->first();
+                $lockedPlayer = Player::whereKey($player->id)->lockForUpdate()->first();
                 $cost = $this->repairCost($building);
 
                 if (
-                    $lockedCity->gold < $cost['gold']
-                    || $lockedCity->{$cost['repair_material']} < $cost['material_amount']
+                    $lockedPlayer->gold < $cost['gold']
+                    || $lockedPlayer->{$cost['repair_material']} < $cost['material_amount']
                 ) {
                     return false;
                 }
 
-                $lockedCity->decrement('gold', $cost['gold']);
-                $lockedCity->decrement($cost['repair_material'], $cost['material_amount']);
+                $lockedPlayer->decrement('gold', $cost['gold']);
+                $lockedPlayer->decrement($cost['repair_material'], $cost['material_amount']);
             }
 
             $building->update([

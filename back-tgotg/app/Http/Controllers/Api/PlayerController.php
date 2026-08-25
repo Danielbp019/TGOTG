@@ -15,6 +15,29 @@ class PlayerController extends Controller
 {
     use ResolvesCurrentPlayer;
 
+    public function resources(Request $request): JsonResponse
+    {
+        $player = $this->currentPlayer($request->user()->id);
+
+        if ($player === null) {
+            return response()->json([
+                'in_game' => false,
+                'resources' => null,
+            ]);
+        }
+
+        return response()->json([
+            'in_game' => true,
+            'resources' => [
+                'gold' => (int) $player->gold,
+                'wood' => (int) $player->wood,
+                'stone' => (int) $player->stone,
+                'iron' => (int) $player->iron,
+                'food' => (int) $player->food,
+            ],
+        ]);
+    }
+
     public function civilization(Request $request): JsonResponse
     {
         $player = $this->currentPlayer($request->user()->id);

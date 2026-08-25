@@ -15,6 +15,7 @@ use App\Support\CityState;
 use App\Support\StartingConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 class CitiesController extends Controller
 {
@@ -128,16 +129,19 @@ class CitiesController extends Controller
         $region = Region::find($data['region_id']);
         $biome = Biome::find($data['biome_id']);
 
-        $city = City::create(array_merge(
-            StartingConfig::cityValues(),
-            [
-                'player_id' => $player->id,
-                'world_id' => $player->world_id,
-                'region_id' => $region->id,
-                'biome_id' => $biome->id,
-                'name' => $name,
-            ]
-        ));
+        // La ciudad no recibe copia de recursos (viven en el jugador),
+        // pero sí sus atributos base: producción por hora, población, defensa…
+        $cityValues = Arr::except(StartingConfig::cityValues(), [
+            'name', 'gold', 'wood', 'stone', 'iron', 'food',
+        ]);
+
+        $city = City::create(array_merge($cityValues, [
+            'player_id' => $player->id,
+            'world_id' => $player->world_id,
+            'region_id' => $region->id,
+            'biome_id' => $biome->id,
+            'name' => $name,
+        ]));
 
         $plotKeys = array_column(CityLayouts::plots(), 'key');
         $typeIdsByPlotKey = BuildingType::whereIn('key', $plotKeys)->pluck('id', 'key');

@@ -15,16 +15,24 @@ function createPlayerWithCity(array $cityOverrides = []): array
 {
     $user = User::factory()->create();
     $world = World::factory()->create(['status' => 'running']);
-    $player = Player::factory()->create(['world_id' => $world->id, 'user_id' => $user->id]);
-    $city = City::factory()->create(array_merge([
-        'player_id' => $player->id,
+
+    // Los recursos viven en el jugador; los overrides de recursos van a su fila.
+    $resourceKeys = ['gold', 'wood', 'stone', 'iron', 'food'];
+    $playerResources = array_intersect_key($cityOverrides, array_flip($resourceKeys));
+    $player = Player::factory()->create(array_merge([
         'world_id' => $world->id,
+        'user_id' => $user->id,
         'gold' => 10000,
         'wood' => 5000,
         'stone' => 5000,
         'iron' => 5000,
         'food' => 5000,
-    ], $cityOverrides));
+    ], $playerResources));
+
+    $city = City::factory()->create(array_merge([
+        'player_id' => $player->id,
+        'world_id' => $world->id,
+    ], array_diff_key($cityOverrides, array_flip($resourceKeys))));
 
     return [$user, $world, $player, $city];
 }
@@ -64,7 +72,7 @@ test('reparar un edificio sin daños devuelve error', function () {
 });
 
 test('la reparación pagada descuenta oro y material y marca la reparación', function () {
-    [$user, , , $city] = createPlayerWithCity();
+    [$user, , $player, $city] = createPlayerWithCity();
     $type = BuildingType::factory()->create([
         'key' => 'muralla',
         'repair_material' => 'stone',
@@ -78,9 +86,9 @@ test('la reparación pagada descuenta oro y material y marca la reparación', fu
         ->assertJsonPath('building.repairing', true)
         ->assertJsonPath('building.repairPaid', true);
 
-    $city->refresh();
-    expect($city->gold)->toBe(5500);
-    expect($city->stone)->toBe(3500);
+    $player->refresh();
+    expect($player->gold)->toBe(5500);
+    expect($player->stone)->toBe(3500);
 
     $building->refresh();
     expect($building->repair_paid)->toBeTrue();
@@ -101,7 +109,7 @@ test('la reparación pagada sin recursos suficientes falla', function () {
 });
 
 test('la reparación automática es gratuita y lenta', function () {
-    [$user, , , $city] = createPlayerWithCity();
+    [$user, , $player, $city] = createPlayerWithCity();
     $building = createDamagedBuilding($city, ['damage' => 30]);
 
     $this->actingAs($user, 'sanctum')
@@ -109,8 +117,8 @@ test('la reparación automática es gratuita y lenta', function () {
         ->assertStatus(200)
         ->assertJsonPath('building.repairPaid', false);
 
-    $city->refresh();
-    expect($city->gold)->toBe(10000);
+    $player->refresh();
+    expect($player->gold)->toBe(10000);
 
     $building->refresh();
     expect($building->repair_paid)->toBeFalse();

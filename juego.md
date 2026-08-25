@@ -108,3 +108,7 @@ Laravel proyecto corriendo con routes API implementadas:
 - [ ] Estrategia de integración con proveedores de modelos (al menos 3), sin acoplar la arquitectura.
 - [ ] Los secretos/API keys nunca deben estar disponibles para el frontend.
 - [ ] Definir sistema de instrucciones/personajes de los dioses IA (personalidad, objetivos, prioridades, tolerancia al riesgo, límites).
+
+- regions la ia creo el label que le dije que no creara! creo un campo sort_order no se para que sirve
+- mapa no se muestra
+- implementar paso del dia
