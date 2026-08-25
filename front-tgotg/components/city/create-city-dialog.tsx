@@ -1,7 +1,15 @@
 'use client'
 
 import * as React from 'react'
-import { Droplets, Mountain, Pickaxe, TreePine, Wheat } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import {
+  Castle,
+  Droplets,
+  Mountain,
+  Pickaxe,
+  TreePine,
+  Wheat,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,69 +22,186 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import {
+  ApiError,
+  createCity,
+  fetchRegionsCached,
+  type RegionPayload,
+} from '@/lib/api'
+import { useCities } from '@/hooks/use-cities'
+import {
+  createCitySchema,
+  type CreateCityValues,
+} from '@/lib/validations/city'
 
 interface CreateCityDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-const biomes = [
-  {
-    key: 'pradera',
+type CreateCityErrors = Partial<Record<keyof CreateCityValues, string>>
+
+const initialValues: CreateCityValues = {
+  nombre: '',
+  region: '',
+  bioma: '',
+}
+
+interface BiomeMeta {
+  label: string
+  bonus: string
+  description: string
+  icon: React.ElementType
+  iconColor: string
+}
+
+const BIOME_META: Record<string, BiomeMeta> = {
+  pradera: {
     label: 'Pradera',
     bonus: '+10 % comida',
     description: 'Llanuras fértiles ideales para granjas y pastos.',
     icon: Wheat,
     iconColor: 'text-forest',
   },
-  {
-    key: 'bosque',
+  bosque: {
     label: 'Bosque',
     bonus: '+10 % madera',
     description: 'Espesura interminable de robles y pinos.',
     icon: TreePine,
     iconColor: 'text-wine',
   },
-  {
-    key: 'montana',
+  'montaña': {
     label: 'Montaña',
     bonus: '+10 % piedra',
     description: 'Picos rocosos ricos en canteras.',
     icon: Mountain,
     iconColor: 'text-stone',
   },
-  {
-    key: 'colina-rica',
+  colinaRica: {
     label: 'Colina rica',
     bonus: '+10 % hierro',
     description: 'Vetas profundas de mineral bajo las colinas.',
     icon: Pickaxe,
     iconColor: 'text-ink-soft',
   },
-  {
-    key: 'costa',
+  costa: {
     label: 'Costa',
     bonus: '+10 % oro',
     description: 'Costas prósperas que atraen comercio y tributos.',
     icon: Droplets,
     iconColor: 'text-azure',
   },
-] as const
+}
+
+const FALLBACK_BIOME_META: BiomeMeta = {
+  label: '',
+  bonus: '',
+  description: '',
+  icon: Castle,
+  iconColor: 'text-muted-foreground',
+}
+
+function biomeMeta(key: string): BiomeMeta {
+  return BIOME_META[key] ?? { ...FALLBACK_BIOME_META, label: key }
+}
 
 export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) {
-  const [nombre, setNombre] = React.useState('')
-  const [region, setRegion] = React.useState('')
-  const [bioma, setBioma] = React.useState('')
+  const router = useRouter()
+  const { reload } = useCities()
+  const [values, setValues] = React.useState<CreateCityValues>(initialValues)
+  const [errors, setErrors] = React.useState<CreateCityErrors>({})
+  const [formError, setFormError] = React.useState<string | null>(null)
+  const [regions, setRegions] = React.useState<RegionPayload[]>([])
+  const [regionsError, setRegionsError] = React.useState<string | null>(null)
+  const [submitting, setSubmitting] = React.useState(false)
+
+  const selectedRegion = regions.find((r) => r.id === values.region) ?? null
+
+  async function loadRegions() {
+    setRegionsError(null)
+    try {
+      const response = await fetchRegionsCached()
+      setRegions(response.regions)
+    } catch {
+      setRegionsError('No se pudieron cargar las regiones.')
+    }
+  }
+
+  React.useEffect(() => {
+    if (!open) return
+    const t = window.setTimeout(() => {
+      void loadRegions()
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [open])
+
+  function reset() {
+    setValues(initialValues)
+    setErrors({})
+    setFormError(null)
+  }
 
   function handleOpenChange(next: boolean) {
     if (!next) {
-      setNombre('')
-      setRegion('')
-      setBioma('')
+      reset()
     }
     onOpenChange(next)
+  }
+
+  function handleField(field: keyof CreateCityValues, value: string) {
+    setValues((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'region' ? { bioma: '' } : {}),
+    }))
+    setErrors((prev) => ({ ...prev, [field]: undefined }))
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+
+    const result = createCitySchema.safeParse(values)
+    if (!result.success) {
+      const issueFor = (field: string) =>
+        result.error.issues.find((issue) => issue.path.join('.') === field)
+          ?.message
+      setErrors({
+        nombre: issueFor('nombre'),
+        region: issueFor('region'),
+        bioma: issueFor('bioma'),
+      })
+      return
+    }
+
+    const regionId = values.region
+    const biomeId = values.bioma
+
+    setSubmitting(true)
+    setFormError(null)
+    try {
+      const response = await createCity({
+        name: result.data.nombre,
+        region_id: regionId,
+        biome_id: biomeId,
+      })
+      await reload()
+      handleOpenChange(false)
+      router.push(`/ciudad/${response.city.id}`)
+    } catch (caught) {
+      if (caught instanceof ApiError) {
+        setFormError(caught.message)
+        setErrors({
+          nombre: caught.errors.name?.[0],
+          region: caught.errors.region_id?.[0],
+          bioma: caught.errors.biome_id?.[0],
+        })
+      } else {
+        setFormError('No se pudo crear la ciudad. Inténtalo de nuevo.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -89,7 +214,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4">
+        <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
           <div className="bg-muted flex h-48 items-center justify-center rounded-xl border text-sm font-medium">
             mapa aquí
           </div>
@@ -98,123 +223,132 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
             <Label htmlFor="create-city-nombre">Nombre de la ciudad</Label>
             <Input
               id="create-city-nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              value={values.nombre}
+              onChange={(e) => handleField('nombre', e.target.value)}
               placeholder="Ej. Nueva Aurora"
               maxLength={30}
+              aria-invalid={Boolean(errors.nombre)}
             />
-            <p className="text-muted-foreground text-xs">Máximo 30 caracteres.</p>
+            {errors.nombre ? (
+              <p className="text-destructive text-xs">{errors.nombre}</p>
+            ) : (
+              <p className="text-muted-foreground text-xs">Máximo 30 caracteres.</p>
+            )}
           </div>
 
           <div className="grid gap-2">
             <Label>Región</Label>
-            <p className="text-muted-foreground text-xs">
-              Regiones fijas — se definirán próximamente.
-            </p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {(['Norte', 'Sur', 'Este', 'Oeste', 'Centro'] as const).map((r) => {
-                const selected = region === r
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    disabled
-                    onClick={() => setRegion(r)}
-                    aria-pressed={selected}
-                    className={cn(
-                      'rounded-lg border px-3 py-2 text-sm font-medium opacity-60',
-                      selected ? 'border-primary bg-primary/5 ring-2' : 'border-border'
-                    )}
-                  >
-                    {r}
-                  </button>
-                )
-              })}
-            </div>
+            {regionsError ? (
+              <div className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2">
+                <p className="text-destructive text-xs">{regionsError}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void loadRegions()}
+                >
+                  Reintentar
+                </Button>
+              </div>
+            ) : regions.length === 0 ? (
+              <p className="text-muted-foreground text-xs">Cargando regiones…</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {regions.map((r) => {
+                  const selected = values.region === r.id
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => handleField('region', r.id)}
+                      aria-pressed={selected}
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
+                        selected
+                          ? 'border-primary bg-primary/5 ring-2'
+                          : 'border-border hover:bg-muted'
+                      )}
+                    >
+                      {r.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {errors.region && (
+              <p className="text-destructive text-xs">{errors.region}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
             <Label>Bioma</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {biomes.map((b) => {
-                const selected = bioma === b.key
-                return (
-                  <button
-                    key={b.key}
-                    type="button"
-                    onClick={() => setBioma(b.key)}
-                    aria-pressed={selected}
-                    className={cn(
-                      'flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-colors',
-                      selected
-                        ? 'border-primary bg-primary/5 ring-2'
-                        : 'border-border hover:bg-muted'
-                    )}
-                  >
-                    <b.icon className={cn('size-5', b.iconColor)} />
-                    <span className="text-sm font-medium">{b.label}</span>
-                    <span className="text-primary text-xs font-medium">{b.bonus}</span>
-                    <span className="text-muted-foreground text-xs leading-relaxed">
-                      {b.description}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+            {!selectedRegion ? (
+              <p className="text-muted-foreground text-xs">
+                Selecciona primero una región para ver sus biomas.
+              </p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {selectedRegion.biomes.map((b) => {
+                  const meta = biomeMeta(b.key)
+                  const selected = values.bioma === b.id
+                  const Icon = meta.icon
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => handleField('bioma', b.id)}
+                      aria-pressed={selected}
+                      className={cn(
+                        'flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-colors',
+                        selected
+                          ? 'border-primary bg-primary/5 ring-2'
+                          : 'border-border hover:bg-muted'
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Icon className={cn('size-5', meta.iconColor)} />
+                        <span className="text-sm font-medium">{meta.label}</span>
+                      </span>
+                      {meta.bonus && (
+                        <span className="text-primary text-xs font-medium">
+                          {meta.bonus}
+                        </span>
+                      )}
+                      {meta.description && (
+                        <span className="text-muted-foreground text-xs leading-relaxed">
+                          {meta.description}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {errors.bioma && (
+              <p className="text-destructive text-xs">{errors.bioma}</p>
+            )}
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Biomas</CardTitle>
-              <CardDescription>
-                Cada bioma otorga un bono de producción en su recurso asociado.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="flex flex-col gap-2 text-sm">
-                <li className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Wheat className="text-forest size-4" /> Pradera
-                  </span>
-                  <span className="text-muted-foreground">+10 % comida</span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <TreePine className="text-wine size-4" /> Bosque
-                  </span>
-                  <span className="text-muted-foreground">+10 % madera</span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Mountain className="text-stone size-4" /> Montaña
-                  </span>
-                  <span className="text-muted-foreground">+10 % piedra</span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Pickaxe className="text-ink-soft size-4" /> Colina rica
-                  </span>
-                  <span className="text-muted-foreground">+10 % hierro</span>
-                </li>
-                <li className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Droplets className="text-azure size-4" /> Costa
-                  </span>
-                  <span className="text-muted-foreground">+10 % oro</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+          {formError && (
+            <p className="text-destructive text-sm" role="alert">
+              {formError}
+            </p>
+          )}
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button type="button" onClick={() => handleOpenChange(false)}>
-            Crear ciudad
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={submitting}
+              onClick={() => handleOpenChange(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Fundando…' : 'Crear ciudad'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

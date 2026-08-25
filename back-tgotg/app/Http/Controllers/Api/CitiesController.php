@@ -11,6 +11,7 @@ use App\Models\City;
 use App\Models\Player;
 use App\Models\Region;
 use App\Support\CityLayouts;
+use App\Support\CityState;
 use App\Support\StartingConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,6 +55,30 @@ class CitiesController extends Controller
             ]);
 
         return response()->json(['cities' => $cities]);
+    }
+
+    public function show(Request $request, City $city): JsonResponse
+    {
+        $player = $this->currentPlayer($request->user()->id);
+
+        if ($player === null) {
+            return response()->json([
+                'message' => __('No tienes una civilización en la contienda actual.'),
+            ], 404);
+        }
+
+        if ($city->player_id !== $player->id) {
+            return response()->json([
+                'message' => __('Esa ciudad no te pertenece.'),
+            ], 403);
+        }
+
+        $city->load(['buildings.buildingType']);
+        CityState::sync($city);
+
+        return response()->json([
+            'city' => CityState::payload($city, $player),
+        ]);
     }
 
     public function store(Request $request): JsonResponse

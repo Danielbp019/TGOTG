@@ -1,9 +1,10 @@
 'use client'
 
 import * as React from 'react'
+import { useParams } from 'next/navigation'
 import { setCityBuildings, setWorldSize } from '@/game/city-data'
 import type { CityPayload } from '@/lib/api'
-import { ApiError, fetchCity } from '@/lib/api'
+import { ApiError, fetchCity, fetchCityById } from '@/lib/api'
 import { useAuth } from '@/components/auth/auth-provider'
 
 interface CityContextValue {
@@ -19,6 +20,9 @@ const CityContext = React.createContext<CityContextValue | null>(null)
 
 export function CityProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoading: authLoading } = useAuth()
+  const params = useParams<{ id?: string }>()
+  // Ciudad activa: la de la ruta /ciudad/[id] o, en su defecto, la primera del jugador.
+  const activeCityId = typeof params?.id === 'string' ? params.id : null
   const [city, setCity] = React.useState<CityPayload | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<ApiError | null>(null)
@@ -31,7 +35,9 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true)
       setError(null)
       try {
-        const response = await fetchCity(signal)
+        const response = await (
+          activeCityId ? fetchCityById(activeCityId, signal) : fetchCity(signal)
+        )
         setCity(response.city)
         setCityBuildings(response.city.buildings)
         if (response.city.worldSize) setWorldSize(response.city.worldSize)
@@ -40,7 +46,7 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
         if (caught instanceof DOMException && caught.name === 'AbortError')
           return
         if (caught instanceof ApiError) {
-          if (caught.status === 401) {
+          if (caught.status === 401 || caught.status === 403 || caught.status === 404) {
             setCity(null)
           }
           setError(caught)
@@ -51,10 +57,18 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false)
       }
     },
-    [authLoading, userId]
+    [authLoading, userId, activeCityId]
   )
 
   const reload = load
+
+  // Evita mostrar datos de la ciudad anterior al navegar a otra.
+  const [prevCityId, setPrevCityId] = React.useState(activeCityId)
+  if (prevCityId !== activeCityId) {
+    setPrevCityId(activeCityId)
+    setCity(null)
+    setError(null)
+  }
 
   React.useEffect(() => {
     if (authLoading || !userId) return

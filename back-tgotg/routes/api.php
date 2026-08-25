@@ -36,6 +36,7 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::get('/game-options', [SystemController::class, 'gameOptions']);
     Route::get('/city', [CityController::class, 'show']);
     Route::get('/cities', [CitiesController::class, 'index']);
+    Route::get('/cities/{city}', [CitiesController::class, 'show']);
     Route::post('/cities', [CitiesController::class, 'store']);
     Route::get('/regions', [RegionController::class, 'index']);
     Route::get('/biomes', [RegionController::class, 'biomes']);

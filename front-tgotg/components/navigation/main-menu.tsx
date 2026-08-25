@@ -7,14 +7,14 @@ import { ChevronDown, Castle } from 'lucide-react'
 
 import { mainMenu } from '@/data/menu'
 import { useAuth } from '@/components/auth/auth-provider'
-import { useCity } from '@/components/city/city-provider'
+import { useCities } from '@/hooks/use-cities'
 import { CreateCityDialog } from '@/components/city/create-city-dialog'
 import { cn } from '@/lib/utils'
 
 export function MainMenu() {
   const pathname = usePathname()
   const { user } = useAuth()
-  const { city } = useCity()
+  const { cities, isLoading: citiesLoading } = useCities()
   const [createOpen, setCreateOpen] = React.useState(false)
 
   const visibleItems = mainMenu.filter((item) => !item.adminOnly || user?.role === 'admin')
@@ -94,19 +94,39 @@ export function MainMenu() {
                       )
                     })}
 
-                    <Link
-                      href="/ciudad"
-                      aria-current={pathname === '/ciudad' ? 'page' : undefined}
-                      className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
-                        pathname === '/ciudad'
-                          ? 'bg-muted text-foreground'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                      )}
-                    >
-                      <Castle className="size-4 shrink-0" />
-                      <span>{city?.name ?? 'Principal'}</span>
-                    </Link>
+                    {citiesLoading && (
+                      <p className="text-muted-foreground px-3 py-1.5 text-sm">
+                        Cargando ciudades…
+                      </p>
+                    )}
+
+                    {!citiesLoading && cities.length === 0 && (
+                      <p className="text-muted-foreground px-3 py-1.5 text-sm">
+                        Aún no tienes ciudades.
+                      </p>
+                    )}
+
+                    {cities.map((city) => {
+                      const href = `/ciudad/${city.id}`
+                      const isCityActive = pathname === href
+
+                      return (
+                        <Link
+                          key={city.id}
+                          href={href}
+                          aria-current={isCityActive ? 'page' : undefined}
+                          className={cn(
+                            'flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                            isCityActive
+                              ? 'bg-muted text-foreground'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          )}
+                        >
+                          <Castle className="size-4 shrink-0" />
+                          <span className="truncate">{city.name}</span>
+                        </Link>
+                      )
+                    })}
                   </div>
                 )}
               </div>

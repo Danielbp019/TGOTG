@@ -396,6 +396,10 @@ export function fetchCity(signal?: AbortSignal) {
   return apiFetch<{ city: CityPayload }>('/city', { signal } as RequestInit)
 }
 
+export function fetchCityById(id: string, signal?: AbortSignal) {
+  return apiFetch<{ city: CityPayload }>(`/cities/${id}`, { signal } as RequestInit)
+}
+
 export function repairBuilding(buildingId: string, type: 'paid' | 'auto') {
   return apiFetch<{
     building: Pick<CityBuilding, 'key' | 'damage'> & {
