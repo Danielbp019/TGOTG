@@ -15,6 +15,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('player_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('world_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('region_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignUuid('biome_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
             $table->string('name')->nullable();
             $table->unsignedBigInteger('gold')->default(0);
             $table->unsignedBigInteger('wood')->default(0);
@@ -37,6 +39,8 @@ return new class extends Migration
             $table->unsignedInteger('stationed_troops')->default(0);
             $table->unsignedInteger('defense_power')->default(0);
             $table->timestamp('protection_until')->nullable();
+            $table->index(['world_id', 'region_id']);
+            $table->index(['region_id', 'biome_id']);
             $table->timestamps();
         });
     }

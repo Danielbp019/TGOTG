@@ -2,8 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Models\Biome;
 use App\Models\City;
 use App\Models\Player;
+use App\Models\Region;
 use App\Models\World;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -22,6 +24,8 @@ class CityFactory extends Factory
         return [
             'player_id' => Player::factory(),
             'world_id' => World::factory(),
+            'region_id' => Region::inRandomOrder()->first()?->id ?? Region::factory(),
+            'biome_id' => Biome::inRandomOrder()->first()?->id ?? Biome::factory(),
             'name' => fake()->city(),
             'gold' => 0,
             'wood' => 0,

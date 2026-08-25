@@ -27,6 +27,8 @@ class DatabaseSeeder extends Seeder
             BuildingTypeSeeder::class,
             UnitTypeSeeder::class,
             GameOptionSeeder::class,
+            BiomeSeeder::class,
+            RegionSeeder::class,
             DemoWorldSeeder::class,
             DemoMessagesSeeder::class,
         ]);

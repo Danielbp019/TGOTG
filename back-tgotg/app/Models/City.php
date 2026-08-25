@@ -20,6 +20,8 @@ class City extends Model
     protected $fillable = [
         'player_id',
         'world_id',
+        'region_id',
+        'biome_id',
         'name',
         'gold',
         'wood',
@@ -108,6 +110,16 @@ class City extends Model
     public function world(): BelongsTo
     {
         return $this->belongsTo(World::class);
+    }
+
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
+    }
+
+    public function biome(): BelongsTo
+    {
+        return $this->belongsTo(Biome::class);
     }
 
     public function buildings(): HasMany

@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Biome;
 use App\Models\Building;
 use App\Models\BuildingType;
 use App\Models\City;
 use App\Models\Player;
+use App\Models\Region;
 use App\Models\User;
 use App\Models\UserStatistic;
 use App\Models\World;
@@ -53,9 +55,24 @@ class DemoWorldSeeder extends Seeder
             'food' => 9700,
         ]);
 
+        $region = Region::firstOrCreate(
+            ['key' => 'region1'],
+            ['label' => 'Región 1', 'polygon' => [100, 100, 400, 100, 400, 300, 100, 300], 'sort_order' => 1]
+        );
+        $biome = Biome::firstOrCreate(
+            ['key' => 'bosque'],
+            ['bonus_resource' => 'wood', 'bonus_value' => 0.10]
+        );
+
+        if (! $region->biomes()->where('biomes.id', $biome->id)->exists()) {
+            $region->biomes()->syncWithoutDetaching([$biome->id]);
+        }
+
         $city = City::create(StartingConfig::cityValues() + [
             'player_id' => $player->id,
             'world_id' => $world->id,
+            'region_id' => $region->id,
+            'biome_id' => $biome->id,
         ]);
 
         foreach (CityLayouts::plots() as $building) {
