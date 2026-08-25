@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Building;
 use App\Models\City;
 use App\Models\GameOption;
 use App\Models\Player;
@@ -89,11 +88,9 @@ test('un administrador crea la contienda con duración y velocidad resueltas', f
         'user_id' => $admin->id,
     ]);
 
+    // Flujo normal: el mundo se inicia sin ciudad; la primera ciudad se funda vía POST /cities tras elegir bendición
     $city = City::where('world_id', $world->id)->first();
-    expect($city)->not->toBeNull()
-        ->and($city->gold)->toBe(12450)
-        ->and($city->gold_per_hour)->toBe(109)
-        ->and(Building::where('city_id', $city->id)->count())->toBe(9);
+    expect($city)->toBeNull();
 });
 
 test('iniciar una nueva contienda cierra la anterior y borra sus jugadores', function () {

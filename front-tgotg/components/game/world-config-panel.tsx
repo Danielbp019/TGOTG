@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import { Check, Globe, Rocket } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -13,15 +12,13 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useAuth } from '@/components/auth/auth-provider'
-import { useCity } from '@/components/city/city-provider'
 import type { GameOptionPayload } from '@/lib/api'
 import { ApiError, createWorld, fetchGameOptions } from '@/lib/api'
 import { worldConfigSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
 export function WorldConfigPanel() {
-  const router = useRouter()
-  const { reload } = useCity()
+  const { user, isLoading: authLoading, logout } = useAuth()
 
   const [durations, setDurations] = React.useState<GameOptionPayload[]>([])
   const [multipliers, setMultipliers] = React.useState<GameOptionPayload[]>([])
@@ -30,8 +27,6 @@ export function WorldConfigPanel() {
   const [error, setError] = React.useState<string | undefined>()
   const [saving, setSaving] = React.useState(false)
   const [started, setStarted] = React.useState(false)
-
-  const { user, isLoading: authLoading } = useAuth()
 
   React.useEffect(() => {
     if (authLoading || !user) return
@@ -74,8 +69,7 @@ export function WorldConfigPanel() {
         multiplier_key: multiplierId,
       })
       setStarted(true)
-      await reload()
-      router.push('/')
+      await logout()
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message)

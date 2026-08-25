@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\Concerns\ResolvesCurrentPlayer;
 use App\Http\Controllers\Controller;
 use App\Models\Blessing;
 use App\Models\Civilization;
+use App\Models\Player;
+use App\Support\StartingConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -41,9 +43,23 @@ class PlayerController extends Controller
         $player = $this->currentPlayer($request->user()->id);
 
         if ($player === null) {
-            return response()->json([
-                'message' => __('No tienes una civilización en la contienda actual.'),
-            ], 404);
+            $world = $this->currentWorld();
+
+            if ($world === null) {
+                return response()->json([
+                    'message' => __('No hay una contienda en curso.'),
+                ], 404);
+            }
+
+            $player = Player::create([
+                'world_id' => $world->id,
+                'user_id' => $request->user()->id,
+                'gold' => StartingConfig::cityValues()['gold'],
+                'wood' => StartingConfig::cityValues()['wood'],
+                'stone' => StartingConfig::cityValues()['stone'],
+                'iron' => StartingConfig::cityValues()['iron'],
+                'food' => StartingConfig::cityValues()['food'],
+            ]);
         }
 
         $civilization = Civilization::where('key', $data['key'])->firstOrFail();
@@ -82,9 +98,23 @@ class PlayerController extends Controller
         $player = $this->currentPlayer($request->user()->id);
 
         if ($player === null) {
-            return response()->json([
-                'message' => __('No tienes una civilización en la contienda actual.'),
-            ], 404);
+            $world = $this->currentWorld();
+
+            if ($world === null) {
+                return response()->json([
+                    'message' => __('No hay una contienda en curso.'),
+                ], 404);
+            }
+
+            $player = Player::create([
+                'world_id' => $world->id,
+                'user_id' => $request->user()->id,
+                'gold' => StartingConfig::cityValues()['gold'],
+                'wood' => StartingConfig::cityValues()['wood'],
+                'stone' => StartingConfig::cityValues()['stone'],
+                'iron' => StartingConfig::cityValues()['iron'],
+                'food' => StartingConfig::cityValues()['food'],
+            ]);
         }
 
         $blessing = Blessing::where('key', $data['key'])->firstOrFail();

@@ -73,12 +73,22 @@ test('no se puede seleccionar una bendición inexistente', function () {
         ->assertStatus(422);
 });
 
-test('un usuario sin jugador no puede seleccionar bendición', function () {
+test('un usuario sin jugador puede seleccionar bendición y se crea su civilización con recursos iniciales', function () {
     $user = User::factory()->create();
-    World::factory()->create(['status' => 'running']);
-    Blessing::factory()->create(['key' => 'cosecha-abundante']);
+    $world = World::factory()->create(['status' => 'running']);
+    $blessing = Blessing::factory()->create(['key' => 'cosecha-abundante']);
 
     $this->actingAs($user, 'sanctum')
-        ->putJson('/api/player/blessing', ['key' => 'cosecha-abundante'])
-        ->assertStatus(404);
+        ->putJson('/api/player/blessing', ['key' => $blessing->key])
+        ->assertStatus(200)
+        ->assertJsonPath('blessing.key', 'cosecha-abundante');
+
+    $this->assertDatabaseHas('players', [
+        'world_id' => $world->id,
+        'user_id' => $user->id,
+        'blessing_id' => $blessing->id,
+    ]);
+
+    $player = Player::where('world_id', $world->id)->where('user_id', $user->id)->first();
+    expect($player->gold)->toBe(12450);
 });

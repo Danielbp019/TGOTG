@@ -336,6 +336,58 @@ export function fetchCivilizationsCached() {
   return cachedFetch('civilizations', fetchCivilizations)
 }
 
+export interface RegionPayload {
+  id: string
+  key: string
+  label: string
+  polygon: number[]
+  sortOrder: number
+  biomes: BiomePayload[]
+}
+
+export interface BiomePayload {
+  id: string
+  key: string
+  bonusResource: string
+  bonusValue: number
+}
+
+export interface CitiesPayload {
+  cities: Array<{
+    id: string
+    name: string
+    region: { id: string; key: string; label: string } | null
+    biome: { id: string; key: string } | null
+  }>
+}
+
+export function fetchRegions() {
+  return apiFetch<{ regions: RegionPayload[] }>('/regions')
+}
+
+export function fetchBiomes() {
+  return apiFetch<{ biomes: BiomePayload[] }>('/biomes')
+}
+
+export function fetchRegionsCached() {
+  return cachedFetch('regions', fetchRegions)
+}
+
+export function fetchBiomesCached() {
+  return cachedFetch('biomes', fetchBiomes)
+}
+
+export function fetchCities() {
+  return apiFetch<CitiesPayload>('/cities')
+}
+
+export function createCity(data: { name: string; region_id: string; biome_id: string }) {
+  return apiFetch<{ city: { id: string; name: string } }>('/cities', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
 export function fetchGameOptions() {
   return apiFetch<GameOptionsPayload>('/game-options')
 }

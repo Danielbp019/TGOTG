@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CitiesController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PlayerController;
+use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\SystemController;
 use App\Http\Controllers\Api\WorldController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +35,10 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::get('/building-types', [SystemController::class, 'buildingTypes']);
     Route::get('/game-options', [SystemController::class, 'gameOptions']);
     Route::get('/city', [CityController::class, 'show']);
+    Route::get('/cities', [CitiesController::class, 'index']);
+    Route::post('/cities', [CitiesController::class, 'store']);
+    Route::get('/regions', [RegionController::class, 'index']);
+    Route::get('/biomes', [RegionController::class, 'biomes']);
     Route::post('/city/buildings/{building}/repair', [CityController::class, 'repair']);
     Route::post('/city/buildings/{building}/upgrade', [CityController::class, 'upgrade']);
     Route::post('/worlds', [WorldController::class, 'store']);

@@ -46,6 +46,7 @@ Juego de estrategia medieval persistente por navegador, con una experiencia visu
 8. No crear sistemas complejos sin necesidad.
 9. Priorizar una interfaz funcional sobre efectos visuales.
 10. Cada etapa debe dejar la aplicación ejecutable.
+11. Todo dato de prueba va en `database/seeders` y `database/factories`, nunca hardcodeado en controladores. Los controladores son estándar y leen/escriben DB; el seed puebla la DB.
 
 ## Validaciones
 
