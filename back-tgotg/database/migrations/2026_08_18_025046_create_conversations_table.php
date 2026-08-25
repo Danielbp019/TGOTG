@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignUuid('user_two_id')->constrained('users')->cascadeOnDelete();
             $table->timestamp('last_message_at')->nullable()->index();
             $table->unique(['world_id', 'user_one_id', 'user_two_id']);
+            $table->index(['world_id', 'last_message_at']);
             $table->timestamps();
         });
     }

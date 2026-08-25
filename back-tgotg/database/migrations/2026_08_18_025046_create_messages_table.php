@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignUuid('sender_id')->constrained('users')->cascadeOnDelete();
             $table->text('body');
             $table->timestamp('read_at')->nullable();
+            $table->index(['conversation_id', 'created_at']);
             $table->timestamps();
         });
     }
