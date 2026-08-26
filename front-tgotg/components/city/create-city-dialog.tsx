@@ -2,14 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Castle,
-  Droplets,
-  Mountain,
-  Pickaxe,
-  TreePine,
-  Wheat,
-} from 'lucide-react'
+import Image from 'next/image'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -23,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { biomeBonusLabel, biomeMeta } from '@/data/biomes'
 import {
   ApiError,
   createCity,
@@ -46,64 +40,6 @@ const initialValues: CreateCityValues = {
   nombre: '',
   region: '',
   bioma: '',
-}
-
-interface BiomeMeta {
-  label: string
-  bonus: string
-  description: string
-  icon: React.ElementType
-  iconColor: string
-}
-
-const BIOME_META: Record<string, BiomeMeta> = {
-  pradera: {
-    label: 'Pradera',
-    bonus: '+10 % comida',
-    description: 'Llanuras fértiles ideales para granjas y pastos.',
-    icon: Wheat,
-    iconColor: 'text-forest',
-  },
-  bosque: {
-    label: 'Bosque',
-    bonus: '+10 % madera',
-    description: 'Espesura interminable de robles y pinos.',
-    icon: TreePine,
-    iconColor: 'text-wine',
-  },
-  'montaña': {
-    label: 'Montaña',
-    bonus: '+10 % piedra',
-    description: 'Picos rocosos ricos en canteras.',
-    icon: Mountain,
-    iconColor: 'text-stone',
-  },
-  colinaRica: {
-    label: 'Colina rica',
-    bonus: '+10 % hierro',
-    description: 'Vetas profundas de mineral bajo las colinas.',
-    icon: Pickaxe,
-    iconColor: 'text-ink-soft',
-  },
-  costa: {
-    label: 'Costa',
-    bonus: '+10 % oro',
-    description: 'Costas prósperas que atraen comercio y tributos.',
-    icon: Droplets,
-    iconColor: 'text-azure',
-  },
-}
-
-const FALLBACK_BIOME_META: BiomeMeta = {
-  label: '',
-  bonus: '',
-  description: '',
-  icon: Castle,
-  iconColor: 'text-muted-foreground',
-}
-
-function biomeMeta(key: string): BiomeMeta {
-  return BIOME_META[key] ?? { ...FALLBACK_BIOME_META, label: key }
 }
 
 export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) {
@@ -215,9 +151,15 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
-          <div className="bg-muted flex h-48 items-center justify-center rounded-xl border text-sm font-medium">
-            mapa aquí
-          </div>
+          <figure className="ring-foreground/10 overflow-hidden rounded-xl ring-1">
+            <Image
+              src="/game/maps/mapaGlobal2048x1024.jpg"
+              alt="Mapa del mundo conocido"
+              width={2048}
+              height={1024}
+              className="block h-auto w-full"
+            />
+          </figure>
 
           <div className="grid gap-2">
             <Label htmlFor="create-city-nombre">Nombre de la ciudad</Label>
@@ -309,11 +251,9 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
                         <Icon className={cn('size-5', meta.iconColor)} />
                         <span className="text-sm font-medium">{meta.label}</span>
                       </span>
-                      {meta.bonus && (
-                        <span className="text-primary text-xs font-medium">
-                          {meta.bonus}
-                        </span>
-                      )}
+                      <span className="text-primary text-xs font-medium">
+                        {biomeBonusLabel(b.bonusResource, b.bonusValue)}
+                      </span>
                       {meta.description && (
                         <span className="text-muted-foreground text-xs leading-relaxed">
                           {meta.description}

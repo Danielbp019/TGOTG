@@ -27,7 +27,7 @@ export const mainMenu: MenuItem[] = [
     icon: FlaskConical,
     disabled: true,
   },
-  { label: 'Mapa', href: '/mapa', icon: Map, disabled: true },
+  { label: 'Mapa', href: '/mapa', icon: Map },
   { label: 'Alianzas', href: '/alianzas', icon: Users, disabled: true },
   { label: 'Mensajes', href: '/mensajes', icon: MessageSquare },
   {
