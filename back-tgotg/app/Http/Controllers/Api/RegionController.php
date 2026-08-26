@@ -23,6 +23,8 @@ class RegionController extends Controller
                 'biomes' => $region->biomes->map(fn (Biome $b) => [
                     'id' => $b->id,
                     'key' => $b->key,
+                    'label' => $b->label,
+                    'description' => $b->description,
                     'bonusResource' => $b->bonus_resource,
                     'bonusValue' => (float) $b->bonus_value,
                 ])->values(),
@@ -36,6 +38,8 @@ class RegionController extends Controller
         $biomes = Biome::orderBy('key')->get()->map(fn (Biome $b) => [
             'id' => $b->id,
             'key' => $b->key,
+            'label' => $b->label,
+            'description' => $b->description,
             'bonusResource' => $b->bonus_resource,
             'bonusValue' => (float) $b->bonus_value,
         ]);

@@ -249,14 +249,16 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
                     >
                       <span className="flex items-center gap-2">
                         <Icon className={cn('size-5', meta.iconColor)} />
-                        <span className="text-sm font-medium">{meta.label}</span>
+                        <span className="text-sm font-medium">
+                          {b.label || meta.label}
+                        </span>
                       </span>
                       <span className="text-primary text-xs font-medium">
                         {biomeBonusLabel(b.bonusResource, b.bonusValue)}
                       </span>
-                      {meta.description && (
+                      {(b.description || meta.description) && (
                         <span className="text-muted-foreground text-xs leading-relaxed">
-                          {meta.description}
+                          {b.description || meta.description}
                         </span>
                       )}
                     </button>

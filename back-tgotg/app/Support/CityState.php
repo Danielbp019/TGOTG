@@ -47,6 +47,9 @@ class CityState
             ->values()
             ->map(function (Building $building) {
                 $plot = CityLayouts::plotForKey($building->buildingType->key);
+                $repairCost = $building->damage > 0 && $building->repair_started_at === null
+                    ? BuildingRepair::cost($building)
+                    : null;
 
                 return [
                     'id' => $building->id,
@@ -57,6 +60,12 @@ class CityState
                     'damage' => $building->damage,
                     'repairing' => $building->repair_started_at !== null,
                     'repairPaid' => $building->repair_paid,
+                    'repairMaterial' => $building->buildingType->repair_material,
+                    'repairCost' => $repairCost === null ? null : [
+                        'gold' => $repairCost['gold'],
+                        'material' => $repairCost['repair_material'],
+                        'amount' => $repairCost['material_amount'],
+                    ],
                     'upgrading' => $building->upgrade_finishes_at !== null,
                     'upgradeFinishesAt' => $building->upgrade_finishes_at?->toIso8601String(),
                     'shape' => $plot['shape'] ?? 'diamond',

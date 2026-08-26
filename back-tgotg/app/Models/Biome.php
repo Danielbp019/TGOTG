@@ -15,6 +15,8 @@ class Biome extends Model
 
     protected $fillable = [
         'key',
+        'label',
+        'description',
         'bonus_resource',
         'bonus_value',
     ];

@@ -7,6 +7,7 @@ use App\Models\Blessing;
 use App\Models\BuildingType;
 use App\Models\Civilization;
 use App\Models\GameOption;
+use App\Support\BuildingCosts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 
@@ -62,6 +63,9 @@ class SystemController extends Controller
                 'iron_cost' => $buildingType->iron_cost,
                 'base_minutes' => $buildingType->base_minutes,
                 'repair_material' => $buildingType->repair_material,
+                'levels' => collect(range(1, (int) $buildingType->max_level))
+                    ->map(fn (int $level) => BuildingCosts::costForLevel($buildingType, $level))
+                    ->values(),
             ]
         );
 

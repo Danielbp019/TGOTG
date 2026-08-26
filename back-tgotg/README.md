@@ -351,7 +351,7 @@ Requiere autenticación. Opciones para crear partida: duraciones y multiplicador
 
 ### `GET /api/city`
 
-Requiere autenticación (cookie `tgotg_token` o `Authorization: Bearer`). Devuelve la ciudad del jugador con todos sus datos. Las coordenadas `shape,x,y,width,height` y `worldSize` **no se leen de la tabla `buildings`** — la tabla solo guarda `level/damage/repair_*/upgrade_*`; el controlador las resuelve contra el SSOT `App\Support\CityLayouts` y las inyecta en la respuesta. `StartingConfig::buildings()` es alias deprecado.
+Requiere autenticación (cookie `tgotg_token` o `Authorization: Bearer`). Devuelve la ciudad del jugador con todos sus datos. Las coordenadas `shape,x,y,width,height` y `worldSize` **no se leen de la tabla `buildings`** — la tabla solo guarda `level/damage/repair_*/upgrade_*`; el controlador las resuelve contra el SSOT `App\Support\CityLayouts` y las inyecta en la respuesta.
 
 **Respuesta 200**
 
@@ -499,7 +499,7 @@ Requiere autenticación. Elimina una conversación.
 
 ## Coordenadas y mapas (SSOT)
 
-- **Fichero único:** `app/Support/CityLayouts.php` — `const WORLD_SIZE`, `plots(map='bosque')` y `plotForKey(key, map)`. Único lugar para mover edificios o añadir mapas/edificios. `StartingConfig::buildings(map)` delega allí.
+- **Fichero único:** `app/Support/CityLayouts.php` — `const WORLD_SIZE`, `plots(map='bosque')` y `plotForKey(key, map)`. Único lugar para mover edificios o añadir mapas/edificios.
 - **Tabla `buildings`:** columnas `id, city_id, building_type_id, level, damage, repair_started_at, repair_paid, upgrade_started_at, upgrade_finishes_at, upgrade_target_level` — sin `shape,x,y,width,height`.
 - **Front:** `front-tgotg/game/plots.ts` deprecado a stub; `CityScene` lee `getCityBuildings()/getWorldSize()` de `game/city-data.ts` alimentados por `GET /api/city`. Validación `zod` en `front-tgotg/lib/validations/city.ts`.
 - **Nuevo mapa:** añade `case 'desierto' => [...]` en `CityLayouts::plots()` y propaga el `map` a `WorldController::store`, `DemoWorldSeeder` y `CityController::show` sin nueva migración.

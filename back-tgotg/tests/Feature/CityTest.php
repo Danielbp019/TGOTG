@@ -85,7 +85,38 @@ test('devuelve la ciudad del jugador actual con sus edificios', function () {
         ->assertJsonPath('city.buildings.0.x', 970)
         ->assertJsonPath('city.buildings.0.y', 290)
         ->assertJsonPath('city.buildings.0.width', 340)
-        ->assertJsonPath('city.buildings.0.height', 320);
+        ->assertJsonPath('city.buildings.0.height', 320)
+        // Sin daño no hay costo de reparación.
+        ->assertJsonPath('city.buildings.0.repairCost', null);
+});
+
+test('el payload incluye el material y costo de reparación de un edificio dañado', function () {
+    $user = User::factory()->create();
+    $world = World::factory()->create(['status' => 'running']);
+    $player = Player::factory()->create(['world_id' => $world->id, 'user_id' => $user->id]);
+    $city = City::factory()->create([
+        'player_id' => $player->id,
+        'world_id' => $world->id,
+    ]);
+    $buildingType = BuildingType::factory()->create([
+        'key' => 'muralla',
+        'repair_material' => 'stone',
+    ]);
+    Building::factory()->create([
+        'city_id' => $city->id,
+        'building_type_id' => $buildingType->id,
+        'level' => 2,
+        'damage' => 50,
+    ]);
+
+    // HP = 2 × 1000 × 1,5 (defensivo) = 3000; puntos = 50 % de 3000 = 1500.
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/city')
+        ->assertStatus(200)
+        ->assertJsonPath('city.buildings.0.repairMaterial', 'stone')
+        ->assertJsonPath('city.buildings.0.repairCost.gold', 4500)
+        ->assertJsonPath('city.buildings.0.repairCost.material', 'stone')
+        ->assertJsonPath('city.buildings.0.repairCost.amount', 1500);
 });
 
 test('los recursos del payload de ciudad son los generales del jugador', function () {

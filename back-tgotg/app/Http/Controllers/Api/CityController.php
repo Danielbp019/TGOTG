@@ -8,6 +8,7 @@ use App\Models\Building;
 use App\Models\City;
 use App\Models\Player;
 use App\Support\BuildingCosts;
+use App\Support\BuildingRepair;
 use App\Support\CityState;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -236,7 +237,7 @@ class CityController extends Controller
         $sufficient = DB::transaction(function () use ($player, $building, $paid): bool {
             if ($paid) {
                 $lockedPlayer = Player::whereKey($player->id)->lockForUpdate()->first();
-                $cost = $this->repairCost($building);
+                $cost = BuildingRepair::cost($building);
 
                 if (
                     $lockedPlayer->gold < $cost['gold']
@@ -271,41 +272,5 @@ class CityController extends Controller
                 'repairPaid' => $paid,
             ],
         ]);
-    }
-
-    /**
-     * Order a repair for a damaged building.
-     *
-     * `paid` deduces gold and material and repairs fast (10 % HP/hora);
-     * `auto` is free but slow (1,5 % HP/hora).
-     */
-    private function repairCost(Building $building): array
-    {
-        $material = $building->buildingType->repair_material;
-        $points = $this->damagePoints($building);
-
-        return [
-            'repair_material' => $material,
-            'gold' => $points * (int) config('game_balance.repair.gold_per_point'),
-            'material_amount' => $points * (int) config('game_balance.repair.material_per_point'),
-        ];
-    }
-
-    private function damagePoints(Building $building): int
-    {
-        $hp = $this->buildingHp($building);
-
-        return (int) ceil($building->damage * $hp / 100);
-    }
-
-    private function buildingHp(Building $building): int
-    {
-        $hp = $building->level * (int) config('game_balance.building.hp_per_level');
-
-        if (in_array($building->buildingType->key, ['muralla', 'foso'], true)) {
-            $hp = (int) round($hp * (float) config('game_balance.building.hp_factor_defensive'));
-        }
-
-        return max($hp, 1);
     }
 }

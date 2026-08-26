@@ -19,6 +19,8 @@ class BiomeFactory extends Factory
     {
         return [
             'key' => fake()->unique()->lexify('biome???'),
+            'label' => fake()->unique()->word(),
+            'description' => fake()->sentence(),
             'bonus_resource' => fake()->randomElement(['food', 'wood', 'stone', 'iron', 'gold']),
             'bonus_value' => 0.10,
         ];

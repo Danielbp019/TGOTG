@@ -131,7 +131,7 @@ export function WorldMap() {
                     >
                       <span className="flex items-center gap-2 text-sm font-medium">
                         <Icon className={cn('size-4', meta.iconColor)} />
-                        {meta.label || biome.key}
+                        {biome.label || meta.label || biome.key}
                       </span>
                       <Badge variant="secondary">
                         {biomeBonusLabel(biome.bonusResource, biome.bonusValue)}

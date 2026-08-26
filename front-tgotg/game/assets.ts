@@ -73,16 +73,3 @@ export function allInteriorAssetPaths(): string[] {
   }
   return [...new Set(paths)]
 }
-
-/** @deprecated Usar buildingAssetPath(key, level, damage). Se mantiene por compatibilidad. */
-export const buildingAssets: Record<BuildingType, string> = {
-  ayuntamiento: buildingAssetPath('ayuntamiento', 1, 0) ?? '',
-  muralla: buildingAssetPath('muralla', 1, 0) ?? '',
-  foso: buildingAssetPath('foso', 1, 0) ?? '',
-  granja: buildingAssetPath('granja', 1, 0) ?? '',
-  minaHierro: buildingAssetPath('minaHierro', 1, 0) ?? '',
-  minaPiedra: buildingAssetPath('minaPiedra', 1, 0) ?? '',
-  aserradero: buildingAssetPath('aserradero', 1, 0) ?? '',
-  cuartel: buildingAssetPath('cuartel', 1, 0) ?? '',
-  laboratorio: buildingAssetPath('laboratorio', 1, 0) ?? '',
-}

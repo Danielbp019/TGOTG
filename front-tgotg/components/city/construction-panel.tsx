@@ -16,11 +16,11 @@ import {
 } from '@/components/ui/card'
 import { useAuth } from '@/components/auth/auth-provider'
 import { buildingColors, buildingIcons } from '@/data/icons'
-import { buildingCostAtLevel } from '@/data/balance'
 import {
   ApiError,
   fetchBuildingTypesCached,
   upgradeBuilding,
+  type BuildingLevelCost,
   type BuildingTypePayload,
   type CityBuilding,
 } from '@/lib/api'
@@ -109,7 +109,7 @@ function ConstructionRow({
   onUpgrade: () => void
 }) {
   const nextLevel = level + 1
-  const cost = buildingCostAtLevel(building.key, nextLevel)
+  const cost: BuildingLevelCost | undefined = building.levels[nextLevel - 1]
   const countdown = formatCountdown(upgradeFinishesAt, now)
   const category = isBuildingCategory(building.category)
     ? building.category

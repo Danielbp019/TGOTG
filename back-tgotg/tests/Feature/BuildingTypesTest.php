@@ -41,5 +41,14 @@ test('devuelve los tipos de edificio con descripción, nivel máximo y costos', 
         ->assertJsonPath('building_types.0.stone_cost', 600)
         ->assertJsonPath('building_types.0.iron_cost', 200)
         ->assertJsonPath('building_types.0.base_minutes', 120)
-        ->assertJsonPath('building_types.0.repair_material', 'stone');
+        ->assertJsonPath('building_types.0.repair_material', 'stone')
+        ->assertJsonCount(5, 'building_types.0.levels')
+        ->assertJsonPath('building_types.0.levels.0.gold', 4000)
+        ->assertJsonPath('building_types.0.levels.0.minutes', 120)
+        // Nivel 2: materiales ×1.6 y tiempo ×1.5.
+        ->assertJsonPath('building_types.0.levels.1.gold', 6400)
+        ->assertJsonPath('building_types.0.levels.1.wood', 1280)
+        ->assertJsonPath('building_types.0.levels.1.stone', 960)
+        ->assertJsonPath('building_types.0.levels.1.iron', 320)
+        ->assertJsonPath('building_types.0.levels.1.minutes', 180);
 });

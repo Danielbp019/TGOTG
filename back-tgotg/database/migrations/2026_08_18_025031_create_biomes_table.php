@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('biomes', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('key')->unique();
+            $table->string('label');
+            $table->text('description')->nullable();
             $table->string('bonus_resource');
             $table->decimal('bonus_value', 5, 2);
             $table->timestamps();

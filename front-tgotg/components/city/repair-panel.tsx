@@ -13,44 +13,22 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { buildingColors, buildingIcons } from '@/data/icons'
-import { buildingHp } from '@/data/balance'
-import { BALANCE } from '@/data/balance'
 import { resources } from '@/data/resources'
-import type { CityBuilding } from '@/lib/api'
-import { ApiError, repairBuilding } from '@/lib/api'
 import type { ResourceKey } from '@/types'
+import {
+  ApiError,
+  repairBuilding,
+  type CityBuilding,
+  type CityBuildingRepairCost,
+} from '@/lib/api'
 
-interface RepairCost {
-  gold: number
-  material: ResourceKey
-  materialAmount: number
+function repairCost(building: CityBuilding): CityBuildingRepairCost | null {
+  if (building.level < 1) return null
+  return building.repairCost
 }
 
-function repairCost(building: CityBuilding): RepairCost | null {
-  const material = BUILDING_MATERIAL[building.key]
-  if (!material || building.level < 1) return null
-
-  const points = Math.ceil(
-    (building.damage * buildingHp(building.key, building.level)) / 100
-  )
-
-  return {
-    gold: points * BALANCE.repair.goldPerPoint,
-    material,
-    materialAmount: points * BALANCE.repair.materialPerPoint,
-  }
-}
-
-const BUILDING_MATERIAL: Record<string, ResourceKey> = {
-  ayuntamiento: 'stone',
-  muralla: 'stone',
-  foso: 'stone',
-  granja: 'wood',
-  aserradero: 'wood',
-  minaPiedra: 'stone',
-  minaHierro: 'iron',
-  cuartel: 'iron',
-  laboratorio: 'iron',
+function isResourceKey(value: string): value is ResourceKey {
+  return value in resources
 }
 
 export function RepairPanel() {
@@ -107,7 +85,9 @@ export function RepairPanel() {
             {damaged.map((building) => {
               const Icon = buildingIcons[building.key]
               const cost = repairCost(building)
-              const MaterialIcon = cost ? resources[cost.material].icon : null
+              const material =
+                cost && isResourceKey(cost.material) ? cost.material : null
+              const MaterialIcon = material ? resources[material].icon : undefined
 
               return (
                 <li
@@ -139,7 +119,7 @@ export function RepairPanel() {
                     </div>
                   </div>
 
-                  {!building.repairing && cost && (
+                  {!building.repairing && cost && material && (
                     <div className="flex items-center gap-2 text-xs tabular-nums">
                       <span className="text-muted-foreground flex items-center gap-1">
                         <resources.gold.icon
@@ -148,14 +128,12 @@ export function RepairPanel() {
                         {cost.gold.toLocaleString('es')}
                       </span>
                       <span className="text-muted-foreground flex items-center gap-1">
-                        {MaterialIcon && (
+                        {material && MaterialIcon && (
                           <MaterialIcon
-                            className={`size-3.5 ${
-                              resources[cost.material].iconColor
-                            }`}
+                            className={`size-3.5 ${resources[material].iconColor}`}
                           />
                         )}
-                        {cost.materialAmount.toLocaleString('es')}
+                        {cost.amount.toLocaleString('es')}
                       </span>
                     </div>
                   )}

@@ -28,6 +28,14 @@ export interface MyBlessingResponse {
   blessing: BlessingPayload | null
 }
 
+export interface BuildingLevelCost {
+  gold: number
+  wood: number
+  stone: number
+  iron: number
+  minutes: number
+}
+
 export interface BuildingTypePayload {
   key: string
   name: string
@@ -40,6 +48,8 @@ export interface BuildingTypePayload {
   iron_cost: number
   base_minutes: number
   repair_material: string
+  /** Costo por nivel (índice 0 = nivel 1), calculado por el backend. */
+  levels: BuildingLevelCost[]
 }
 
 export interface CivilizationPayload {
@@ -66,6 +76,12 @@ export interface GameOptionsPayload {
   multipliers: GameOptionPayload[]
 }
 
+export interface CityBuildingRepairCost {
+  gold: number
+  material: string
+  amount: number
+}
+
 export interface CityBuilding {
   id: string
   key: string
@@ -75,6 +91,9 @@ export interface CityBuilding {
   damage: number
   repairing: boolean
   repairPaid: boolean
+  repairMaterial: string
+  /** Costo total de reparación pagada; null si no aplica. */
+  repairCost: CityBuildingRepairCost | null
   upgrading: boolean
   upgradeFinishesAt: string | null
   shape: PlotShape
@@ -357,6 +376,8 @@ export interface RegionPayload {
 export interface BiomePayload {
   id: string
   key: string
+  label: string | null
+  description: string | null
   bonusResource: string
   bonusValue: number
 }
