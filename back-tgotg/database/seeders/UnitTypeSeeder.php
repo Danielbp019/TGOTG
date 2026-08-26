@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Civilization;
 use App\Models\UnitType;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -13,11 +14,14 @@ class UnitTypeSeeder extends Seeder
     /**
      * Seed the initial unit types.
      *
+     * Cada civilización usa únicamente sus propios tipos de unidad
+     * (columna civilization_id; null = unidad neutral compartida).
      * Cada unidad requiere un cuartel del nivel indicado en
      * required_barracks_level y consume comida por hora mientras existe.
      */
     public function run(): void
     {
+        $humanos = Civilization::where('key', 'humanos')->firstOrFail();
         $unitTypes = [
             [
                 'key' => 'miliciano',
@@ -92,6 +96,8 @@ class UnitTypeSeeder extends Seeder
         ];
 
         foreach ($unitTypes as $unitType) {
+            $unitType['civilization_id'] = $humanos->id;
+
             UnitType::updateOrCreate(['key' => $unitType['key']], $unitType);
         }
     }

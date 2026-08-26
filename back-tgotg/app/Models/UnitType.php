@@ -6,6 +6,7 @@ use Database\Factories\UnitTypeFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UnitType extends Model
 {
@@ -16,6 +17,7 @@ class UnitType extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'civilization_id',
         'key',
         'name',
         'tier',
@@ -46,5 +48,13 @@ class UnitType extends Model
             'training_minutes' => 'integer',
             'required_barracks_level' => 'integer',
         ];
+    }
+
+    /**
+     * Civilización dueña del tipo de unidad (null = unidad neutral compartida).
+     */
+    public function civilization(): BelongsTo
+    {
+        return $this->belongsTo(Civilization::class);
     }
 }

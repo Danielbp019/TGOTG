@@ -34,6 +34,7 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::get('/blessings', [SystemController::class, 'blessings']);
     Route::get('/civilizations', [SystemController::class, 'civilizations']);
     Route::get('/building-types', [SystemController::class, 'buildingTypes']);
+    Route::get('/unit-types', [SystemController::class, 'unitTypes']);
     Route::get('/game-options', [SystemController::class, 'gameOptions']);
     Route::get('/city', [CityController::class, 'show']);
     Route::get('/cities', [CitiesController::class, 'index']);

@@ -208,6 +208,14 @@ Daños al perder la defensa `[base, por punto de exceso]`:
 
 Fuentes: tabla `unit_types` / `UnitTypeSeeder`. El entrenamiento requiere el nivel de cuartel indicado.
 
+**Cada civilización usa únicamente sus propios tipos de unidad.**
+
+- La tabla tiene una FK opcional `civilization_id` → `civilizations` con índice único `(civilization_id, tier)`: cada civilización tiene como máximo un tipo por tier (1–5).
+- `civilization_id = null` reserva unidades **neutras/compartidas** accesibles por cualquier civilización (aún no hay ninguna).
+- Hoy solo existen las 5 unidades de humanos, asignadas a esa civilización en `UnitTypeSeeder`.
+- Para añadir las unidades de otra raza solo hay que añadir filas al seeder con su `civilization_id` y claves propias.
+- Endpoint `GET /api/unit-types`: devuelve las unidades de la civilización del jugador (+ neutrales); acepta `?civilization=key` para consultar cualquier raza (vista previa al elegir civilización); sin filtro ni civilización activa devuelve todas, agrupables por `civilization.key`. Las neutrales se listan al final.
+
 | Unidad     | Tier | Ataque | Defensa |   Oro | Comida | Hierro | Upkeep comida/h | Entrenamiento | Cuartel |
 | ---------- | ---: | -----: | ------: | ----: | -----: | -----: | --------------: | ------------: | ------: |
 | Miliciano  |    1 |     25 |      25 |    50 |     20 |     10 |             0,2 |         5 min |   Nvl 1 |

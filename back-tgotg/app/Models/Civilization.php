@@ -38,4 +38,9 @@ class Civilization extends Model
     {
         return $this->hasMany(Player::class);
     }
+
+    public function unitTypes(): HasMany
+    {
+        return $this->hasMany(UnitType::class);
+    }
 }

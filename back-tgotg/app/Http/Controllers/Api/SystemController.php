@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\ResolvesCurrentPlayer;
 use App\Http\Controllers\Controller;
 use App\Models\Blessing;
 use App\Models\BuildingType;
 use App\Models\Civilization;
 use App\Models\GameOption;
+use App\Models\UnitType;
 use App\Support\BuildingCosts;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class SystemController extends Controller
 {
+    use ResolvesCurrentPlayer;
+
     public function serverTime(): JsonResponse
     {
         return response()->json([
@@ -80,6 +85,85 @@ class SystemController extends Controller
             'durations' => $this->gameOptionPayload(GameOption::TYPE_DURATION),
             'multipliers' => $this->gameOptionPayload(GameOption::TYPE_MULTIPLIER),
         ]);
+    }
+
+    /**
+     * Tipos de unidad visibles para el jugador.
+     *
+     * Sin filtro y sin civilización activa devuelve todas (agrupables por
+     * `civilization.key` en el cliente); con civilización activa o con el
+     * parámetro ?civilization=key devuelve únicamente esa civilización.
+     */
+    public function unitTypes(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'civilization' => ['nullable', 'string', 'exists:civilizations,key'],
+        ]);
+
+        $civilizationKey = $data['civilization'] ?? null;
+
+        if ($civilizationKey === null) {
+            $player = $this->currentPlayer($request->user()->id);
+            $civilizationKey = $player?->civilization?->key;
+        }
+
+        $unitTypes = UnitType::query()
+            ->with('civilization')
+            ->when($civilizationKey, function ($query) use ($civilizationKey) {
+                $query->where(function ($query) use ($civilizationKey) {
+                    // La propia civilización + unidades neutrales compartidas.
+                    $query->whereHas('civilization', fn ($q) => $q->where('key', $civilizationKey))
+                        ->orWhereNull('civilization_id');
+                });
+            })
+            ->get()
+            ->values()
+            ->sort(function (UnitType $a, UnitType $b): int {
+                $civA = $a->civilization?->name;
+                $civB = $b->civilization?->name;
+
+                if ($civA === null || $civB === null) {
+                    if ($civA !== $civB) {
+                        // Las unidades neutrales van al final.
+                        return $civA === null ? 1 : -1;
+                    }
+
+                    return $a->tier <=> $b->tier;
+                }
+
+                return [$civA, $a->tier] <=> [$civB, $b->tier];
+            })
+            ->values()
+            ->map(fn (UnitType $unitType) => $this->unitTypePayload($unitType));
+
+        return response()->json([
+            'unit_types' => $unitTypes,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function unitTypePayload(UnitType $unitType): array
+    {
+        return [
+            'key' => $unitType->key,
+            'name' => $unitType->name,
+            'tier' => $unitType->tier,
+            'description' => $unitType->description,
+            'attack' => $unitType->attack,
+            'defense' => $unitType->defense,
+            'gold_cost' => $unitType->gold_cost,
+            'food_cost' => $unitType->food_cost,
+            'iron_cost' => $unitType->iron_cost,
+            'food_upkeep' => (float) $unitType->food_upkeep,
+            'training_minutes' => $unitType->training_minutes,
+            'required_barracks_level' => $unitType->required_barracks_level,
+            'civilization' => $unitType->civilization === null ? null : [
+                'key' => $unitType->civilization->key,
+                'name' => $unitType->civilization->name,
+            ],
+        ];
     }
 
     /**

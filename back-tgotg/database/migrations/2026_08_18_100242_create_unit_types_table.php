@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('unit_types', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            // Civilización dueña del tipo de unidad; null = unidad neutral compartida.
+            $table->uuid('civilization_id')->nullable();
             $table->string('key')->unique();
             $table->string('name');
             $table->unsignedTinyInteger('tier');
@@ -26,6 +28,13 @@ return new class extends Migration
             $table->unsignedInteger('training_minutes');
             $table->unsignedTinyInteger('required_barracks_level');
             $table->timestamps();
+
+            $table->foreign('civilization_id')
+                ->references('id')
+                ->on('civilizations')
+                ->nullOnDelete();
+            // Un tier por civilización (las unidades neutrales quedan fuera del índice).
+            $table->unique(['civilization_id', 'tier']);
         });
     }
 

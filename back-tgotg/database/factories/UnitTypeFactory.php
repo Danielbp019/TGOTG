@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Civilization;
 use App\Models\UnitType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,6 +19,7 @@ class UnitTypeFactory extends Factory
     public function definition(): array
     {
         return [
+            'civilization_id' => Civilization::factory(),
             'key' => fake()->unique()->word(),
             'name' => fake()->unique()->word(),
             'tier' => fake()->numberBetween(1, 5),
