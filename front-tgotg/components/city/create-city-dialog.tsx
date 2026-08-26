@@ -142,7 +142,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Crear nueva ciudad</DialogTitle>
           <DialogDescription>

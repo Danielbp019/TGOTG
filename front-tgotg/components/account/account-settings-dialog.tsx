@@ -210,7 +210,7 @@ export function AccountSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-md">
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Ajustes de cuenta</DialogTitle>
           <DialogDescription>
