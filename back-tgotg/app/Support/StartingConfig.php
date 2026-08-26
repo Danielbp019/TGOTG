@@ -5,21 +5,22 @@ namespace App\Support;
 class StartingConfig
 {
     /**
-     * Niveles iniciales de los edificios de la ciudad de partida.
+     * Niveles iniciales de los edificios de una ciudad recién creada:
+     * todo en nivel 0 excepto el ayuntamiento, que empieza en nivel 1.
      */
     private const BUILDING_LEVELS = [
-        'ayuntamiento' => 3,
-        'granja' => 2,
-        'aserradero' => 2,
-        'minaPiedra' => 1,
-        'minaHierro' => 2,
-        'muralla' => 2,
-        'foso' => 1,
+        'ayuntamiento' => 1,
+        'granja' => 0,
+        'aserradero' => 0,
+        'minaPiedra' => 0,
+        'minaHierro' => 0,
+        'muralla' => 0,
+        'foso' => 0,
     ];
 
-    private const POPULATION = 340;
+    private const POPULATION = 100;
 
-    private const STATIONED_TROOPS = 124;
+    private const STATIONED_TROOPS = 0;
 
     private const HAPPINESS = 72;
 
@@ -69,11 +70,11 @@ class StartingConfig
 
         return [
             'name' => 'Principal',
-            'gold' => 12450,
-            'wood' => 8300,
-            'stone' => 6200,
-            'iron' => 4100,
-            'food' => 9700,
+            'gold' => 3000,
+            'wood' => 2500,
+            'stone' => 2000,
+            'iron' => 500,
+            'food' => 2500,
             'gold_per_hour' => $goldPerHour,
             'wood_per_hour' => $perHour['wood'],
             'stone_per_hour' => $perHour['stone'],

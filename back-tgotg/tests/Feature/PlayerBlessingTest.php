@@ -90,5 +90,5 @@ test('un usuario sin jugador puede seleccionar bendición y se crea su civilizac
     ]);
 
     $player = Player::where('world_id', $world->id)->where('user_id', $user->id)->first();
-    expect($player->gold)->toBe(12450);
+    expect($player->gold)->toBe(3000);
 });

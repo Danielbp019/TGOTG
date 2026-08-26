@@ -269,15 +269,20 @@ Fuente: tabla `blessings` / `BlessingSeeder`. Se eligen al crear la partida y pu
 
 Fuente: `app/Support/StartingConfig.php` (todos los valores se derivan de `config('game_balance')`).
 
-Edificios iniciales: ayuntamiento Nvl 3, granja Nvl 2, aserradero Nvl 2, mina de piedra Nvl 1, mina de hierro Nvl 2, muralla Nvl 2, foso Nvl 1. Población inicial 340, felicidad 72, tropas estacionadas 124.
+Edificios iniciales: **todo en nivel 0 excepto el ayuntamiento, que empieza en nivel 1**.
 
-| Valor inicial                                           |                               Cantidad |
-| ------------------------------------------------------- | -------------------------------------: |
-| Oro / Madera / Piedra / Hierro / Comida (stock general) | 12 450 / 8 300 / 6 200 / 4 100 / 9 700 |
-| Oro/h · Madera/h · Piedra/h · Hierro/h · Comida/h       |               109 · 85 · 60 · 35 · 105 |
-| Consumo de comida/h                                     |                                     51 |
-| Defensa                                                 |                                    230 |
-| Poder defensivo                                         |                                  3 330 |
+| Valor inicial                                           |                            Cantidad |
+| ------------------------------------------------------- | ----------------------------------: |
+| Oro / Madera / Piedra / Hierro / Comida (stock general) | 3 000 / 2 500 / 2 000 / 500 / 2 500 |
+| Oro/h · Madera/h · Piedra/h · Hierro/h · Comida/h       |              24 · 35 · 30 · 15 · 15 |
+| Consumo de comida/h                                     |                                  15 |
+| Población                                               |                                 100 |
+| Felicidad                                               |                                  72 |
+| Tropas estacionadas                                     |                                   0 |
+| Defensa                                                 |                                  10 |
+| Poder defensivo                                         |                                  10 |
+
+> ⚠️ Provisional: el crecimiento de población y el reclutamiento de tropas aún no tienen definición oficial (ver §10).
 
 ### 9.2 Reparto diario
 
@@ -319,6 +324,8 @@ Edificios iniciales: ayuntamiento Nvl 3, granja Nvl 2, aserradero Nvl 2, mina de
 
 ### Economía y reglas de juego
 
+- [ ] Definir oficialmente la mecánica de **crecimiento de población** (fórmula provisional: 1 % de la brecha hasta el tope por hora, §2.4).
+- [ ] Definir oficialmente el **reclutamiento de tropas** (costes ya sembrados en `unit_types`, ver §7).
 - [ ] Implementar el reparto diario de excedente ligado al paso del día (§9.2).
 - [ ] El ayuntamiento determina el nivel máximo del resto de construcciones (ej. ayuntamiento 5 → construcciones 5).
 - [ ] Sistema de turnos/acciones: número fijo por paso del día, acumulables.

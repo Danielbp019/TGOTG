@@ -1,11 +1,14 @@
 <?php
 
+use App\Models\Biome;
 use App\Models\Building;
 use App\Models\BuildingType;
 use App\Models\City;
 use App\Models\Player;
+use App\Models\Region;
 use App\Models\User;
 use App\Models\World;
+use App\Support\CityLayouts;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -76,4 +79,71 @@ test('devuelve la ciudad propia con su payload completo', function () {
         ->assertJsonCount(1, 'city.buildings')
         ->assertJsonPath('city.buildings.0.key', 'ayuntamiento')
         ->assertJsonPath('city.buildings.0.level', 2);
+});
+
+test('crear una ciudad arranca con el ayuntamiento nivel 1 y el resto en nivel 0', function () {
+    $user = User::factory()->create();
+    World::factory()->create(['status' => 'running']);
+
+    $region = Region::factory()->create();
+    $biome = Biome::factory()->create();
+    $region->biomes()->attach($biome->id);
+
+    foreach (CityLayouts::plots() as $plot) {
+        BuildingType::factory()->create(['key' => $plot['key']]);
+    }
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/cities', [
+            'name' => 'Principal',
+            'region_id' => $region->id,
+            'biome_id' => $biome->id,
+        ])
+        ->assertStatus(201);
+
+    $player = Player::where('user_id', $user->id)->firstOrFail();
+    $buildings = Building::where('city_id', $player->cities->first()->id)->get();
+
+    expect($buildings)->toHaveCount(count(CityLayouts::plots()));
+
+    foreach ($buildings as $building) {
+        $expectedLevel = $building->buildingType->key === 'ayuntamiento' ? 1 : 0;
+        expect($building->level)->toBe($expectedLevel);
+    }
+});
+
+test('una ciudad recien creada tiene atributos coherentes con sus edificios', function () {
+    $user = User::factory()->create();
+    World::factory()->create(['status' => 'running']);
+
+    $region = Region::factory()->create();
+    $biome = Biome::factory()->create();
+    $region->biomes()->attach($biome->id);
+
+    foreach (CityLayouts::plots() as $plot) {
+        BuildingType::factory()->create(['key' => $plot['key']]);
+    }
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/cities', [
+            'name' => 'Principal',
+            'region_id' => $region->id,
+            'biome_id' => $biome->id,
+        ])
+        ->assertStatus(201);
+
+    // TH Nvl 1, resto Nvl 0: oro/h 24 (100 × 0,24), producción base,
+    // defensa 10 y poder defensivo 10 sin tropas.
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/city')
+        ->assertStatus(200)
+        ->assertJsonPath('city.perHour.gold', 24)
+        ->assertJsonPath('city.perHour.wood', 35)
+        ->assertJsonPath('city.perHour.stone', 30)
+        ->assertJsonPath('city.perHour.iron', 15)
+        ->assertJsonPath('city.perHour.food', 15)
+        ->assertJsonPath('city.population', 100)
+        ->assertJsonPath('city.defense', 10)
+        ->assertJsonPath('city.stationedTroops', 0)
+        ->assertJsonPath('city.defensePower', 10);
 });
