@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ResolvesCurrentPlayer;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateBlessingRequest;
+use App\Http\Requests\UpdateCivilizationRequest;
+use App\Http\Resources\BlessingResource;
+use App\Http\Resources\CivilizationResource;
 use App\Models\Blessing;
 use App\Models\Civilization;
 use App\Models\Player;
-use App\Support\StartingConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -52,44 +55,26 @@ class PlayerController extends Controller
         return response()->json([
             'in_game' => true,
             'civilization' => $player->civilization
-                ? $this->civilizationPayload($player->civilization)
+                ? new CivilizationResource($player->civilization)
                 : null,
         ]);
     }
 
-    public function updateCivilization(Request $request): JsonResponse
+    public function updateCivilization(UpdateCivilizationRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'key' => ['required', 'string', 'exists:civilizations,key'],
-        ]);
+        $data = $request->validated();
 
         $player = $this->currentPlayer($request->user()->id);
 
         if ($player === null) {
-            $world = $this->currentWorld();
-
-            if ($world === null) {
-                return response()->json([
-                    'message' => __('No hay una contienda en curso.'),
-                ], 404);
-            }
-
-            $player = Player::create([
-                'world_id' => $world->id,
-                'user_id' => $request->user()->id,
-                'gold' => StartingConfig::cityValues()['gold'],
-                'wood' => StartingConfig::cityValues()['wood'],
-                'stone' => StartingConfig::cityValues()['stone'],
-                'iron' => StartingConfig::cityValues()['iron'],
-                'food' => StartingConfig::cityValues()['food'],
-            ]);
+            $player = Player::findOrCreateForWorld($request->user()->id);
         }
 
         $civilization = Civilization::where('key', $data['key'])->firstOrFail();
         $player->update(['civilization_id' => $civilization->id]);
 
         return response()->json([
-            'civilization' => $this->civilizationPayload($civilization),
+            'civilization' => new CivilizationResource($civilization),
         ]);
     }
 
@@ -107,70 +92,26 @@ class PlayerController extends Controller
         return response()->json([
             'in_game' => true,
             'blessing' => $player->blessing
-                ? $this->blessingPayload($player->blessing)
+                ? new BlessingResource($player->blessing)
                 : null,
         ]);
     }
 
-    public function updateBlessing(Request $request): JsonResponse
+    public function updateBlessing(UpdateBlessingRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'key' => ['required', 'string', 'exists:blessings,key'],
-        ]);
+        $data = $request->validated();
 
         $player = $this->currentPlayer($request->user()->id);
 
         if ($player === null) {
-            $world = $this->currentWorld();
-
-            if ($world === null) {
-                return response()->json([
-                    'message' => __('No hay una contienda en curso.'),
-                ], 404);
-            }
-
-            $player = Player::create([
-                'world_id' => $world->id,
-                'user_id' => $request->user()->id,
-                'gold' => StartingConfig::cityValues()['gold'],
-                'wood' => StartingConfig::cityValues()['wood'],
-                'stone' => StartingConfig::cityValues()['stone'],
-                'iron' => StartingConfig::cityValues()['iron'],
-                'food' => StartingConfig::cityValues()['food'],
-            ]);
+            $player = Player::findOrCreateForWorld($request->user()->id);
         }
 
         $blessing = Blessing::where('key', $data['key'])->firstOrFail();
         $player->update(['blessing_id' => $blessing->id]);
 
         return response()->json([
-            'blessing' => $this->blessingPayload($blessing),
+            'blessing' => new BlessingResource($blessing),
         ]);
-    }
-
-    /**
-     * @return array{key: string, name: string, benefit: string, description: string|null}
-     */
-    private function blessingPayload(Blessing $blessing): array
-    {
-        return [
-            'key' => $blessing->key,
-            'name' => $blessing->name,
-            'benefit' => $blessing->benefit,
-            'description' => $blessing->description,
-        ];
-    }
-
-    /**
-     * @return array{key: string, name: string, benefit: string, description: string|null}
-     */
-    private function civilizationPayload(Civilization $civilization): array
-    {
-        return [
-            'key' => $civilization->key,
-            'name' => $civilization->name,
-            'benefit' => $civilization->benefit,
-            'description' => $civilization->description,
-        ];
     }
 }

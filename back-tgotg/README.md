@@ -32,12 +32,14 @@ La API usa **Sanctum con cookie `HttpOnly`** (recomendado para el navegador). Es
 
 > Los tokens caducan a las **24 horas** (`SANCTUM_TOKEN_EXPIRATION`). Los expirados se borran a diario con `sanctum:prune-expired`. Si ves `401 Sesión caducada` en el front, el `middleware/proxy` te redirige a `/login` y el `ApiError` dispara `tgotg:unauthorized`.
 
-## Autorización (Policies)
+## Autorización (Policies y roles)
 
 La comprobación de propiedad no se hace "a mano" en los controladores; vive en policies:
 
 - `BuildingPolicy::manage` — un edificio solo se repara/mejora si pertenece a la ciudad del jugador en la contienda `running` actual (`403` en caso contrario).
 - `ConversationPolicy::participate` — solo los dos participantes de una conversación pueden leerla, escribir o borrarla (`404`, para no revelar existencia).
+
+Las rutas exclusivas de administrador usan el middleware `role:admin` (alias registrado en `bootstrap/app.php`). Si un usuario sin el rol adecuado intenta acceder, recibe `403` con `{ "message": "No tienes permiso para realizar esta acción." }`. Los roles se asignan únicamente por seeder; el registro público siempre crea cuentas `player`.
 
 ## Rate limiting
 
@@ -59,33 +61,33 @@ Las operaciones que tocan recursos del juego son atómicas:
 
 ## Endpoints
 
-| Método | Ruta                                         | Auth | Descripción                                                              |
-| ------ | -------------------------------------------- | ---- | ------------------------------------------------------------------------ |
-| GET    | `/api/ping`                                  | No   | Comprobación de que la API responde.                                     |
-| POST   | `/api/auth/register`                         | No   | Crea una cuenta y deja la sesión en cookie `tgotg_token`.                |
-| POST   | `/api/auth/login`                            | No   | Inicia sesión y deja la sesión en cookie `tgotg_token`.                  |
-| POST   | `/api/auth/logout`                           | Sí   | Cierra sesión, revoca el token y borra la cookie.                        |
-| GET    | `/api/user`                                  | Sí   | Devuelve los datos del usuario autenticado.                              |
-| PUT    | `/api/account/profile`                       | Sí   | Actualiza nick y/o contraseña del usuario autenticado.                   |
-| DELETE | `/api/account`                               | Sí   | Elimina la cuenta y todos sus datos.                                     |
-| GET    | `/api/server-time`                           | Sí   | Devuelve la hora actual del servidor (ISO 8601 UTC).                     |
-| GET    | `/api/player/blessing`                       | Sí   | Devuelve la bendición actual del jugador en la partida.                  |
-| PUT    | `/api/player/blessing`                       | Sí   | Actualiza la bendición del jugador.                                      |
-| GET    | `/api/player/civilization`                   | Sí   | Devuelve la civilización actual del jugador en la partida.               |
-| PUT    | `/api/player/civilization`                   | Sí   | Actualiza la civilización del jugador.                                   |
-| GET    | `/api/blessings`                             | Sí   | Lista todas las bendiciones disponibles.                                 |
-| GET    | `/api/civilizations`                         | Sí   | Lista todas las civilizaciones disponibles.                              |
-| GET    | `/api/building-types`                        | Sí   | Lista todos los tipos de edificio disponibles.                           |
-| GET    | `/api/game-options`                          | Sí   | Devuelve duraciones y multiplicadores para crear partida.                |
-| GET    | `/api/city`                                  | Sí   | Devuelve la ciudad del jugador con recursos, producción, edificios, etc. |
-| POST   | `/api/city/buildings/{building}/repair`      | Sí   | Repara un edificio (paid/auto).                                          |
-| POST   | `/api/worlds`                                | Sí   | Crea una nueva contienda (partida).                                      |
-| GET    | `/api/conversations`                         | Sí   | Lista conversaciones del jugador.                                        |
-| POST   | `/api/conversations`                         | Sí   | Crea una nueva conversación con un mensaje inicial.                      |
-| GET    | `/api/conversations/{conversation}`          | Sí   | Obtiene una conversación con sus mensajes.                               |
-| POST   | `/api/conversations/{conversation}/messages` | Sí   | Envía un mensaje en una conversación existente.                          |
-| POST   | `/api/city/buildings/{building}/upgrade`     | Sí   | Inicia la mejora/construcción de un edificio (cola temporizada).         |
-| DELETE | `/api/conversations/{conversation}`          | Sí   | Elimina una conversación.                                                |
+| Método | Ruta                                         | Auth  | Descripción                                                              |
+| ------ | -------------------------------------------- | ----- | ------------------------------------------------------------------------ |
+| GET    | `/api/ping`                                  | No    | Comprobación de que la API responde.                                     |
+| POST   | `/api/auth/register`                         | No    | Crea una cuenta y deja la sesión en cookie `tgotg_token`.                |
+| POST   | `/api/auth/login`                            | No    | Inicia sesión y deja la sesión en cookie `tgotg_token`.                  |
+| POST   | `/api/auth/logout`                           | Sí    | Cierra sesión, revoca el token y borra la cookie.                        |
+| GET    | `/api/user`                                  | Sí    | Devuelve los datos del usuario autenticado.                              |
+| PUT    | `/api/account/profile`                       | Sí    | Actualiza nick y/o contraseña del usuario autenticado.                   |
+| DELETE | `/api/account`                               | Sí    | Elimina la cuenta y todos sus datos.                                     |
+| GET    | `/api/server-time`                           | Sí    | Devuelve la hora actual del servidor (ISO 8601 UTC).                     |
+| GET    | `/api/player/blessing`                       | Sí    | Devuelve la bendición actual del jugador en la partida.                  |
+| PUT    | `/api/player/blessing`                       | Sí    | Actualiza la bendición del jugador.                                      |
+| GET    | `/api/player/civilization`                   | Sí    | Devuelve la civilización actual del jugador en la partida.               |
+| PUT    | `/api/player/civilization`                   | Sí    | Actualiza la civilización del jugador.                                   |
+| GET    | `/api/blessings`                             | Sí    | Lista todas las bendiciones disponibles.                                 |
+| GET    | `/api/civilizations`                         | Sí    | Lista todas las civilizaciones disponibles.                              |
+| GET    | `/api/building-types`                        | Sí    | Lista todos los tipos de edificio disponibles.                           |
+| GET    | `/api/game-options`                          | Sí    | Devuelve duraciones y multiplicadores para crear partida.                |
+| GET    | `/api/city`                                  | Sí    | Devuelve la ciudad del jugador con recursos, producción, edificios, etc. |
+| POST   | `/api/city/buildings/{building}/repair`      | Sí    | Repara un edificio (paid/auto).                                          |
+| POST   | `/api/worlds`                                | Admin | Crea una nueva contienda (partida).                                      |
+| GET    | `/api/conversations`                         | Sí    | Lista conversaciones del jugador.                                        |
+| POST   | `/api/conversations`                         | Sí    | Crea una nueva conversación con un mensaje inicial.                      |
+| GET    | `/api/conversations/{conversation}`          | Sí    | Obtiene una conversación con sus mensajes.                               |
+| POST   | `/api/conversations/{conversation}/messages` | Sí    | Envía un mensaje en una conversación existente.                          |
+| POST   | `/api/city/buildings/{building}/upgrade`     | Sí    | Inicia la mejora/construcción de un edificio (cola temporizada).         |
+| DELETE | `/api/conversations/{conversation}`          | Sí    | Elimina una conversación.                                                |
 
 ### `GET /api/ping`
 
@@ -447,7 +449,7 @@ Requiere autenticación. Inicia la construcción o mejora de un edificio. Coste 
 
 ### `POST /api/worlds`
 
-Requiere autenticación. Crea una nueva contienda (partida).
+Requiere autenticación y rol `admin`. Crea una nueva contienda (partida).
 
 **Cuerpo de petición**
 
@@ -494,6 +496,7 @@ Requiere autenticación. Elimina una conversación.
 | Código | Situación                                                                                                      |
 | ------ | -------------------------------------------------------------------------------------------------------------- |
 | `401`  | Token ausente, inválido o revocado. `{ "message": "Unauthenticated." }`                                        |
+| `403`  | Sin permisos: edificio/conversación ajena (policy) o ruta de admin sin rol `admin` (`No tienes permiso...`).   |
 | `422`  | Validación fallida: `{ "message": "...", "errors": { "campo": ["..."] } }` (mensajes en español)               |
 | `429`  | Demasiadas peticiones: `login`/`register` (6/min), mensajería (30/min), resto de la API autenticada (120/min). |
 

@@ -3,29 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateWorldRequest;
 use App\Models\GameOption;
 use App\Models\Player;
 use App\Models\World;
-use App\Support\StartingConfig;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class WorldController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(CreateWorldRequest $request): JsonResponse
     {
-        if ($request->user()->role !== 'admin') {
-            return response()->json([
-                'message' => __('Solo el administrador puede iniciar una contienda.'),
-            ], 403);
-        }
-
-        $data = $request->validate([
-            'duration_key' => ['required', 'string', 'exists:game_options,key'],
-            'multiplier_key' => ['required', 'string', 'exists:game_options,key'],
-        ]);
+        $data = $request->validated();
 
         $duration = GameOption::where('type', GameOption::TYPE_DURATION)
             ->where('key', $data['duration_key'])
@@ -72,15 +62,7 @@ class WorldController extends Controller
                     'created_by' => $admin->id,
                 ]);
 
-                Player::create([
-                    'world_id' => $world->id,
-                    'user_id' => $admin->id,
-                    'gold' => StartingConfig::cityValues()['gold'],
-                    'wood' => StartingConfig::cityValues()['wood'],
-                    'stone' => StartingConfig::cityValues()['stone'],
-                    'iron' => StartingConfig::cityValues()['iron'],
-                    'food' => StartingConfig::cityValues()['food'],
-                ]);
+                Player::findOrCreateForWorld($admin->id);
 
                 return $world;
             });

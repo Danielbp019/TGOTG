@@ -44,7 +44,7 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::get('/biomes', [RegionController::class, 'biomes']);
     Route::post('/city/buildings/{building}/repair', [CityController::class, 'repair']);
     Route::post('/city/buildings/{building}/upgrade', [CityController::class, 'upgrade']);
-    Route::post('/worlds', [WorldController::class, 'store']);
+    Route::post('/worlds', [WorldController::class, 'store'])->middleware('role:admin');
 
     Route::middleware('throttle:30,1')->group(function () {
         Route::get('/conversations', [MessageController::class, 'index']);

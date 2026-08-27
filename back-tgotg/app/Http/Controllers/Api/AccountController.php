@@ -2,33 +2,22 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\HasUserPayload;
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Http\Requests\DestroyAccountRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AccountController extends Controller
 {
-    public function updateProfile(Request $request): JsonResponse
+    use HasUserPayload;
+
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();
-
-        $data = $request->validate([
-            'nick' => [
-                'sometimes',
-                'string',
-                'min:3',
-                'max:24',
-                Rule::unique('users', 'nick')->ignore($user->id),
-            ],
-            'current_password' => ['required_with:password', 'string'],
-            'password' => ['sometimes', 'string', 'min:8', 'confirmed'],
-        ], [
-            'nick.unique' => __('Este nick ya está en uso.'),
-        ]);
+        $data = $request->validated();
 
         if (isset($data['password']) && ! Hash::check($data['current_password'], $user->password)) {
             throw ValidationException::withMessages([
@@ -55,13 +44,9 @@ class AccountController extends Controller
         ]);
     }
 
-    public function destroy(Request $request): JsonResponse
+    public function destroy(DestroyAccountRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'confirm_nick' => ['required', 'string'],
-            'password' => ['required', 'string'],
-        ]);
-
+        $data = $request->validated();
         $user = $request->user();
 
         if ($data['confirm_nick'] !== $user->nick) {
@@ -80,18 +65,5 @@ class AccountController extends Controller
         $user->delete();
 
         return response()->json(['message' => __('Cuenta eliminada correctamente.')]);
-    }
-
-    /**
-     * @return array{id: string, nick: string, email: string, role: string}
-     */
-    private function userPayload(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'nick' => $user->nick,
-            'email' => $user->email,
-            'role' => $user->role,
-        ];
     }
 }

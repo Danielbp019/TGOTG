@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ResolvesCurrentPlayer;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RepairBuildingRequest;
 use App\Models\Building;
 use App\Models\City;
 use App\Models\Player;
@@ -197,11 +198,9 @@ class CityController extends Controller
      * `paid` deduces gold and material and repairs fast (10 % HP/hora);
      * `auto` is free but slow (1,5 % HP/hora).
      */
-    public function repair(Request $request, Building $building): JsonResponse
+    public function repair(RepairBuildingRequest $request, Building $building): JsonResponse
     {
-        $data = $request->validate([
-            'type' => ['required', 'string', 'in:paid,auto'],
-        ]);
+        $data = $request->validated();
 
         $player = $this->currentPlayer($request->user()->id);
 

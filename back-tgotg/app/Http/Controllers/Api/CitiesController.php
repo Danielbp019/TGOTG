@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ResolvesCurrentPlayer;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCityRequest;
 use App\Models\Biome;
 use App\Models\Building;
 use App\Models\BuildingType;
@@ -82,35 +83,15 @@ class CitiesController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreCityRequest $request): JsonResponse
     {
         $player = $this->currentPlayer($request->user()->id);
 
         if ($player === null) {
-            $world = $this->currentWorld();
-
-            if ($world === null) {
-                return response()->json([
-                    'message' => __('No hay una contienda en curso.'),
-                ], 404);
-            }
-
-            $player = Player::create([
-                'world_id' => $world->id,
-                'user_id' => $request->user()->id,
-                'gold' => StartingConfig::cityValues()['gold'],
-                'wood' => StartingConfig::cityValues()['wood'],
-                'stone' => StartingConfig::cityValues()['stone'],
-                'iron' => StartingConfig::cityValues()['iron'],
-                'food' => StartingConfig::cityValues()['food'],
-            ]);
+            $player = Player::findOrCreateForWorld($request->user()->id);
         }
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'min:3', 'max:30'],
-            'region_id' => ['required', 'uuid', 'exists:regions,id'],
-            'biome_id' => ['required', 'uuid', 'exists:biomes,id'],
-        ]);
+        $data = $request->validated();
 
         $name = trim($data['name']);
 

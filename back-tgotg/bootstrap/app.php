@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AttachTokenFromCookie;
+use App\Http\Middleware\EnsureHasRole;
 use App\Http\Middleware\PruneExpiredTokens;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -15,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'role' => EnsureHasRole::class,
+        ]);
         $middleware->redirectGuestsTo(fn (Request $request) => null);
         $middleware->api(prepend: [
             AttachTokenFromCookie::class,

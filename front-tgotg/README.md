@@ -131,6 +131,7 @@ front-tgotg/
 - El front no guarda el token en JS. `proxy.ts` lee la cookie en el servidor y decide redirigir (`/ → /login` si no hay cookie, `/login → /` si la hay).
 - `AuthProvider` hidrata el usuario con `GET /api/user` usando la cookie, pero **solo en rutas de juego**: en `/login` y `/register` no hay llamada al backend (evita un `401` inútil cada vez que entras a `/` sin sesión; el proxy ya decidió por ti). Mientras `isLoading` no fetchea ciudad ni bendiciones.
 - Todos los diálogos/paneles que llaman a la API (`CityProvider`, `BlessingDialog`, `CivilizationDialog`, `ServerClock`, `ConstructionPanel`, etc.) esperan a `user` antes de fetchear → cero `api/*` en `/login`.
+- **Roles**: `POST /api/worlds` requiere rol `admin`. Si el usuario no es admin, el backend devuelve `403`. El frontend solo muestra el panel de configuración de mundo a usuarios con `role: "admin"`.
 - Como respaldo para Postman/tests sigue funcionando `Authorization: Bearer <token>` si lo envías a mano.
 
 ---
@@ -150,6 +151,7 @@ front-tgotg/
 | Síntoma                                  | Qué mirar                                                                                                                                         |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `401 Sesión caducada` en bucle           | Revisa `back-tgotg/.env` → `SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000` y `SESSION_DOMAIN=localhost`. Borra cookies y re-loguea.      |
+| `403` al crear mundo                     | Solo los usuarios con rol `admin` pueden crear contiendas. El rol se asigna por seeder, no por la interfaz.                                       |
 | `CORS blocked` / `Set-Cookie` no aparece | Back debe tener `supports_credentials: true` y front `NEXT_PUBLIC_API_URL` debe apuntar al mismo host/puerto del back.                            |
 | `proxy` no redirige                      | Verifica que existe `proxy.ts` (no `middleware.ts`) y su `config.matcher` incluye `"/", "/login", "/mensajes/:path*"`.                            |
 | Phaser no carga sprites                  | Revisa `public/game/buildings/*`; en la ciudad pulsa `O` (rejilla + coordenadas) o `P` (contornos de parcelas y puntero) para depurar posiciones. |

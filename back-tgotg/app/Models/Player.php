@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\StartingConfig;
 use Database\Factories\PlayerFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -77,5 +78,33 @@ class Player extends Model
     public function cities(): HasMany
     {
         return $this->hasMany(City::class);
+    }
+
+    /**
+     * Busca o crea un jugador para el usuario en el mundo en curso.
+     *
+     * Si el usuario ya tiene un jugador en el mundo actual, lo retorna.
+     * Si no, crea uno con los recursos iniciales.
+     */
+    public static function findOrCreateForWorld(string $userId): static
+    {
+        $world = World::where('status', 'running')
+            ->latest('started_at')
+            ->first();
+
+        if ($world === null) {
+            abort(404, __('No hay una contienda en curso.'));
+        }
+
+        return static::firstOrCreate(
+            ['world_id' => $world->id, 'user_id' => $userId],
+            [
+                'gold' => StartingConfig::cityValues()['gold'],
+                'wood' => StartingConfig::cityValues()['wood'],
+                'stone' => StartingConfig::cityValues()['stone'],
+                'iron' => StartingConfig::cityValues()['iron'],
+                'food' => StartingConfig::cityValues()['food'],
+            ],
+        );
     }
 }

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\Concerns\ResolvesCurrentPlayer;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SendConversationMessageRequest;
+use App\Http\Requests\StoreConversationRequest;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
@@ -72,7 +74,7 @@ class MessageController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreConversationRequest $request): JsonResponse
     {
         $userId = $request->user()->id;
 
@@ -84,10 +86,7 @@ class MessageController extends Controller
             ], 422);
         }
 
-        $data = $request->validate([
-            'recipient_nick' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string', 'max:2000'],
-        ]);
+        $data = $request->validated();
 
         $world = $player->world;
         $recipient = User::where('nick', $data['recipient_nick'])
@@ -110,7 +109,7 @@ class MessageController extends Controller
         ], 201);
     }
 
-    public function sendMessage(Request $request, Conversation $conversation): JsonResponse
+    public function sendMessage(SendConversationMessageRequest $request, Conversation $conversation): JsonResponse
     {
         $user = $request->user();
 
@@ -120,9 +119,7 @@ class MessageController extends Controller
             ], 404);
         }
 
-        $data = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
-        ]);
+        $data = $request->validated();
 
         $this->appendMessage($conversation, $user->id, $data['body']);
 

@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\HasUserPayload;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,15 +14,11 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request): JsonResponse
+    use HasUserPayload;
+
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'nick' => ['required', 'string', 'max:255', 'unique:users,nick'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ], [
-            'nick.unique' => __('Este nick ya está en uso.'),
-        ]);
+        $data = $request->validated();
 
         $user = User::create($data);
         $user->refresh();
@@ -44,12 +43,9 @@ class AuthController extends Controller
             ));
     }
 
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        $credentials = $request->validated();
 
         if (! Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
@@ -90,18 +86,5 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json($this->userPayload($request->user()));
-    }
-
-    /**
-     * @return array{id: string, nick: string, email: string, role: string}
-     */
-    private function userPayload(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'nick' => $user->nick,
-            'email' => $user->email,
-            'role' => $user->role,
-        ];
     }
 }
