@@ -244,7 +244,7 @@ class ClanController extends Controller
 
         if ($clanMember->role === 'leader') {
             return response()->json([
-                'message' => __('El líder no puede abandonar el clan. Debe disbolverlo o transferir el liderazgo.'),
+                'message' => __('El líder no puede abandonar el clan. Debe disolverlo o transferir el liderazgo.'),
             ], 422);
         }
 
@@ -267,13 +267,13 @@ class ClanController extends Controller
 
         if ($player === null) {
             return response()->json([
-                'message' => __('Debes estar en la contienda para disbolver un clan.'),
+                'message' => __('Debes estar en la contienda para disolver un clan.'),
             ], 422);
         }
 
         if ($clan->leader_id !== $request->user()->id) {
             return response()->json([
-                'message' => __('Solo el líder puede disbolver el clan.'),
+                'message' => __('Solo el líder puede disolver el clan.'),
             ], 403);
         }
 
@@ -291,7 +291,7 @@ class ClanController extends Controller
             $daysRemaining = config('game_balance.clan.min_days_to_disband', 3) - $daysSinceJoin;
 
             return response()->json([
-                'message' => __('Debes esperar :days días más para disbolver el clan.', ['days' => $daysRemaining]),
+                'message' => __('Debes esperar :days días más para disolver el clan.', ['days' => $daysRemaining]),
             ], 422);
         }
 
@@ -301,7 +301,7 @@ class ClanController extends Controller
         });
 
         return response()->json([
-            'message' => __('El clan ha sido disbuelto.'),
+            'message' => __('El clan ha sido disuelto.'),
         ]);
     }
 
@@ -481,6 +481,7 @@ class ClanController extends Controller
             'memberCount' => $clan->members->count(),
             'maxMembers' => config('game_balance.clan.max_members', 20),
             'currentUserRole' => $currentMember?->role,
+            'currentPlayerId' => $currentPlayer->id,
         ];
     }
 }

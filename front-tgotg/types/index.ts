@@ -100,6 +100,7 @@ export interface ClanDetail extends Clan {
   members: ClanMember[]
   bulletins: ClanBulletin[]
   currentUserRole?: ClanRole
+  currentPlayerId?: string
 }
 
 export interface ClanApplication {

@@ -52,6 +52,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
 
   const [formError, setFormError] = React.useState<string | null>(null)
   const selectedRegionId = watch('region')
+  const selectedBiomaId = watch('bioma')
 
   const regionsQuery = useQuery({
     queryKey: ['regions'],
@@ -169,7 +170,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
             ) : (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {regions.map((r) => {
-                  const selected = values.region === r.id
+                  const selected = selectedRegionId === r.id
                   return (
                     <button
                       key={r.id}
@@ -204,7 +205,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
               <div className="grid gap-2 sm:grid-cols-2">
                 {selectedRegion.biomes.map((b) => {
                   const meta = biomeMeta(b.key)
-                  const selected = values.bioma === b.id
+                  const selected = selectedBiomaId === b.id
                   const Icon = meta.icon
                   return (
                     <button

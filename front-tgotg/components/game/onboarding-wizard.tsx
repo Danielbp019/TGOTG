@@ -41,6 +41,7 @@ export function OnboardingWizard() {
   const [selectedBlessing, setSelectedBlessing] = React.useState<string>()
   const [selectedCiv, setSelectedCiv] = React.useState<string>()
   const [error, setError] = React.useState<string>()
+  const justSaved = React.useRef(false)
 
   const blessingsQuery = useQuery({
     queryKey: ['blessings'],
@@ -88,7 +89,12 @@ export function OnboardingWizard() {
     const needsBlessing = !myBlessing
     const needsCiv = civData !== undefined && !civData.civilization
 
-    if (!needsBlessing && !needsCiv) return
+    if (!needsBlessing && !needsCiv) {
+      justSaved.current = false
+      return
+    }
+
+    if (justSaved.current) return
 
     const t = window.setTimeout(() => setOpen(true), 0)
     return () => window.clearTimeout(t)
@@ -96,6 +102,7 @@ export function OnboardingWizard() {
 
   function handleOpenChange(next: boolean) {
     if (next) return
+    justSaved.current = false
     setOpen(false)
   }
 
@@ -119,6 +126,7 @@ export function OnboardingWizard() {
         selectBlessing(selectedBlessing),
         saveCivMutation.mutateAsync(selectedCiv),
       ])
+      justSaved.current = true
       setOpen(false)
     } catch (caught) {
       setError(
@@ -137,7 +145,7 @@ export function OnboardingWizard() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl"
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl"
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
