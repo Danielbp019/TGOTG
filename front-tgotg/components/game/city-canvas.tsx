@@ -3,14 +3,15 @@
 import dynamic from 'next/dynamic'
 
 import { useCity } from '@/components/city/city-provider'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const PhaserGame = dynamic(
   () => import('@/components/game/phaser-game').then((mod) => mod.PhaserGame),
   {
     ssr: false,
     loading: () => (
-      <div className="text-muted-foreground flex h-full w-full items-center justify-center">
-        Cargando la ciudad…
+      <div className="flex h-full w-full items-center justify-center">
+        <Skeleton className="h-full w-full" />
       </div>
     ),
   }
@@ -21,8 +22,8 @@ export function CityCanvas() {
 
   if (isLoading || !city) {
     return (
-      <div className="text-muted-foreground flex h-full w-full items-center justify-center">
-        Cargando la ciudad…
+      <div className="flex h-full w-full items-center justify-center">
+        <Skeleton className="h-full w-full" />
       </div>
     )
   }

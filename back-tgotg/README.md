@@ -44,10 +44,11 @@ Las rutas exclusivas de administrador usan el middleware `role:admin` (alias reg
 ## Rate limiting
 
 | Grupo                           | Límite  |
-| ------------------------------- | ------- | ----- |
-| `POST /api/auth/register        | login`  | 6/min |
+| ------------------------------- | ------- |
+| `POST /api/auth/register/login` | 6/min   |
 | Resto de endpoints autenticados | 120/min |
 | Endpoints de mensajería         | 30/min  |
+| Endpoints de clanes             | 60/min  |
 
 Al superarlo la API responde `429`.
 
@@ -61,33 +62,57 @@ Las operaciones que tocan recursos del juego son atómicas:
 
 ## Endpoints
 
-| Método | Ruta                                         | Auth  | Descripción                                                              |
-| ------ | -------------------------------------------- | ----- | ------------------------------------------------------------------------ |
-| GET    | `/api/ping`                                  | No    | Comprobación de que la API responde.                                     |
-| POST   | `/api/auth/register`                         | No    | Crea una cuenta y deja la sesión en cookie `tgotg_token`.                |
-| POST   | `/api/auth/login`                            | No    | Inicia sesión y deja la sesión en cookie `tgotg_token`.                  |
-| POST   | `/api/auth/logout`                           | Sí    | Cierra sesión, revoca el token y borra la cookie.                        |
-| GET    | `/api/user`                                  | Sí    | Devuelve los datos del usuario autenticado.                              |
-| PUT    | `/api/account/profile`                       | Sí    | Actualiza nick y/o contraseña del usuario autenticado.                   |
-| DELETE | `/api/account`                               | Sí    | Elimina la cuenta y todos sus datos.                                     |
-| GET    | `/api/server-time`                           | Sí    | Devuelve la hora actual del servidor (ISO 8601 UTC).                     |
-| GET    | `/api/player/blessing`                       | Sí    | Devuelve la bendición actual del jugador en la partida.                  |
-| PUT    | `/api/player/blessing`                       | Sí    | Actualiza la bendición del jugador.                                      |
-| GET    | `/api/player/civilization`                   | Sí    | Devuelve la civilización actual del jugador en la partida.               |
-| PUT    | `/api/player/civilization`                   | Sí    | Actualiza la civilización del jugador.                                   |
-| GET    | `/api/blessings`                             | Sí    | Lista todas las bendiciones disponibles.                                 |
-| GET    | `/api/civilizations`                         | Sí    | Lista todas las civilizaciones disponibles.                              |
-| GET    | `/api/building-types`                        | Sí    | Lista todos los tipos de edificio disponibles.                           |
-| GET    | `/api/game-options`                          | Sí    | Devuelve duraciones y multiplicadores para crear partida.                |
-| GET    | `/api/city`                                  | Sí    | Devuelve la ciudad del jugador con recursos, producción, edificios, etc. |
-| POST   | `/api/city/buildings/{building}/repair`      | Sí    | Repara un edificio (paid/auto).                                          |
-| POST   | `/api/worlds`                                | Admin | Crea una nueva contienda (partida).                                      |
-| GET    | `/api/conversations`                         | Sí    | Lista conversaciones del jugador.                                        |
-| POST   | `/api/conversations`                         | Sí    | Crea una nueva conversación con un mensaje inicial.                      |
-| GET    | `/api/conversations/{conversation}`          | Sí    | Obtiene una conversación con sus mensajes.                               |
-| POST   | `/api/conversations/{conversation}/messages` | Sí    | Envía un mensaje en una conversación existente.                          |
-| POST   | `/api/city/buildings/{building}/upgrade`     | Sí    | Inicia la mejora/construcción de un edificio (cola temporizada).         |
-| DELETE | `/api/conversations/{conversation}`          | Sí    | Elimina una conversación.                                                |
+| Método | Ruta                                          | Auth  | Descripción                                                              |
+| ------ | --------------------------------------------- | ----- | ------------------------------------------------------------------------ |
+| GET    | `/api/ping`                                   | No    | Comprobación de que la API responde.                                     |
+| POST   | `/api/auth/register`                          | No    | Crea una cuenta y deja la sesión en cookie `tgotg_token`.                |
+| POST   | `/api/auth/login`                             | No    | Inicia sesión y deja la sesión en cookie `tgotg_token`.                  |
+| POST   | `/api/auth/logout`                            | Sí    | Cierra sesión, revoca el token y borra la cookie.                        |
+| GET    | `/api/user`                                   | Sí    | Devuelve los datos del usuario autenticado.                              |
+| PUT    | `/api/account/profile`                        | Sí    | Actualiza nick y/o contraseña del usuario autenticado.                   |
+| DELETE | `/api/account`                                | Sí    | Elimina la cuenta y todos sus datos.                                     |
+| GET    | `/api/server-time`                            | Sí    | Devuelve la hora actual del servidor (ISO 8601 UTC).                     |
+| GET    | `/api/player/blessing`                        | Sí    | Devuelve la bendición actual del jugador en la partida.                  |
+| PUT    | `/api/player/blessing`                        | Sí    | Actualiza la bendición del jugador.                                      |
+| GET    | `/api/player/resources`                       | Sí    | Devuelve los recursos actuales del jugador.                              |
+| GET    | `/api/player/civilization`                    | Sí    | Devuelve la civilización actual del jugador en la partida.               |
+| PUT    | `/api/player/civilization`                    | Sí    | Actualiza la civilización del jugador.                                   |
+| GET    | `/api/blessings`                              | Sí    | Lista todas las bendiciones disponibles.                                 |
+| GET    | `/api/civilizations`                          | Sí    | Lista todas las civilizaciones disponibles.                              |
+| GET    | `/api/building-types`                         | Sí    | Lista todos los tipos de edificio disponibles.                           |
+| GET    | `/api/unit-types`                             | Sí    | Lista tipos de unidad (filtro por civilización).                         |
+| GET    | `/api/game-options`                           | Sí    | Devuelve duraciones y multiplicadores para crear partida.                |
+| GET    | `/api/city`                                   | Sí    | Devuelve la ciudad del jugador con recursos, producción, edificios, etc. |
+| GET    | `/api/cities`                                 | Sí    | Lista las ciudades del jugador.                                          |
+| GET    | `/api/cities/{city}`                          | Sí    | Devuelve una ciudad con sus edificios.                                   |
+| POST   | `/api/cities`                                 | Sí    | Crea una nueva ciudad en una región y bioma.                             |
+| GET    | `/api/regions`                                | Sí    | Lista regiones disponibles con sus biomas.                               |
+| GET    | `/api/biomes`                                 | Sí    | Lista todos los biomas disponibles.                                      |
+| POST   | `/api/city/buildings/{building}/repair`       | Sí    | Repara un edificio (paid/auto).                                          |
+| POST   | `/api/city/buildings/{building}/upgrade`      | Sí    | Inicia la mejora/construcción de un edificio (cola temporizada).         |
+| POST   | `/api/worlds`                                 | Admin | Crea una nueva contienda (partida).                                      |
+| GET    | `/api/conversations`                          | Sí    | Lista conversaciones del jugador.                                        |
+| POST   | `/api/conversations`                          | Sí    | Crea una nueva conversación con un mensaje inicial.                      |
+| GET    | `/api/conversations/{conversation}`           | Sí    | Obtiene una conversación con sus mensajes.                               |
+| POST   | `/api/conversations/{conversation}/messages`  | Sí    | Envía un mensaje en una conversación existente.                          |
+| DELETE | `/api/conversations/{conversation}`           | Sí    | Elimina una conversación.                                                |
+| GET    | `/api/clans`                                  | Sí    | Lista todos los clanes de la contienda.                                  |
+| POST   | `/api/clans`                                  | Sí    | Crea un nuevo clan.                                                      |
+| GET    | `/api/clans/my`                               | Sí    | Devuelve el clan del jugador actual con miembros y boletines.            |
+| GET    | `/api/clans/{clan}`                           | Sí    | Devuelve el detalle de un clan.                                          |
+| POST   | `/api/clans/{clan}/join`                      | Sí    | Solicita unirse a un clan.                                               |
+| POST   | `/api/clans/{clan}/leave`                     | Sí    | Abandona el clan actual.                                                 |
+| DELETE | `/api/clans/{clan}`                           | Sí    | Disuelve el clan (solo el líder).                                        |
+| GET    | `/api/clans/{clan}/applications`              | Sí    | Lista solicitudes pendientes de un clan.                                 |
+| POST   | `/api/clans/{clan}/applications/{app}/accept` | Sí    | Acepta una solicitud de unión.                                           |
+| POST   | `/api/clans/{clan}/applications/{app}/reject` | Sí    | Rechaza una solicitud de unión.                                          |
+| GET    | `/api/clans/{clan}/bulletins`                 | Sí    | Lista boletines del clan.                                                |
+| POST   | `/api/clans/{clan}/bulletins`                 | Sí    | Crea un nuevo boletín.                                                   |
+| PUT    | `/api/clans/{clan}/bulletins/{bulletin}`      | Sí    | Actualiza un boletín.                                                    |
+| DELETE | `/api/clans/{clan}/bulletins/{bulletin}`      | Sí    | Elimina un boletín.                                                      |
+| GET    | `/api/clans/{clan}/messages`                  | Sí    | Devuelve los mensajes recientes del chat del clan.                       |
+| POST   | `/api/clans/{clan}/messages`                  | Sí    | Envía un mensaje al chat del clan.                                       |
+| POST   | `/api/clan/transfer`                          | Sí    | Transfiere recursos a otro miembro del clan.                             |
 
 ### `GET /api/ping`
 
@@ -491,14 +516,575 @@ Requiere autenticación. Envía un mensaje en una conversación existente.
 
 Requiere autenticación. Elimina una conversación.
 
+---
+
+## Sistema y catálogos
+
+### `GET /api/player/resources`
+
+Requiere autenticación. Devuelve los recursos actuales del jugador en la partida.
+
+**Respuesta 200**
+
+```json
+{
+    "in_game": true,
+    "resources": {
+        "gold": 12450,
+        "wood": 8300,
+        "stone": 6200,
+        "iron": 4100,
+        "food": 9700
+    }
+}
+```
+
+Si el jugador no está en partida: `{ "in_game": false, "resources": null }`.
+
+### `GET /api/unit-types`
+
+Requiere autenticación. Catálogo de tipos de unidad. Opcionalmente filtra por civilización.
+
+**Query params**
+
+| Campo          | Reglas                                    |
+| -------------- | ----------------------------------------- |
+| `civilization` | opcional, clave de civilización existente |
+
+Si no se envía `civilization` y el jugador tiene civilización seleccionada, usa esa. Si no, devuelve todas las unidades.
+
+**Respuesta 200**
+
+```json
+{
+    "unit_types": [
+        {
+            "id": "uuid",
+            "key": "guerrero",
+            "name": "Guerrero",
+            "tier": 1,
+            "attack": 10,
+            "defense": 5,
+            "speed": 1.0,
+            "cost": { "gold": 100, "food": 50 },
+            "civilization": { "key": "norse", "name": "Nórdicos" }
+        }
+    ]
+}
+```
+
+### `GET /api/cities`
+
+Requiere autenticación. Lista las ciudades del jugador en la contienda actual.
+
+**Respuesta 200**
+
+```json
+{
+    "cities": [
+        {
+            "id": "uuid",
+            "name": "Principal",
+            "region": { "id": "uuid", "key": "bosque", "label": "Bosque" },
+            "biome": { "id": "uuid", "key": "archipiélago" }
+        }
+    ]
+}
+```
+
+Si no hay contienda en curso: respuesta `404` con `"No hay una contienda en curso."`.
+
+### `GET /api/cities/{city}`
+
+Requiere autenticación. Devuelve una ciudad con todos sus edificios. Las coordenadas `shape,x,y,width,height` y `worldSize` se resuelven contra el SSOT `App\Support\CityLayouts`.
+
+**Respuesta 200**
+
+Mismo formato que `GET /api/city` (ver arriba).
+
+**Errores**: `403` si la ciudad no pertenece al jugador.
+
+### `POST /api/cities`
+
+Requiere autenticación. Crea una nueva ciudad en una región y bioma.
+
+**Cuerpo de petición**
+
+| Campo       | Reglas                                       |
+| ----------- | -------------------------------------------- |
+| `name`      | obligatorio, string, 3–30 caracteres         |
+| `region_id` | obligatorio, uuid, debe existir en `regions` |
+| `biome_id`  | obligatorio, uuid, debe existir en `biomes`  |
+
+El bioma debe pertenecer a la región seleccionada (verificación server-side).
+
+**Respuesta 201**
+
+```json
+{
+    "city": {
+        "id": "uuid",
+        "name": "Nueva Ciudad",
+        "region": { "id": "uuid", "key": "bosque", "label": "Bosque" },
+        "biome": { "id": "uuid", "key": "archipiélago" }
+    }
+}
+```
+
+**Errores**: `422` si el bioma no pertenece a la región, validación fallida.
+
+### `GET /api/regions`
+
+Requiere autenticación. Lista todas las regiones disponibles con sus biomas.
+
+**Respuesta 200**
+
+```json
+{
+    "regions": [
+        {
+            "id": "uuid",
+            "key": "bosque",
+            "label": "Bosque",
+            "polygon": "[[0,0],[100,0],[100,100],[0,100]]",
+            "sortOrder": 1,
+            "biomes": [
+                {
+                    "id": "uuid",
+                    "key": "archipiélago",
+                    "label": "Archipiélago",
+                    "description": "Islas separadas por agua",
+                    "bonusResource": "food",
+                    "bonusValue": 0.15
+                }
+            ]
+        }
+    ]
+}
+```
+
+### `GET /api/biomes`
+
+Requiere autenticación. Lista todos los biomas disponibles.
+
+**Respuesta 200**
+
+```json
+{
+    "biomes": [
+        {
+            "id": "uuid",
+            "key": "archipiélago",
+            "label": "Archipiélago",
+            "description": "Islas separadas por agua",
+            "bonusResource": "food",
+            "bonusValue": 0.15
+        }
+    ]
+}
+```
+
+---
+
+## Clanes
+
+Los clanes permiten a los jugadores agruparse, compartir un tablón de anuncios, chatear y transferir recursos. Todos los endpoints de clanes usan `throttle:60,1`.
+
+### `GET /api/clans`
+
+Requiere autenticación. Lista todos los clanes de la contienda actual.
+
+**Respuesta 200**
+
+```json
+{
+    "clans": [
+        {
+            "id": "uuid",
+            "name": "Los Valientes",
+            "acronym": "LVA",
+            "leader": { "id": "uuid", "nick": "Thor" },
+            "memberCount": 5,
+            "maxMembers": 20
+        }
+    ]
+}
+```
+
+### `POST /api/clans`
+
+Requiere autenticación. Crea un nuevo clan. El jugador queda como líder automáticamente.
+
+**Cuerpo de petición**
+
+| Campo     | Reglas                                                  |
+| --------- | ------------------------------------------------------- |
+| `name`    | obligatorio, string, max 50, único                      |
+| `acronym` | obligatorio, string, 3–5 caracteres, solo letras, único |
+
+**Respuesta 201**
+
+```json
+{
+    "clan": {
+        "id": "uuid",
+        "name": "Los Valientes",
+        "acronym": "LVA",
+        "leader": { "id": "uuid", "nick": "Thor" },
+        "members": [
+            {
+                "id": "uuid",
+                "nick": "Thor",
+                "role": "leader",
+                "joinedAt": "2026-08-27T12:00:00+00:00"
+            }
+        ],
+        "memberCount": 1,
+        "maxMembers": 20
+    }
+}
+```
+
+**Errores**: `422` si el jugador ya pertenece a un clan, nombre o acrónimo ocupado.
+
+### `GET /api/clans/my`
+
+Requiere autenticación. Devuelve el clan del jugador actual con miembros, boletines y rol.
+
+**Respuesta 200**
+
+```json
+{
+    "clan": {
+        "id": "uuid",
+        "name": "Los Valientes",
+        "acronym": "LVA",
+        "leader": { "id": "uuid", "nick": "Thor" },
+        "members": [
+            {
+                "id": "uuid",
+                "nick": "Thor",
+                "role": "leader",
+                "joinedAt": "2026-08-27T12:00:00+00:00"
+            },
+            {
+                "id": "uuid",
+                "nick": "Loki",
+                "role": "member",
+                "joinedAt": "2026-08-27T13:00:00+00:00"
+            }
+        ],
+        "bulletins": [
+            {
+                "id": "uuid",
+                "title": "Reunión",
+                "content": "Reunión el viernes a las 20h.",
+                "author": { "id": "uuid", "nick": "Thor" },
+                "createdAt": "2026-08-27T12:00:00+00:00"
+            }
+        ],
+        "memberCount": 2,
+        "maxMembers": 20,
+        "currentUserRole": "leader",
+        "currentPlayerId": "uuid"
+    }
+}
+```
+
+Si el jugador no tiene clan: `{ "clan": null }`.
+
+### `GET /api/clans/{clan}`
+
+Requiere autenticación. Devuelve el detalle de un clan (sin miembros ni boletines).
+
+**Respuesta 200**
+
+```json
+{
+    "clan": {
+        "id": "uuid",
+        "name": "Los Valientes",
+        "acronym": "LVA",
+        "leader": { "id": "uuid", "nick": "Thor" },
+        "memberCount": 5,
+        "maxMembers": 20
+    }
+}
+```
+
+### `POST /api/clans/{clan}/join`
+
+Requiere autenticación. Solicita unirse a un clan. El mensaje es opcional.
+
+**Cuerpo de petición**
+
+| Campo     | Reglas                    |
+| --------- | ------------------------- |
+| `message` | opcional, string, max 500 |
+
+**Respuesta 201**
+
+```json
+{
+    "application": {
+        "id": "uuid",
+        "status": "pending",
+        "createdAt": "2026-08-27T12:00:00+00:00"
+    }
+}
+```
+
+**Errores**: `422` si ya pertenece a un clan, clan lleno, solicitud pendiente, límite de 24h.
+
+### `POST /api/clans/{clan}/leave`
+
+Requiere autenticación. Abandona el clan actual. El líder no puede abandonar (debe disolver).
+
+**Respuesta 200**
+
+```json
+{ "message": "Has abandonado el clan." }
+```
+
+**Errores**: `422` si no pertenece a un clan, cooldown de salida, líder no puede salir.
+
+### `DELETE /api/clans/{clan}`
+
+Requiere autenticación. Disuelve el clan. Solo el líder puede hacerlo.
+
+**Respuesta 200**
+
+```json
+{ "message": "El clan ha sido disuelto." }
+```
+
+**Errores**: `403` si no es el líder, `422` si hay cooldown.
+
+### `GET /api/clans/{clan}/applications`
+
+Requiere autenticación. Lista las solicitudes pendientes de un clan. Solo miembros del clan pueden verlas.
+
+**Respuesta 200**
+
+```json
+{
+    "applications": [
+        {
+            "id": "uuid",
+            "player": { "id": "uuid", "nick": "Odin" },
+            "message": "Quiero unirme al clan.",
+            "createdAt": "2026-08-27T12:00:00+00:00"
+        }
+    ]
+}
+```
+
+**Errores**: `403` si no es miembro del clan.
+
+### `POST /api/clans/{clan}/applications/{application}/accept`
+
+Requiere autenticación. Acepta una solicitud de unión. Requiere permisos de admin (líder u oficial).
+
+**Respuesta 200**
+
+```json
+{ "message": "Solicitud aceptada." }
+```
+
+**Errores**: `403` sin permisos, `422` clan lleno, solicitud ya procesada, jugador ya en clan.
+
+### `POST /api/clans/{clan}/applications/{application}/reject`
+
+Requiere autenticación. Rechaza una solicitud de unión. Requiere permisos de admin.
+
+**Respuesta 200**
+
+```json
+{ "message": "Solicitud rechazada." }
+```
+
+**Errores**: `403` sin permisos, `422` solicitud ya procesada.
+
+### `GET /api/clans/{clan}/bulletins`
+
+Requiere autenticación. Lista los boletines del clan. Solo miembros del clan pueden verlos.
+
+**Respuesta 200**
+
+```json
+{
+    "bulletins": [
+        {
+            "id": "uuid",
+            "title": "Reunión",
+            "content": "Reunión el viernes a las 20h.",
+            "author": { "id": "uuid", "nick": "Thor" },
+            "createdAt": "2026-08-27T12:00:00+00:00"
+        }
+    ]
+}
+```
+
+**Errores**: `403` si no es miembro del clan.
+
+### `POST /api/clans/{clan}/bulletins`
+
+Requiere autenticación. Crea un nuevo boletín. Requiere permisos de admin.
+
+**Cuerpo de petición**
+
+| Campo     | Reglas                        |
+| --------- | ----------------------------- |
+| `title`   | obligatorio, string, max 100  |
+| `content` | obligatorio, string, max 2000 |
+
+**Respuesta 201**
+
+```json
+{
+    "bulletin": {
+        "id": "uuid",
+        "title": "Reunión",
+        "content": "Reunión el viernes a las 20h.",
+        "author": { "id": "uuid", "nick": "Thor" },
+        "createdAt": "2026-08-27T12:00:00+00:00"
+    }
+}
+```
+
+**Errores**: `403` sin permisos.
+
+### `PUT /api/clans/{clan}/bulletins/{bulletin}`
+
+Requiere autenticación. Actualiza un boletín. Requiere permisos de admin.
+
+**Cuerpo de petición**
+
+| Campo     | Reglas                        |
+| --------- | ----------------------------- |
+| `title`   | obligatorio, string, max 100  |
+| `content` | obligatorio, string, max 2000 |
+
+**Respuesta 200**
+
+```json
+{
+    "bulletin": {
+        "id": "uuid",
+        "title": "Reunión actualizada",
+        "content": "Reunión el sábado.",
+        "author": { "id": "uuid", "nick": "Thor" },
+        "createdAt": "2026-08-27T12:00:00+00:00"
+    }
+}
+```
+
+**Errores**: `403` sin permisos, `422` boletín no pertenece al clan.
+
+### `DELETE /api/clans/{clan}/bulletins/{bulletin}`
+
+Requiere autenticación. Elimina un boletín. Requiere permisos de admin.
+
+**Respuesta 200**
+
+```json
+{ "message": "Publicación eliminada." }
+```
+
+**Errores**: `403` sin permisos, `422` boletín no pertenece al clan.
+
+### `GET /api/clans/{clan}/messages`
+
+Requiere autenticación. Devuelve los mensajes recientes del chat del clan. Solo miembros del clan pueden verlos. Limitado a 100 mensajes (configurable en `game_balance.clan.chat_max_messages`).
+
+**Respuesta 200**
+
+```json
+{
+    "messages": [
+        {
+            "id": "uuid",
+            "body": "¿Listos para la batalla?",
+            "sender": { "id": "uuid", "nick": "Thor" },
+            "createdAt": "2026-08-27T12:00:00+00:00"
+        }
+    ]
+}
+```
+
+**Errores**: `403` si no es miembro del clan.
+
+### `POST /api/clans/{clan}/messages`
+
+Requiere autenticación. Envía un mensaje al chat del clan. Solo miembros del clan pueden enviar.
+
+**Cuerpo de petición**
+
+| Campo  | Reglas                        |
+| ------ | ----------------------------- |
+| `body` | obligatorio, string, max 1000 |
+
+**Respuesta 201**
+
+```json
+{
+    "message": {
+        "id": "uuid",
+        "body": "¿Listos para la batalla?",
+        "sender": { "id": "uuid", "nick": "Thor" },
+        "createdAt": "2026-08-27T12:00:00+00:00"
+    }
+}
+```
+
+**Errores**: `403` si no es miembro del clan.
+
+---
+
+## Transferencia de recursos
+
+### `POST /api/clan/transfer`
+
+Requiere autenticación. Transfiere recursos a otro miembro del mismo clan. Todos los campos de recursos son opcionales pero al menos uno debe ser mayor a 0.
+
+**Cuerpo de petición**
+
+| Campo                 | Reglas                                       |
+| --------------------- | -------------------------------------------- |
+| `recipient_player_id` | obligatorio, uuid, debe existir en `players` |
+| `gold`                | opcional, entero, min 0                      |
+| `wood`                | opcional, entero, min 0                      |
+| `stone`               | opcional, entero, min 0                      |
+| `iron`                | opcional, entero, min 0                      |
+| `food`                | opcional, entero, min 0                      |
+
+**Respuesta 200**
+
+```json
+{
+    "message": "Recursos enviados correctamente.",
+    "sender": {
+        "gold": 11450,
+        "wood": 7800,
+        "stone": 6100,
+        "iron": 4000,
+        "food": 9200
+    }
+}
+```
+
+**Errores**: `422` destinatario no existe, no están en el mismo clan, no puedes enviarte a ti mismo, recursos insuficientes, no envía al menos un recurso.
+
 ## Errores comunes
 
-| Código | Situación                                                                                                      |
-| ------ | -------------------------------------------------------------------------------------------------------------- |
-| `401`  | Token ausente, inválido o revocado. `{ "message": "Unauthenticated." }`                                        |
-| `403`  | Sin permisos: edificio/conversación ajena (policy) o ruta de admin sin rol `admin` (`No tienes permiso...`).   |
-| `422`  | Validación fallida: `{ "message": "...", "errors": { "campo": ["..."] } }` (mensajes en español)               |
-| `429`  | Demasiadas peticiones: `login`/`register` (6/min), mensajería (30/min), resto de la API autenticada (120/min). |
+| Código | Situación                                                                                                                                                                                               |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `401`  | Token ausente, inválido o revocado. `{ "message": "Unauthenticated." }`                                                                                                                                 |
+| `403`  | Sin permisos: edificio/conversación/clan ajena (policy), ruta de admin sin rol `admin`, líder no puede salir del clan.                                                                                  |
+| `404`  | Recurso no encontrado: clan, solicitud, conversación, ciudad ajena. Para no revelar existencia se devuelve `404` en vez de `403` en algunos casos.                                                      |
+| `409`  | Conflicto: creación de mundo en curso, jugador ya pertenece a un clan, solicitud pendiente, límite de solicitudes (24h).                                                                                |
+| `422`  | Validación fallida: `{ "message": "...", "errors": { "campo": ["..."] } }` (mensajes en español). Errores de lógica: clan lleno, cooldown de salida, recursos insuficientes, nombre/acrónimo duplicado. |
+| `429`  | Demasiadas peticiones: `login`/`register` (6/min), mensajería (30/min), clanes (6/min), resto de la API autenticada (120/min).                                                                          |
 
 ## Coordenadas y mapas (SSOT)
 

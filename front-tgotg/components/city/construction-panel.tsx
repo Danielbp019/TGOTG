@@ -8,13 +8,8 @@ import { LevelBar } from '@/components/city/level-bar'
 import { useCity } from '@/components/city/city-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/components/auth/auth-provider'
 import { buildingColors, buildingIcons } from '@/data/icons'
 import {
@@ -244,7 +239,21 @@ export function ConstructionPanel() {
   const catalog = catalogQuery.data
 
   if (cityLoading || !catalog) {
-    return <p className="text-muted-foreground text-sm">Cargando edificios…</p>
+    return (
+      <div className="flex w-full flex-col gap-4">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-64" />
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

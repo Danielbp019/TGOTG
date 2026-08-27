@@ -5,27 +5,15 @@ import * as React from 'react'
 import { useCity } from '@/components/city/city-provider'
 import { useMyResources } from '@/hooks/use-my-resources'
 import { resources } from '@/data/resources'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function ResourceBar() {
-  const { city, version } = useCity()
+  const { city } = useCity()
   const {
     resources: playerResources,
     isLoading,
     error,
-    refresh,
   } = useMyResources()
-
-  // Refresca los recursos del jugador tras acciones que gastan
-  // (mejoras y reparaciones recargan la ciudad activa).
-  const lastVersion = React.useRef(version)
-  React.useEffect(() => {
-    if (version === lastVersion.current) return
-    lastVersion.current = version
-    const t = window.setTimeout(() => {
-      void refresh()
-    }, 0)
-    return () => window.clearTimeout(t)
-  }, [version, refresh])
 
   return (
     <ul className="flex flex-col gap-1">
@@ -45,9 +33,11 @@ export function ResourceBar() {
             </span>
             <span className="flex items-baseline gap-2">
               {amount === undefined ? (
-                <span className="text-muted-foreground text-xs">
-                  {error && !isLoading ? '—' : 'Cargando…'}
-                </span>
+                error && !isLoading ? (
+                  <span className="text-muted-foreground text-xs">—</span>
+                ) : (
+                  <Skeleton className="h-4 w-12" />
+                )
               ) : (
                 <>
                   <span className="font-medium tabular-nums">

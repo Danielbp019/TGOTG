@@ -1,6 +1,8 @@
 'use client'
 
 import * as React from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -13,65 +15,62 @@ import {
 } from '@/components/ui/tooltip'
 import { ApiError } from '@/lib/api'
 import { registerSchema, type RegisterValues } from '@/lib/validations/auth'
-import { getFieldError } from '@/lib/validations/utils'
 import { useAuth } from '@/components/auth/auth-provider'
 import { HelpCircle } from 'lucide-react'
 
-type RegisterErrors = Partial<Record<keyof RegisterValues, string>>
-
-const initialRegister: RegisterValues = {
-  nick: '',
-  email: '',
-  password: '',
-  confirmPassword: '',
-  remember: false,
-}
-
 export function RegisterForm() {
-  const { register } = useAuth()
-  const [form, setForm] = React.useState<RegisterValues>(initialRegister)
-  const [errors, setErrors] = React.useState<RegisterErrors>({})
+  const { register: registerUser } = useAuth()
   const [formError, setFormError] = React.useState<string | undefined>()
-  const [submitting, setSubmitting] = React.useState(false)
 
-  function handleField(field: keyof RegisterValues, value: string | boolean) {
-    setForm((prev) => ({ ...prev, [field]: value }))
+  const form = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      nick: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      remember: false,
+    },
+  })
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = form
+
+  const rememberValue = watch('remember')
+
+  async function onSubmit(data: RegisterValues) {
     setFormError(undefined)
-  }
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    const result = registerSchema.safeParse(form)
-    if (!result.success) {
-      setErrors({
-        nick: getFieldError(result.error, 'nick'),
-        email: getFieldError(result.error, 'email'),
-        password: getFieldError(result.error, 'password'),
-        confirmPassword: getFieldError(result.error, 'confirmPassword'),
-      })
-      return
-    }
-    setErrors({})
-    setSubmitting(true)
     try {
-      await register({
-        nick: form.nick,
-        email: form.email,
-        password: form.password,
-        password_confirmation: form.confirmPassword,
-        remember: form.remember,
+      await registerUser({
+        nick: data.nick,
+        email: data.email,
+        password: data.password,
+        password_confirmation: data.confirmPassword,
+        remember: data.remember,
       })
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 422) {
-          setErrors({
-            nick: error.errors.nick?.[0],
-            email: error.errors.email?.[0],
-            password: error.errors.password?.[0],
-            confirmPassword:
-              error.errors.confirmPassword?.[0] ??
-              error.errors.password_confirmation?.[0],
-          })
+          if (error.errors.nick?.[0]) {
+            form.setError('nick', { message: error.errors.nick[0] })
+          }
+          if (error.errors.email?.[0]) {
+            form.setError('email', { message: error.errors.email[0] })
+          }
+          if (error.errors.password?.[0]) {
+            form.setError('password', { message: error.errors.password[0] })
+          }
+          const confirmError =
+            error.errors.confirmPassword?.[0] ??
+            error.errors.password_confirmation?.[0]
+          if (confirmError) {
+            form.setError('confirmPassword', { message: confirmError })
+          }
           setFormError(error.message)
         } else {
           setFormError(error.message)
@@ -79,13 +78,11 @@ export function RegisterForm() {
       } else {
         setFormError('No se pudo conectar con el servidor.')
       }
-    } finally {
-      setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="grid gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4">
       <div>
         <h2 className="font-heading text-xl font-bold">
           Funda tu civilización
@@ -102,14 +99,13 @@ export function RegisterForm() {
           type="text"
           autoComplete="nickname"
           placeholder="Tu nombre en el reino"
-          value={form.nick}
-          onChange={(event) => handleField('nick', event.target.value)}
+          {...register('nick')}
           aria-invalid={Boolean(errors.nick)}
           aria-describedby={errors.nick ? 'register-nick-error' : undefined}
         />
         {errors.nick && (
           <p id="register-nick-error" className="text-destructive text-xs">
-            {errors.nick}
+            {errors.nick.message}
           </p>
         )}
       </div>
@@ -121,14 +117,13 @@ export function RegisterForm() {
           type="email"
           autoComplete="email"
           placeholder="dios@reino.com"
-          value={form.email}
-          onChange={(event) => handleField('email', event.target.value)}
+          {...register('email')}
           aria-invalid={Boolean(errors.email)}
           aria-describedby={errors.email ? 'register-email-error' : undefined}
         />
         {errors.email && (
           <p id="register-email-error" className="text-destructive text-xs">
-            {errors.email}
+            {errors.email.message}
           </p>
         )}
       </div>
@@ -140,8 +135,7 @@ export function RegisterForm() {
           type="password"
           autoComplete="new-password"
           placeholder="Mínimo 8 caracteres"
-          value={form.password}
-          onChange={(event) => handleField('password', event.target.value)}
+          {...register('password')}
           aria-invalid={Boolean(errors.password)}
           aria-describedby={
             errors.password ? 'register-password-error' : undefined
@@ -149,7 +143,7 @@ export function RegisterForm() {
         />
         {errors.password && (
           <p id="register-password-error" className="text-destructive text-xs">
-            {errors.password}
+            {errors.password.message}
           </p>
         )}
       </div>
@@ -161,10 +155,7 @@ export function RegisterForm() {
           type="password"
           autoComplete="new-password"
           placeholder="••••••••"
-          value={form.confirmPassword}
-          onChange={(event) =>
-            handleField('confirmPassword', event.target.value)
-          }
+          {...register('confirmPassword')}
           aria-invalid={Boolean(errors.confirmPassword)}
           aria-describedby={
             errors.confirmPassword
@@ -177,7 +168,7 @@ export function RegisterForm() {
             id="register-confirm-password-error"
             className="text-destructive text-xs"
           >
-            {errors.confirmPassword}
+            {errors.confirmPassword.message}
           </p>
         )}
       </div>
@@ -185,8 +176,8 @@ export function RegisterForm() {
       <div className="flex items-center gap-2">
         <Checkbox
           id="register-remember"
-          checked={form.remember ?? false}
-          onCheckedChange={(checked) => handleField('remember', checked === true)}
+          checked={rememberValue ?? false}
+          onCheckedChange={(checked) => setValue('remember', checked === true)}
         />
         <Label htmlFor="register-remember" className="text-sm font-normal">
           Recuérdame
@@ -211,14 +202,14 @@ export function RegisterForm() {
 
       <Button
         type="submit"
-        disabled={submitting}
+        disabled={isSubmitting}
         className="bg-wine text-parchment hover:bg-wine/90 mt-1 h-11 w-full gap-2.5 rounded-md text-[0.92rem] font-bold tracking-wide"
       >
         <span
           aria-hidden="true"
           className="border-gold-bright size-4 shrink-0 rounded-full border-[1.5px]"
         />
-        {submitting ? 'Fundando…' : 'Fundar civilización'}
+        {isSubmitting ? 'Fundando…' : 'Fundar civilización'}
       </Button>
     </form>
   )

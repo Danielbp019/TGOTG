@@ -7,13 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/components/auth/auth-provider'
 import { useCity } from '@/components/city/city-provider'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { buildingColors, buildingIcons } from '@/data/icons'
 import { resources } from '@/data/resources'
 import type { ResourceKey } from '@/types'
@@ -60,7 +55,18 @@ export function RepairPanel() {
   }
 
   if (isLoading) {
-    return <p className="text-muted-foreground text-sm">Cargando daños…</p>
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

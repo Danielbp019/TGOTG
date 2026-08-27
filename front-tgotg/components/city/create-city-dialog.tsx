@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { biomeBonusLabel, biomeMeta } from '@/data/biomes'
 import { ApiError, createCity, fetchRegions } from '@/lib/api'
@@ -164,9 +165,11 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
                 </Button>
               </div>
             ) : regions.length === 0 ? (
-              <p className="text-muted-foreground text-xs">
-                Cargando regiones…
-              </p>
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-2/3" />
+              </div>
             ) : (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {regions.map((r) => {

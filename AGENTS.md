@@ -39,20 +39,51 @@ Juego de estrategia medieval persistente por navegador, con una experiencia visu
 1. No implementar funcionalidades futuras antes de necesitarlas.
 2. Mantener React y Phaser separados conceptualmente.
 3. Usar TypeScript en todo el frontend.
-4. Usar componentes reutilizables (shadcn/ui).
-5. Mantener todos los textos visibles en español.
-6. Usar datos mock antes de conectar el backend.
-7. No acoplar la lógica del juego a los assets gráficos.
-8. No crear sistemas complejos sin necesidad.
-9. Priorizar una interfaz funcional sobre efectos visuales.
-10. Cada etapa debe dejar la aplicación ejecutable.
-11. Todo dato de prueba va en `database/seeders` y `database/factories`, nunca hardcodeado en controladores. Los controladores son estándar y leen/escriben DB; el seed puebla la DB.
-12. Da respuestas breves en lo posible.
+4. Mantener todos los textos visibles en español.
+5. Usar datos mock antes de conectar el backend.
+6. No acoplar la lógica del juego a los assets gráficos.
+7. No crear sistemas complejos sin necesidad.
+8. Priorizar una interfaz funcional sobre efectos visuales.
+9. Cada etapa debe dejar la aplicación ejecutable.
+10. Todo dato de prueba va en `database/seeders` y `database/factories`, nunca hardcodeado en controladores. Los controladores son estándar y leen/escriben DB; el seed puebla la DB.
+11. Da respuestas breves en lo posible.
+
+## Calidad de código y reutilización
+
+### Librerías obligatorias
+
+- **Formularios**: `react-hook-form` + `@hookform/resolvers/zod` + `zod`.
+  No crear forms con `useState` manual.
+- **Data fetching**: `@tanstack/react-query` (`useQuery`, `useMutation`, `useQueryClient`).
+  No hacer `fetch()` directo.
+- **Validación**: Zod schemas en `lib/validations/{dominio}.ts`, tipos con `z.infer<typeof schema>`.
+  Nunca duplicar un schema.
+
+### Reutilización antes de crear
+
+- Diálogo de confirmación → `ConfirmDialog` (`components/ui/confirm-dialog.tsx`)
+- Formulario en diálogo → `FormDialog` (`components/ui/form-dialog.tsx`)
+- Estado de carga → `Skeleton` (`components/ui/skeleton.tsx`). Nunca `<p>Cargando...</p>`
+- Revisar `components/ui/` antes de crear componentes nuevos
+- No usar `confirm()` del navegador
+
+### Formato de imports
+
+- Usar `import * as React from 'react'` consistente
+- Imports de shadcn: `@/components/ui/{componente}`
+- Imports de API: `@/lib/api`
+- Imports de validación: `@/lib/validations/{dominio}`
+
+### Convenciones de archivos
+
+- Componentes: `kebab-case.tsx` (ej. `clan-detail.tsx`)
+- Hooks: `use-{nombre}.ts` (ej. `use-my-resources.ts`)
+- Validations: `kebab-case.ts` (ej. `auth.ts`, `clans.ts`)
+- Named exports en componentes; default exports solo en pages/layouts de Next.js
 
 ## Validaciones
 
-- **Toda validación de datos en el frontend debe hacerse con `zod`**, para mantener el código ordenado y con un mismo estilo.
-- Los esquemas deben vivir en `lib/validations/` y derivar tipos con `z.infer`.
+- En el frontend se usa `zod` (ver "Calidad de código y reutilización").
 - En el backend se usan las reglas nativas de Laravel.
 
 ## Búsqueda y lectura de archivos

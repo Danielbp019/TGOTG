@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { createClanBulletin, deleteClanBulletin } from '@/lib/api'
 import {
   clanBulletinSchema,
@@ -9,17 +11,11 @@ import {
 } from '@/lib/validations/clans'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { FormDialog } from '@/components/ui/form-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Trash2, Plus } from 'lucide-react'
 import type { ClanBulletin as ClanBulletinType, ClanRole } from '@/types'
 
@@ -37,22 +33,26 @@ export function ClanBulletin({
   const queryClient = useQueryClient()
   const [showDialog, setShowDialog] = useState(false)
   const [bulletinToDelete, setBulletinToDelete] = useState<string | null>(null)
-  const [values, setValues] = useState<ClanBulletinValues>({
-    title: '',
-    content: '',
+
+  const form = useForm<ClanBulletinValues>({
+    resolver: zodResolver(clanBulletinSchema),
+    defaultValues: { title: '', content: '' },
   })
-  const [errors, setErrors] = useState<Partial<Record<string, string>>>({})
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = form
 
   const createMutation = useMutation({
     mutationFn: (data: ClanBulletinValues) =>
       createClanBulletin(clanId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-clan'] })
-      setValues({ title: '', content: '' })
+      reset()
       setShowDialog(false)
-    },
-    onError: (error: Error) => {
-      setErrors({ general: error.message })
     },
   })
 
@@ -70,29 +70,8 @@ export function ClanBulletin({
     currentUserRole === 'subleader' ||
     currentUserRole === 'officer'
 
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    setErrors({})
-
-    const result = clanBulletinSchema.safeParse(values)
-    if (!result.success) {
-      const fieldErrors: Partial<Record<string, string>> = {}
-      for (const issue of result.error.issues) {
-        const field = issue.path[0] as string
-        fieldErrors[field] = issue.message
-      }
-      setErrors(fieldErrors)
-      return
-    }
-
-    createMutation.mutate(result.data)
-  }
-
   function handleDialogOpenChange(open: boolean) {
-    if (!open) {
-      setValues({ title: '', content: '' })
-      setErrors({})
-    }
+    if (!open) reset()
     setShowDialog(open)
   }
 
@@ -112,90 +91,51 @@ export function ClanBulletin({
         )}
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto min-h-0">
-        <Dialog open={showDialog} onOpenChange={handleDialogOpenChange}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nueva publicación en el tablón</DialogTitle>
-              <DialogDescription>
-                Escribe un mensaje para todos los miembros del clan.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
-              <div className="grid gap-2">
-                <Label htmlFor="bulletin-title">Título</Label>
-                <Input
-                  id="bulletin-title"
-                  value={values.title}
-                  onChange={(event) =>
-                    setValues((prev) => ({ ...prev, title: event.target.value }))
-                  }
-                  placeholder="Título de la publicación"
-                />
-                {errors.title && (
-                  <p className="text-destructive text-xs">{errors.title}</p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="bulletin-content">Contenido</Label>
-                <Textarea
-                  id="bulletin-content"
-                  value={values.content}
-                  onChange={(event) =>
-                    setValues((prev) => ({ ...prev, content: event.target.value }))
-                  }
-                  placeholder="Escribe el contenido del tablón..."
-                  className="min-h-[120px]"
-                />
-                {errors.content && (
-                  <p className="text-destructive text-xs">{errors.content}</p>
-                )}
-              </div>
-              {errors.general && (
-                <p className="text-destructive text-xs">{errors.general}</p>
-              )}
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleDialogOpenChange(false)}
-                  disabled={createMutation.isPending}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Publicando…' : 'Publicar'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <FormDialog
+          open={showDialog}
+          onOpenChange={handleDialogOpenChange}
+          title="Nueva publicación en el tablón"
+          description="Escribe un mensaje para todos los miembros del clan."
+          onSubmit={handleSubmit((data) => createMutation.mutate(data))}
+          submitLabel="Publicar"
+          submitLoadingLabel="Publicando…"
+          isPending={createMutation.isPending}
+          error={createMutation.error?.message ?? null}
+        >
+          <div className="grid gap-2">
+            <Label htmlFor="bulletin-title">Título</Label>
+            <Input
+              id="bulletin-title"
+              {...register('title')}
+              placeholder="Título de la publicación"
+            />
+            {errors.title && (
+              <p className="text-destructive text-xs">{errors.title.message}</p>
+            )}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="bulletin-content">Contenido</Label>
+            <Textarea
+              id="bulletin-content"
+              {...register('content')}
+              placeholder="Escribe el contenido del tablón..."
+              className="min-h-[120px]"
+            />
+            {errors.content && (
+              <p className="text-destructive text-xs">{errors.content.message}</p>
+            )}
+          </div>
+        </FormDialog>
 
-        <Dialog open={bulletinToDelete !== null} onOpenChange={(open) => { if (!open) setBulletinToDelete(null) }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Eliminar publicación</DialogTitle>
-              <DialogDescription>
-                ¿Estás seguro de que quieres eliminar esta publicación? Esta acción no se puede deshacer.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setBulletinToDelete(null)}
-                disabled={deleteMutation.isPending}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => { if (bulletinToDelete) deleteMutation.mutate(bulletinToDelete) }}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? 'Eliminando…' : 'Eliminar'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <ConfirmDialog
+          open={bulletinToDelete !== null}
+          onOpenChange={(open) => { if (!open) setBulletinToDelete(null) }}
+          title="Eliminar publicación"
+          description="¿Estás seguro de que quieres eliminar esta publicación? Esta acción no se puede deshacer."
+          confirmLabel="Eliminar"
+          onConfirm={() => { if (bulletinToDelete) deleteMutation.mutate(bulletinToDelete) }}
+          isPending={deleteMutation.isPending}
+        />
 
         {bulletins.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-6">

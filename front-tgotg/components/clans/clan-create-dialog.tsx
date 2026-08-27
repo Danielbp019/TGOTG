@@ -1,18 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { createClan } from '@/lib/api'
 import { createClanSchema, type CreateClanValues } from '@/lib/validations/clans'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { FormDialog } from '@/components/ui/form-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
@@ -21,17 +14,21 @@ interface ClanCreateDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-type ClanCreateErrors = Partial<Record<keyof CreateClanValues, string>>
-
-const initialValues: CreateClanValues = {
-  name: '',
-  acronym: '',
-}
-
 export function ClanCreateDialog({ open, onOpenChange }: ClanCreateDialogProps) {
   const queryClient = useQueryClient()
-  const [values, setValues] = useState<CreateClanValues>(initialValues)
-  const [errors, setErrors] = useState<ClanCreateErrors>({})
+
+  const form = useForm<CreateClanValues>({
+    resolver: zodResolver(createClanSchema),
+    defaultValues: { name: '', acronym: '' },
+  })
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { errors },
+  } = form
 
   const createMutation = useMutation({
     mutationFn: createClan,
@@ -42,97 +39,56 @@ export function ClanCreateDialog({ open, onOpenChange }: ClanCreateDialogProps) 
       onOpenChange(false)
     },
     onError: (error: Error) => {
-      setErrors({ name: error.message })
+      setError('name', { message: error.message })
     },
   })
-
-  function reset() {
-    setValues(initialValues)
-    setErrors({})
-  }
 
   function handleOpenChange(next: boolean) {
     if (!next) reset()
     onOpenChange(next)
   }
 
-  function handleField(field: keyof CreateClanValues, value: string) {
-    setValues((prev) => ({ ...prev, [field]: value }))
-    setErrors((prev) => ({ ...prev, [field]: undefined }))
-  }
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    const result = createClanSchema.safeParse(values)
-    if (!result.success) {
-      const fieldErrors: ClanCreateErrors = {}
-      for (const issue of result.error.issues) {
-        const field = issue.path[0] as keyof CreateClanValues
-        fieldErrors[field] = issue.message
-      }
-      setErrors(fieldErrors)
-      return
-    }
-    createMutation.mutate(result.data)
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Crear clan</DialogTitle>
-          <DialogDescription>
-            Crea un nuevo clan con un nombre y siglas únicas.
-          </DialogDescription>
-        </DialogHeader>
+    <FormDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title="Crear clan"
+      description="Crea un nuevo clan con un nombre y siglas únicas."
+      onSubmit={handleSubmit((data) => createMutation.mutate(data))}
+      submitLabel="Crear clan"
+      submitLoadingLabel="Creando..."
+      isPending={createMutation.isPending}
+    >
+      <div className="grid gap-2">
+        <Label htmlFor="clan-name">Nombre del clan</Label>
+        <Input
+          id="clan-name"
+          {...register('name')}
+          aria-invalid={Boolean(errors.name)}
+          placeholder="Ej: Guerreros del Alba"
+        />
+        {errors.name && (
+          <p className="text-destructive text-xs">{errors.name.message}</p>
+        )}
+      </div>
 
-        <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
-          <div className="grid gap-2">
-            <Label htmlFor="clan-name">Nombre del clan</Label>
-            <Input
-              id="clan-name"
-              value={values.name}
-              onChange={(event) => handleField('name', event.target.value)}
-              aria-invalid={Boolean(errors.name)}
-              placeholder="Ej: Guerreros del Alba"
-            />
-            {errors.name && (
-              <p className="text-destructive text-xs">{errors.name}</p>
-            )}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="clan-acronym">Siglas (3-5 caracteres)</Label>
-            <Input
-              id="clan-acronym"
-              value={values.acronym}
-              onChange={(event) =>
-                handleField('acronym', event.target.value.toUpperCase())
-              }
-              aria-invalid={Boolean(errors.acronym)}
-              placeholder="Ej: GDA"
-              maxLength={5}
-            />
-            {errors.acronym && (
-              <p className="text-destructive text-xs">{errors.acronym}</p>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={createMutation.isPending}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? 'Creando...' : 'Crear clan'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <div className="grid gap-2">
+        <Label htmlFor="clan-acronym">Siglas (3-5 caracteres)</Label>
+        <Input
+          id="clan-acronym"
+          {...register('name')}
+          onChange={(e) => {
+            const upper = e.target.value.toUpperCase()
+            form.setValue('acronym', upper, { shouldValidate: true })
+          }}
+          aria-invalid={Boolean(errors.acronym)}
+          placeholder="Ej: GDA"
+          maxLength={5}
+        />
+        {errors.acronym && (
+          <p className="text-destructive text-xs">{errors.acronym.message}</p>
+        )}
+      </div>
+    </FormDialog>
   )
 }

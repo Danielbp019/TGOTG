@@ -47,7 +47,7 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
       const data = query.state.data
       if (!data) return false
       const hasUpgrading = data.buildings.some((b) => b.upgrading)
-      return hasUpgrading ? 1000 : false
+      return hasUpgrading ? 5000 : false
     },
   })
 

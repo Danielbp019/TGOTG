@@ -1,6 +1,8 @@
 'use client'
 
 import * as React from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,9 +14,6 @@ import {
   accountProfileSchema,
   type AccountProfileValues,
 } from '@/lib/validations/account'
-import { getFieldError } from '@/lib/validations/utils'
-
-type ProfileErrors = Partial<Record<keyof AccountProfileValues, string>>
 
 interface ProfileTabProps {
   initialProfile: AccountProfileValues
@@ -23,12 +22,21 @@ interface ProfileTabProps {
 
 export function ProfileTab({ initialProfile, onReset }: ProfileTabProps) {
   const { updateUser } = useAuth()
-  const [profile, setProfile] =
-    React.useState<AccountProfileValues>(initialProfile)
-  const [profileErrors, setProfileErrors] = React.useState<ProfileErrors>({})
   const [formError, setFormError] = React.useState<string | undefined>()
   const [saved, setSaved] = React.useState(false)
-  const [saving, setSaving] = React.useState(false)
+
+  const form = useForm<AccountProfileValues>({
+    resolver: zodResolver(accountProfileSchema),
+    defaultValues: initialProfile,
+  })
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = form
 
   const versionRef = React.useRef(0)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -37,62 +45,41 @@ export function ProfileTab({ initialProfile, onReset }: ProfileTabProps) {
     const v = onReset()
     if (v !== versionRef.current) {
       versionRef.current = v
-      setProfile(initialProfile)
-      setProfileErrors({})
+      reset(initialProfile)
       setFormError(undefined)
       setSaved(false)
-      setSaving(false)
     }
   })
 
-  function handleField(field: keyof AccountProfileValues, value: string) {
-    setProfile((prev) => {
-      const next = { ...prev, [field]: value }
-      if (field === 'password' && value === '') {
-        next.confirmPassword = ''
-      }
-      return next
-    })
-    setSaved(false)
-  }
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    const result = accountProfileSchema.safeParse(profile)
-    if (!result.success) {
-      setProfileErrors({
-        email: getFieldError(result.error, 'email'),
-        nick: getFieldError(result.error, 'nick'),
-        currentPassword: getFieldError(result.error, 'currentPassword'),
-        password: getFieldError(result.error, 'password'),
-        confirmPassword: getFieldError(result.error, 'confirmPassword'),
-      })
-      setSaved(false)
-      return
-    }
-    setProfileErrors({})
+  async function onSubmit(data: AccountProfileValues) {
     setFormError(undefined)
     setSaved(false)
-    setSaving(true)
     try {
       const { user: updated } = await updateAccountProfile({
-        nick: profile.nick,
-        current_password: profile.currentPassword || undefined,
-        password: profile.password || undefined,
-        password_confirmation: profile.confirmPassword || undefined,
+        nick: data.nick,
+        current_password: data.currentPassword || undefined,
+        password: data.password || undefined,
+        password_confirmation: data.confirmPassword || undefined,
       })
       updateUser(updated)
       setSaved(true)
     } catch (error) {
       if (error instanceof ApiError && error.status === 422) {
-        setProfileErrors({
-          nick: error.errors.nick?.[0],
-          currentPassword: error.errors.current_password?.[0],
-          password: error.errors.password?.[0],
-          confirmPassword:
-            error.errors.confirmPassword?.[0] ??
-            error.errors.password_confirmation?.[0],
-        })
+        if (error.errors.nick?.[0]) {
+          setError('nick', { message: error.errors.nick[0] })
+        }
+        if (error.errors.current_password?.[0]) {
+          setError('currentPassword', { message: error.errors.current_password[0] })
+        }
+        if (error.errors.password?.[0]) {
+          setError('password', { message: error.errors.password[0] })
+        }
+        const confirmError =
+          error.errors.confirmPassword?.[0] ??
+          error.errors.password_confirmation?.[0]
+        if (confirmError) {
+          setError('confirmPassword', { message: confirmError })
+        }
       } else {
         setFormError(
           error instanceof ApiError
@@ -100,19 +87,17 @@ export function ProfileTab({ initialProfile, onReset }: ProfileTabProps) {
             : 'No se pudo conectar con el servidor.'
         )
       }
-    } finally {
-      setSaving(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4" noValidate>
       <div className="grid gap-2">
         <Label htmlFor="account-email">Correo electrónico</Label>
         <Input
           id="account-email"
           type="email"
-          value={profile.email}
+          value={initialProfile.email}
           disabled
         />
         <p
@@ -128,19 +113,18 @@ export function ProfileTab({ initialProfile, onReset }: ProfileTabProps) {
         <Input
           id="account-nick"
           type="text"
-          value={profile.nick}
-          onChange={(event) => handleField('nick', event.target.value)}
-          aria-invalid={Boolean(profileErrors.nick)}
+          {...register('nick')}
+          aria-invalid={Boolean(errors.nick)}
           aria-describedby={
-            profileErrors.nick ? 'account-nick-error' : undefined
+            errors.nick ? 'account-nick-error' : undefined
           }
         />
-        {profileErrors.nick && (
+        {errors.nick && (
           <p
             id="account-nick-error"
             className="text-destructive text-xs"
           >
-            {profileErrors.nick}
+            {errors.nick.message}
           </p>
         )}
       </div>
@@ -155,24 +139,21 @@ export function ProfileTab({ initialProfile, onReset }: ProfileTabProps) {
           id="account-current-password"
           type="password"
           autoComplete="current-password"
-          value={profile.currentPassword}
-          onChange={(event) =>
-            handleField('currentPassword', event.target.value)
-          }
-          aria-invalid={Boolean(profileErrors.currentPassword)}
+          {...register('currentPassword')}
+          aria-invalid={Boolean(errors.currentPassword)}
           aria-describedby={
-            profileErrors.currentPassword
+            errors.currentPassword
               ? 'account-current-password-error'
               : undefined
           }
           placeholder="Necesaria para cambiar la contraseña"
         />
-        {profileErrors.currentPassword && (
+        {errors.currentPassword && (
           <p
             id="account-current-password-error"
             className="text-destructive text-xs"
           >
-            {profileErrors.currentPassword}
+            {errors.currentPassword.message}
           </p>
         )}
       </div>
@@ -182,22 +163,21 @@ export function ProfileTab({ initialProfile, onReset }: ProfileTabProps) {
         <Input
           id="account-password"
           type="password"
-          value={profile.password}
-          onChange={(event) => handleField('password', event.target.value)}
-          aria-invalid={Boolean(profileErrors.password)}
+          {...register('password')}
+          aria-invalid={Boolean(errors.password)}
           aria-describedby={
-            profileErrors.password
+            errors.password
               ? 'account-password-error'
               : undefined
           }
           placeholder="Déjala en blanco para no cambiarla"
         />
-        {profileErrors.password && (
+        {errors.password && (
           <p
             id="account-password-error"
             className="text-destructive text-xs"
           >
-            {profileErrors.password}
+            {errors.password.message}
           </p>
         )}
       </div>
@@ -209,23 +189,20 @@ export function ProfileTab({ initialProfile, onReset }: ProfileTabProps) {
         <Input
           id="account-confirm-password"
           type="password"
-          value={profile.confirmPassword}
-          onChange={(event) =>
-            handleField('confirmPassword', event.target.value)
-          }
-          aria-invalid={Boolean(profileErrors.confirmPassword)}
+          {...register('confirmPassword')}
+          aria-invalid={Boolean(errors.confirmPassword)}
           aria-describedby={
-            profileErrors.confirmPassword
+            errors.confirmPassword
               ? 'account-confirm-password-error'
               : undefined
           }
         />
-        {profileErrors.confirmPassword && (
+        {errors.confirmPassword && (
           <p
             id="account-confirm-password-error"
             className="text-destructive text-xs"
           >
-            {profileErrors.confirmPassword}
+            {errors.confirmPassword.message}
           </p>
         )}
       </div>
@@ -243,9 +220,9 @@ export function ProfileTab({ initialProfile, onReset }: ProfileTabProps) {
       <Button
         type="submit"
         className="w-full sm:w-auto"
-        disabled={saving}
+        disabled={isSubmitting}
       >
-        {saving ? 'Guardando…' : 'Guardar cambios'}
+        {isSubmitting ? 'Guardando…' : 'Guardar cambios'}
       </Button>
     </form>
   )

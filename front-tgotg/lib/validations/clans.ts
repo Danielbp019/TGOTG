@@ -1,18 +1,5 @@
 import { z } from 'zod'
 
-export const newConversationSchema = z.object({
-  destinatario: z.string().trim().min(1, 'Escribe el nombre del destinatario'),
-  primerMensaje: z.string().trim().min(1, 'Escribe un primer mensaje'),
-})
-
-export type NewConversationValues = z.infer<typeof newConversationSchema>
-
-export const chatReplySchema = z.object({
-  mensaje: z.string().trim().min(1, 'El mensaje no puede estar vacío'),
-})
-
-export type ChatReplyValues = z.infer<typeof chatReplySchema>
-
 export const createClanSchema = z.object({
   name: z
     .string()
@@ -65,7 +52,6 @@ export const clanMessageSchema = z.object({
 export type ClanMessageValues = z.infer<typeof clanMessageSchema>
 
 export const transferResourcesSchema = z.object({
-  recipient_player_id: z.string().min(1, 'Selecciona un destinatario'),
   gold: z.number().min(0).optional(),
   wood: z.number().min(0).optional(),
   stone: z.number().min(0).optional(),

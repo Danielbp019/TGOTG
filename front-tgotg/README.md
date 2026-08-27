@@ -103,23 +103,24 @@ front-tgotg/
   components/
     layout/            # GameShell, Sidebar, ServerClock
     navigation/        # MainMenu
-    city/              # city-provider, city-status, construction-panel, level-bar
-    game/              # city-canvas, phaser-game, world-config-panel, blessing-*
+    city/              # city-provider, city-title, city-status, city-canvas, construction-panel, repair-panel, create-city-dialog
+    game/              # phaser-game, world-config-panel, onboarding-wizard, blessing-*
     resources/         # ResourceBar
     auth/              # auth-provider, login-form, register-form
-    messages/          # messages-inbox, conversation-list, chat-viewer
-    account/           # account-header, account-settings-dialog
-    ui/                # shadcn/ui (button, card, dialog, sheet, tabs…)
+    messages/          # messages-inbox, conversation-list, chat-viewer, new-conversation-dialog
+    clans/             # clan-detail, clan-create-dialog, clan-join-form, clan-bulletin, clan-chat, clan-members-list, resource-transfer-dialog
+    account/           # account-header, account-settings-dialog, tabs/profile-tab, tabs/danger-zone-tab
+    ui/                # shadcn/ui (button, card, dialog, sheet, tabs…), confirm-dialog, form-dialog, skeleton
   game/                # Phaser (main, scenes/city-scene, assets, city-data, event-bus)
   data/                # resources, menu, icons, balance
   types/               # ResourceKey, BuildingType, PlotShape, Chat*
   lib/
     api.ts             # wrapper fetch (XSRF, credentials:include, ApiError, 401 → tgotg:unauthorized)
-    validations/       # zod (auth, city, messages, account, new-game) con z.infer
+    validations/       # zod (auth, city, messages, clans, account, new-game) con z.infer
     blessing.ts        # evento tgotg:blessing-changed
     settings.ts        # TimeFormat 24h/12h en localStorage
     utils.ts           # cn (clsx + tailwind-merge)
-  hooks/               # alias reservado (ver components.json), lógica hoy en providers
+  hooks/               # use-my-resources, use-user, etc. (lógica de negocio extraída de providers)
   public/game/         # terreno + edificios 1024×1024
 ```
 
@@ -129,7 +130,7 @@ front-tgotg/
 
 - El backend emite `Set-Cookie: tgotg_token=...; HttpOnly; SameSite=Lax` al hacer `POST /api/auth/login` o `register`.
 - El front no guarda el token en JS. `proxy.ts` lee la cookie en el servidor y decide redirigir (`/ → /login` si no hay cookie, `/login → /` si la hay).
-- `AuthProvider` hidrata el usuario con `GET /api/user` usando la cookie, pero **solo en rutas de juego**: en `/login` y `/register` no hay llamada al backend (evita un `401` inútil cada vez que entras a `/` sin sesión; el proxy ya decidió por ti). Mientras `isLoading` no fetchea ciudad ni bendiciones.
+- `AuthProvider` hidrata el usuario con `useQuery({ queryKey: ['user'], queryFn: () => api.get('/user') })` usando la cookie, pero **solo en rutas de juego**: en `/login` y `/register` no hay llamada al backend (evita un `401` inútil cada vez que entras a `/` sin sesión; el proxy ya decidió por ti). Mientras `isLoading` no fetchea ciudad ni bendiciones.
 - Todos los diálogos/paneles que llaman a la API (`CityProvider`, `BlessingDialog`, `CivilizationDialog`, `ServerClock`, `ConstructionPanel`, etc.) esperan a `user` antes de fetchear → cero `api/*` en `/login`.
 - **Roles**: `POST /api/worlds` requiere rol `admin`. Si el usuario no es admin, el backend devuelve `403`. El frontend solo muestra el panel de configuración de mundo a usuarios con `role: "admin"`.
 - Como respaldo para Postman/tests sigue funcionando `Authorization: Bearer <token>` si lo envías a mano.
@@ -139,10 +140,14 @@ front-tgotg/
 ## Validaciones y estilo
 
 - **zod obligatorio** en el front: esquemas en `lib/validations/` y tipos con `z.infer` (`AGENTS.md`).
+- **react-hook-form** para todos los formularios: `useForm` + `zodResolver`. No crear forms con `useState` manual.
+- **react-query** para data fetching: `useQuery`, `useMutation`, `useQueryClient`. No hacer `fetch()` directo.
+- **Componentes reutilizables**: `ConfirmDialog` (confirmaciones destructivas), `FormDialog` (formularios en diálogos), `Skeleton` (estados de carga). Revisar `components/ui/` antes de crear nuevos.
 - **Estética medieval** coherente; iconos `lucide-react` provisionales (no emojis).
 - **Tailwind 4** (`app/globals.css` + `@import "tailwindcss"`), sin `tailwind.config.ts`; PostCSS es `@tailwindcss/postcss`.
 - **shadcn/ui** `style: base-nova`, `baseColor: neutral`, `cssVariables: true` (`components.json`).
 - **Formato**: `prettier` (`singleQuote, semi:false`) + `prettier-plugin-tailwindcss`; `eslint-config-next` + `eslint-config-prettier`.
+- **Convenciones de archivos**: componentes `kebab-case.tsx`, hooks `use-{nombre}.ts`, validations `kebab-case.ts`.
 
 ---
 

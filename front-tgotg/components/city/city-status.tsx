@@ -5,6 +5,7 @@ import { useCity } from '@/components/city/city-provider'
 import { resources } from '@/data/resources'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useEffect, useState } from 'react'
 import type { ResourceKey } from '@/types'
 
@@ -73,7 +74,11 @@ export function CityStatus() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground text-sm">Cargando…</p>
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
           ) : (
             <ul className="flex flex-col gap-1">
               {production.map((item) => (
@@ -105,7 +110,7 @@ export function CityStatus() {
               <span className="text-muted-foreground">Población</span>
               <span className="tabular-nums">{status.population}</span>
             </div>
-            <Progress value={70} aria-label="Población" />
+            <Progress value={Math.min(status.population, 100)} aria-label="Población" />
           </div>
           <div>
             <div className="mb-1 flex justify-between text-sm">
@@ -138,7 +143,7 @@ export function CityStatus() {
                 <span className="tabular-nums">{protectionRemaining} h</span>
               </div>
               <div>
-                <span className="text-danger-600 text-xs font-medium">
+                <span className="text-destructive text-xs font-medium">
                   <ShieldCheck className="size-3.5" /> Tu ciudad está protegida
                   contra ataques
                 </span>

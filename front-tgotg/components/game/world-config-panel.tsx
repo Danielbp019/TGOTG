@@ -2,6 +2,9 @@
 
 import * as React from 'react'
 import { Check, Globe, Rocket } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,55 +17,52 @@ import {
 import { useAuth } from '@/components/auth/auth-provider'
 import type { GameOptionPayload } from '@/lib/api'
 import { ApiError, createWorld, fetchGameOptions } from '@/lib/api'
-import { worldConfigSchema } from '@/lib/validations/new-game'
+import { worldConfigSchema, type WorldConfigValues } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
 export function WorldConfigPanel() {
   const { user, isLoading: authLoading, logout } = useAuth()
 
-  const [durations, setDurations] = React.useState<GameOptionPayload[]>([])
-  const [multipliers, setMultipliers] = React.useState<GameOptionPayload[]>([])
-  const [durationId, setDurationId] = React.useState<string | null>(null)
-  const [multiplierId, setMultiplierId] = React.useState<string | null>(null)
-  const [error, setError] = React.useState<string | undefined>()
+  const form = useForm<WorldConfigValues>({
+    resolver: zodResolver(worldConfigSchema),
+    defaultValues: { durationId: '', multiplierId: '' },
+  })
+
+  const {
+    setValue,
+    watch,
+    formState: { errors },
+  } = form
+
+  const durationId = watch('durationId')
+  const multiplierId = watch('multiplierId')
+
+  const optionsQuery = useQuery({
+    queryKey: ['game-options'],
+    queryFn: fetchGameOptions,
+    enabled: !!user && !authLoading,
+  })
+
+  const durations = React.useMemo(() => optionsQuery.data?.durations ?? [], [optionsQuery.data])
+  const multipliers = React.useMemo(() => optionsQuery.data?.multipliers ?? [], [optionsQuery.data])
+
+  React.useEffect(() => {
+    if (durations.length > 0 && !durationId) {
+      setValue('durationId', durations[0].key)
+    }
+    if (multipliers.length > 0 && !multiplierId) {
+      setValue('multiplierId', multipliers[0].key)
+    }
+  }, [durations, multipliers, durationId, multiplierId, setValue])
+
   const [saving, setSaving] = React.useState(false)
   const [started, setStarted] = React.useState(false)
 
-  React.useEffect(() => {
-    if (authLoading || !user) return
-    let active = true
-
-    fetchGameOptions()
-      .then((response) => {
-        if (!active) return
-        setDurations(response.durations)
-        setMultipliers(response.multipliers)
-        setDurationId(response.durations[0]?.key ?? null)
-        setMultiplierId(response.multipliers[0]?.key ?? null)
-      })
-      .catch(() => {
-        if (active) setError('No se pudieron cargar las opciones del mundo.')
-      })
-
-    return () => {
-      active = false
-    }
-  }, [authLoading, user])
-
   async function handleStart() {
-    if (!durationId || !multiplierId) return
-
-    const result = worldConfigSchema.safeParse({
-      durationId,
-      multiplierId,
-    })
-    if (!result.success) {
-      setError(result.error.issues[0]?.message)
-      return
-    }
+    const isValid = await form.trigger()
+    if (!isValid) return
 
     setSaving(true)
-    setError(undefined)
     try {
       await createWorld({
         duration_key: durationId,
@@ -72,9 +72,11 @@ export function WorldConfigPanel() {
       await logout()
     } catch (caught) {
       if (caught instanceof ApiError) {
-        setError(caught.message)
+        form.setError('root', { message: caught.message })
       } else {
-        setError('No se pudo iniciar el mundo. Inténtalo de nuevo.')
+        form.setError('root', {
+          message: 'No se pudo iniciar el mundo. Inténtalo de nuevo.',
+        })
       }
     } finally {
       setSaving(false)
@@ -102,15 +104,15 @@ export function WorldConfigPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
-          {durations.map((duration) => {
+          {durations.map((duration: GameOptionPayload) => {
             const selected = duration.key === durationId
             return (
               <button
                 key={duration.key}
                 type="button"
                 onClick={() => {
-                  setDurationId(duration.key)
-                  setError(undefined)
+                  setValue('durationId', duration.key, { shouldValidate: true })
+                  form.clearErrors('root')
                 }}
                 aria-pressed={selected}
                 className={cn(
@@ -146,15 +148,15 @@ export function WorldConfigPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
-          {multipliers.map((multiplier) => {
+          {multipliers.map((multiplier: GameOptionPayload) => {
             const selected = multiplier.key === multiplierId
             return (
               <button
                 key={multiplier.key}
                 type="button"
                 onClick={() => {
-                  setMultiplierId(multiplier.key)
-                  setError(undefined)
+                  setValue('multiplierId', multiplier.key, { shouldValidate: true })
+                  form.clearErrors('root')
                 }}
                 aria-pressed={selected}
                 className={cn(
@@ -182,7 +184,9 @@ export function WorldConfigPanel() {
         </CardContent>
       </Card>
 
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {errors.root && (
+        <p className="text-destructive text-sm">{errors.root.message}</p>
+      )}
 
       {started && (
         <p className="text-sm text-emerald-600">

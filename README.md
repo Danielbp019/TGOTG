@@ -78,8 +78,8 @@ Cada bioma otorga un bono de producción en su recurso asociado.
 
 ## Tecnología
 
-- **Frontend** (`front-tgotg/`): React + TypeScript, Next.js, Tailwind CSS, shadcn/ui y Phaser 4 para la representación del mundo.
-- **Backend** (`back-tgotg/`): Laravel (PHP 8.x), Eloquent ORM, MariaDB y autenticación Sanctum.
+- **Frontend** (`front-tgotg/`): React + TypeScript, Next.js 16, Tailwind CSS, shadcn/ui y Phaser 4 para la representación del mundo.
+- **Backend** (`back-tgotg/`): Laravel 12, Eloquent ORM, MariaDB y autenticación Sanctum.
 
 ---
 

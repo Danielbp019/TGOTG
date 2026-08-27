@@ -13,14 +13,7 @@ import { ClanChat } from './clan-chat'
 import { ClanApplications } from './clan-applications'
 import { ResourceTransferDialog } from './resource-transfer-dialog'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Shield, LogOut, Trash2 } from 'lucide-react'
 import type { ClanDetail as ClanDetailType, ClanMember } from '@/types'
 
@@ -35,6 +28,7 @@ export function ClanDetail({ clan }: ClanDetailProps) {
     null
   )
   const [showDisbandDialog, setShowDisbandDialog] = useState(false)
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false)
 
   const { data: applicationsData } = useQuery({
     queryKey: ['clan-applications', clan.id],
@@ -100,11 +94,7 @@ export function ClanDetail({ clan }: ClanDetailProps) {
           {clan.currentUserRole !== 'leader' && (
             <Button
               variant="outline"
-              onClick={() => {
-                if (confirm('¿Estás seguro de que quieres abandonar el clan?')) {
-                  leaveMutation.mutate()
-                }
-              }}
+              onClick={() => setShowLeaveDialog(true)}
               disabled={leaveMutation.isPending}
             >
               <LogOut className="mr-2 h-4 w-4" />
@@ -137,33 +127,25 @@ export function ClanDetail({ clan }: ClanDetailProps) {
         <ClanChat clanId={clan.id} />
       </div>
 
-      <Dialog open={showDisbandDialog} onOpenChange={setShowDisbandDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Disolver el clan?</DialogTitle>
-            <DialogDescription>
-              Esta acción no se puede deshacer. El clan {clan.name} [{clan.acronym}]
-              será eliminado permanentemente y todos sus miembros quedarán sin clan.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDisbandDialog(false)}
-              disabled={disbandMutation.isPending}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => disbandMutation.mutate()}
-              disabled={disbandMutation.isPending}
-            >
-              {disbandMutation.isPending ? 'Disolviendo…' : 'Disolver clan'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={showLeaveDialog}
+        onOpenChange={setShowLeaveDialog}
+        title="Abandonar clan"
+        description={`¿Estás seguro de que quieres abandonar el clan ${clan.name}? Perderás todos los privilegios de miembro.`}
+        confirmLabel="Abandonar"
+        onConfirm={() => leaveMutation.mutate()}
+        isPending={leaveMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={showDisbandDialog}
+        onOpenChange={setShowDisbandDialog}
+        title="¿Disolver el clan?"
+        description={`Esta acción no se puede deshacer. El clan ${clan.name} [${clan.acronym}] será eliminado permanentemente y todos sus miembros quedarán sin clan.`}
+        confirmLabel="Disolver clan"
+        onConfirm={() => disbandMutation.mutate()}
+        isPending={disbandMutation.isPending}
+      />
 
       {transferRecipient && (
         <ResourceTransferDialog

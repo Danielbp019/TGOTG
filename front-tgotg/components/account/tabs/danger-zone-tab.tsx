@@ -1,6 +1,8 @@
 'use client'
 
 import * as React from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { AlertTriangle, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -12,11 +14,6 @@ import {
   createDeleteAccountSchema,
   type DeleteAccountValues,
 } from '@/lib/validations/account'
-import { getFieldError } from '@/lib/validations/utils'
-
-type DeleteErrors = Partial<Record<keyof DeleteAccountValues, string>> & {
-  form?: string
-}
 
 interface DangerZoneTabProps {
   onReset?: () => number
@@ -24,62 +21,55 @@ interface DangerZoneTabProps {
 
 export function DangerZoneTab({ onReset }: DangerZoneTabProps) {
   const { user, logout } = useAuth()
-  const [confirmNick, setConfirmNick] = React.useState('')
-  const [deletePassword, setDeletePassword] = React.useState('')
-  const [deleteErrors, setDeleteErrors] = React.useState<DeleteErrors>({})
-  const [deleting, setDeleting] = React.useState(false)
+
+  const deleteAccountSchema = createDeleteAccountSchema(user?.nick ?? '')
+
+  const form = useForm<DeleteAccountValues>({
+    resolver: zodResolver(deleteAccountSchema),
+    defaultValues: { confirmNick: '', password: '' },
+  })
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = form
 
   const versionRef = React.useRef(0)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (!onReset) return
     const v = onReset()
     if (v !== versionRef.current) {
       versionRef.current = v
-      setConfirmNick('')
-      setDeletePassword('')
-      setDeleteErrors({})
-      setDeleting(false)
+      reset()
     }
   })
 
-  async function handleDelete() {
-    const result = createDeleteAccountSchema(user?.nick ?? '').safeParse({
-      confirmNick,
-      password: deletePassword,
-    })
-    if (!result.success) {
-      setDeleteErrors({
-        confirmNick: getFieldError(result.error, 'confirmNick'),
-        password: getFieldError(result.error, 'password'),
-      })
-      return
-    }
-    setDeleteErrors({})
-    setDeleting(true)
+  async function onSubmit(data: DeleteAccountValues) {
     try {
       await deleteAccount({
-        confirm_nick: confirmNick,
-        password: deletePassword,
+        confirm_nick: data.confirmNick,
+        password: data.password,
       })
-      setDeleting(false)
       await logout()
     } catch (error) {
       if (error instanceof ApiError && error.status === 422) {
-        setDeleteErrors({
-          confirmNick: error.errors.confirm_nick?.[0],
-          password: error.errors.password?.[0],
-          form: error.message,
-        })
+        if (error.errors.confirm_nick?.[0]) {
+          setError('confirmNick', { message: error.errors.confirm_nick[0] })
+        }
+        if (error.errors.password?.[0]) {
+          setError('password', { message: error.errors.password[0] })
+        }
       } else {
-        setDeleteErrors({
-          form:
+        setError('root', {
+          message:
             error instanceof ApiError
               ? error.message
               : 'No se pudo conectar con el servidor.',
         })
       }
-      setDeleting(false)
     }
   }
 
@@ -93,84 +83,69 @@ export function DangerZoneTab({ onReset }: DangerZoneTabProps) {
         Esta acción es permanente y no se puede deshacer. Se
         perderán todos tus progresos, recursos y datos.
       </p>
-      <div className="mt-3 grid gap-2">
-        <Label htmlFor="account-confirm-nick">
-          Escribe tu nick para confirmar
-        </Label>
-        <Input
-          id="account-confirm-nick"
-          type="text"
-          value={confirmNick}
-          onChange={(event) => {
-            setConfirmNick(event.target.value)
-            setDeleteErrors((prev) => ({
-              ...prev,
-              confirmNick: undefined,
-              form: undefined,
-            }))
-          }}
-          aria-invalid={Boolean(deleteErrors.confirmNick)}
-          aria-describedby={
-            deleteErrors.confirmNick
-              ? 'account-confirm-nick-error'
-              : undefined
-          }
-        />
-        {deleteErrors.confirmNick && (
-          <p
-            id="account-confirm-nick-error"
-            className="text-destructive text-xs"
-          >
-            {deleteErrors.confirmNick}
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-3 grid gap-2">
+        <div className="grid gap-2">
+          <Label htmlFor="account-confirm-nick">
+            Escribe tu nick para confirmar
+          </Label>
+          <Input
+            id="account-confirm-nick"
+            type="text"
+            {...register('confirmNick')}
+            aria-invalid={Boolean(errors.confirmNick)}
+            aria-describedby={
+              errors.confirmNick
+                ? 'account-confirm-nick-error'
+                : undefined
+            }
+          />
+          {errors.confirmNick && (
+            <p
+              id="account-confirm-nick-error"
+              className="text-destructive text-xs"
+            >
+              {errors.confirmNick.message}
+            </p>
+          )}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="account-delete-password">Contraseña</Label>
+          <Input
+            id="account-delete-password"
+            type="password"
+            autoComplete="current-password"
+            {...register('password')}
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={
+              errors.password
+                ? 'account-delete-password-error'
+                : undefined
+            }
+          />
+          {errors.password && (
+            <p
+              id="account-delete-password-error"
+              className="text-destructive text-xs"
+            >
+              {errors.password.message}
+            </p>
+          )}
+        </div>
+        {errors.root && (
+          <p className="text-destructive text-sm">
+            {errors.root.message}
           </p>
         )}
-      </div>
-      <div className="mt-3 grid gap-2">
-        <Label htmlFor="account-delete-password">Contraseña</Label>
-        <Input
-          id="account-delete-password"
-          type="password"
-          autoComplete="current-password"
-          value={deletePassword}
-          onChange={(event) => {
-            setDeletePassword(event.target.value)
-            setDeleteErrors((prev) => ({
-              ...prev,
-              password: undefined,
-              form: undefined,
-            }))
-          }}
-          aria-invalid={Boolean(deleteErrors.password)}
-          aria-describedby={
-            deleteErrors.password
-              ? 'account-delete-password-error'
-              : undefined
-          }
-        />
-        {deleteErrors.password && (
-          <p
-            id="account-delete-password-error"
-            className="text-destructive text-xs"
-          >
-            {deleteErrors.password}
-          </p>
-        )}
-      </div>
-      {deleteErrors.form && (
-        <p className="text-destructive mt-2 text-sm">
-          {deleteErrors.form}
-        </p>
-      )}
-      <Button
-        type="button"
-        variant="destructive"
-        onClick={handleDelete}
-        disabled={deleting}
-        className="mt-3 w-full sm:w-auto"
-      >
-        <Trash2 />
-        {deleting ? 'Borrando…' : 'Borrar cuenta'}
-      </Button>
+        <Button
+          type="submit"
+          variant="destructive"
+          disabled={isSubmitting}
+          className="mt-3 w-full sm:w-auto"
+        >
+          <Trash2 />
+          {isSubmitting ? 'Borrando…' : 'Borrar cuenta'}
+        </Button>
+      </form>
     </div>
   )
 }

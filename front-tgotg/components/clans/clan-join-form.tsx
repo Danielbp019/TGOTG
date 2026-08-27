@@ -1,18 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { joinClan } from '@/lib/api'
-import { joinClanSchema } from '@/lib/validations/clans'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { joinClanSchema, type JoinClanValues } from '@/lib/validations/clans'
+import { FormDialog } from '@/components/ui/form-dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { Clan } from '@/types'
@@ -25,81 +18,58 @@ interface ClanJoinFormProps {
 
 export function ClanJoinForm({ clan, open, onOpenChange }: ClanJoinFormProps) {
   const queryClient = useQueryClient()
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState<string | null>(null)
+
+  const form = useForm<JoinClanValues>({
+    resolver: zodResolver(joinClanSchema),
+    defaultValues: { message: '' },
+  })
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = form
 
   const joinMutation = useMutation({
-    mutationFn: () => joinClan(clan.id, message || undefined),
+    mutationFn: (data: JoinClanValues) =>
+      joinClan(clan.id, data.message || undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-clan'] })
-      setMessage('')
+      reset()
       onOpenChange(false)
-    },
-    onError: (err: Error) => {
-      setError(err.message)
     },
   })
 
   function handleOpenChange(next: boolean) {
-    if (!next) {
-      setMessage('')
-      setError(null)
-    }
+    if (!next) reset()
     onOpenChange(next)
   }
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    setError(null)
-
-    const result = joinClanSchema.safeParse({ message })
-    if (!result.success) {
-      setError(result.error.issues[0]?.message ?? 'Error de validación')
-      return
-    }
-
-    joinMutation.mutate()
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Unirse a {clan.name}</DialogTitle>
-          <DialogDescription>
-            Envía una solicitud para unirte al clan [{clan.acronym}].
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
-          <div className="grid gap-2">
-            <Label htmlFor="join-message">Mensaje (opcional)</Label>
-            <Textarea
-              id="join-message"
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="¿Por qué quieres unirte?"
-              className="min-h-[100px]"
-            />
-          </div>
-
-          {error && <p className="text-destructive text-xs">{error}</p>}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={joinMutation.isPending}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={joinMutation.isPending}>
-              {joinMutation.isPending ? 'Enviando...' : 'Enviar solicitud'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={`Unirse a ${clan.name}`}
+      description={`Envía una solicitud para unirte al clan [${clan.acronym}].`}
+      onSubmit={handleSubmit((data) => joinMutation.mutate(data))}
+      submitLabel="Enviar solicitud"
+      submitLoadingLabel="Enviando..."
+      isPending={joinMutation.isPending}
+      error={joinMutation.error?.message ?? null}
+    >
+      <div className="grid gap-2">
+        <Label htmlFor="join-message">Mensaje (opcional)</Label>
+        <Textarea
+          id="join-message"
+          {...register('message')}
+          placeholder="¿Por qué quieres unirte?"
+          className="min-h-[100px]"
+        />
+        {errors.message && (
+          <p className="text-destructive text-xs">{errors.message.message}</p>
+        )}
+      </div>
+    </FormDialog>
   )
 }

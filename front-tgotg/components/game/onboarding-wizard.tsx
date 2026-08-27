@@ -3,6 +3,8 @@
 import * as React from 'react'
 import { Check, Sparkles } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -26,6 +28,11 @@ import {
 import { blessingSchema, civilizationSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
+interface WizardValues {
+  blessingId: string
+  civilizationId: string
+}
+
 export function OnboardingWizard() {
   const { user, isLoading: authLoading } = useAuth()
   const queryClient = useQueryClient()
@@ -38,10 +45,23 @@ export function OnboardingWizard() {
   } = useMyBlessing()
 
   const [open, setOpen] = React.useState(false)
-  const [selectedBlessing, setSelectedBlessing] = React.useState<string>()
-  const [selectedCiv, setSelectedCiv] = React.useState<string>()
-  const [error, setError] = React.useState<string>()
   const justSaved = React.useRef(false)
+
+  const form = useForm<WizardValues>({
+    resolver: zodResolver(
+      blessingSchema.merge(civilizationSchema)
+    ),
+    defaultValues: { blessingId: '', civilizationId: '' },
+  })
+
+  const {
+    setValue,
+    watch,
+    formState: { errors },
+  } = form
+
+  const selectedBlessing = watch('blessingId')
+  const selectedCiv = watch('civilizationId')
 
   const blessingsQuery = useQuery({
     queryKey: ['blessings'],
@@ -109,18 +129,6 @@ export function OnboardingWizard() {
   async function handleConfirm() {
     if (!selectedBlessing || !selectedCiv) return
 
-    const bResult = blessingSchema.safeParse({ blessingId: selectedBlessing })
-    if (!bResult.success) {
-      setError(bResult.error.issues[0]?.message)
-      return
-    }
-    const cResult = civilizationSchema.safeParse({ civilizationId: selectedCiv })
-    if (!cResult.success) {
-      setError(cResult.error.issues[0]?.message)
-      return
-    }
-
-    setError(undefined)
     try {
       await Promise.all([
         selectBlessing(selectedBlessing),
@@ -129,11 +137,12 @@ export function OnboardingWizard() {
       justSaved.current = true
       setOpen(false)
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : 'No se pudo guardar tu elección. Inténtalo de nuevo.'
-      )
+      form.setError('root', {
+        message:
+          caught instanceof Error
+            ? caught.message
+            : 'No se pudo guardar tu elección. Inténtalo de nuevo.',
+      })
     }
   }
 
@@ -171,8 +180,8 @@ export function OnboardingWizard() {
                     key={blessing.key}
                     type="button"
                     onClick={() => {
-                      setSelectedBlessing(blessing.key)
-                      setError(undefined)
+                      setValue('blessingId', blessing.key, { shouldValidate: true })
+                      form.clearErrors('root')
                     }}
                     aria-pressed={selected}
                     className={cn(
@@ -214,8 +223,8 @@ export function OnboardingWizard() {
                     key={civilization.key}
                     type="button"
                     onClick={() => {
-                      setSelectedCiv(civilization.key)
-                      setError(undefined)
+                      setValue('civilizationId', civilization.key, { shouldValidate: true })
+                      form.clearErrors('root')
                     }}
                     aria-pressed={selected}
                     className={cn(
@@ -245,7 +254,9 @@ export function OnboardingWizard() {
           </div>
         )}
 
-        {error && <p className="text-destructive text-xs">{error}</p>}
+        {errors.root && (
+          <p className="text-destructive text-xs">{errors.root.message}</p>
+        )}
 
         <DialogFooter showCloseButton={false}>
           <Button

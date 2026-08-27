@@ -9,6 +9,7 @@ import { mainMenu } from '@/data/menu'
 import { useAuth } from '@/components/auth/auth-provider'
 import { useCities } from '@/hooks/use-cities'
 import { CreateCityDialog } from '@/components/city/create-city-dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 export function MainMenu() {
@@ -95,9 +96,10 @@ export function MainMenu() {
                     })}
 
                     {citiesLoading && (
-                      <p className="text-muted-foreground px-3 py-1.5 text-sm">
-                        Cargando ciudades…
-                      </p>
+                      <div className="flex flex-col gap-1 px-3 py-1.5">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
                     )}
 
                     {!citiesLoading && cities.length === 0 && (

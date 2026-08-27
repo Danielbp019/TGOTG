@@ -21,6 +21,7 @@ import type { NewConversationValues } from '@/lib/validations/messages'
 import { ChatViewer } from '@/components/messages/chat-viewer'
 import { ConversationList } from '@/components/messages/conversation-list'
 import { NewConversationDialog } from '@/components/messages/new-conversation-dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 
 function getInitials(nombre: string) {
   return nombre
@@ -220,7 +221,11 @@ export function MessagesInbox() {
   if (conversationsQuery.isLoading) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <p className="text-muted-foreground text-sm">Cargando mensajes…</p>
+        <div className="flex w-full flex-col gap-3">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
       </div>
     )
   }
