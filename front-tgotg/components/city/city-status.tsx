@@ -134,7 +134,7 @@ export function CityStatus() {
           {protectionRemaining !== null && protectionRemaining > 0 && (
             <div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Desfensa durante</span>
+                <span className="text-muted-foreground">Defensa durante</span>
                 <span className="tabular-nums">{protectionRemaining} h</span>
               </div>
               <div>

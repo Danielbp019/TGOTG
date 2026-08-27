@@ -3,6 +3,9 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -17,13 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { biomeBonusLabel, biomeMeta } from '@/data/biomes'
-import {
-  ApiError,
-  createCity,
-  fetchRegionsCached,
-  type RegionPayload,
-} from '@/lib/api'
-import { useCities } from '@/hooks/use-cities'
+import { ApiError, createCity, fetchRegions } from '@/lib/api'
 import {
   createCitySchema,
   type CreateCityValues,
@@ -34,110 +31,80 @@ interface CreateCityDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-type CreateCityErrors = Partial<Record<keyof CreateCityValues, string>>
-
-const initialValues: CreateCityValues = {
-  nombre: '',
-  region: '',
-  bioma: '',
-}
-
 export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) {
   const router = useRouter()
-  const { reload } = useCities()
-  const [values, setValues] = React.useState<CreateCityValues>(initialValues)
-  const [errors, setErrors] = React.useState<CreateCityErrors>({})
+  const queryClient = useQueryClient()
+
+  const form = useForm<CreateCityValues>({
+    resolver: zodResolver(createCitySchema),
+    defaultValues: { nombre: '', region: '', bioma: '' },
+  })
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    setError: setFieldError,
+    formState: { errors, isSubmitting },
+  } = form
+
   const [formError, setFormError] = React.useState<string | null>(null)
-  const [regions, setRegions] = React.useState<RegionPayload[]>([])
-  const [regionsError, setRegionsError] = React.useState<string | null>(null)
-  const [submitting, setSubmitting] = React.useState(false)
+  const values = watch()
 
+  const regionsQuery = useQuery({
+    queryKey: ['regions'],
+    queryFn: () => fetchRegions(),
+    enabled: open,
+    select: (data) => data.regions,
+  })
+
+  const regions = regionsQuery.data ?? []
   const selectedRegion = regions.find((r) => r.id === values.region) ?? null
-
-  async function loadRegions() {
-    setRegionsError(null)
-    try {
-      const response = await fetchRegionsCached()
-      setRegions(response.regions)
-    } catch {
-      setRegionsError('No se pudieron cargar las regiones.')
-    }
-  }
-
-  React.useEffect(() => {
-    if (!open) return
-    const t = window.setTimeout(() => {
-      void loadRegions()
-    }, 0)
-    return () => window.clearTimeout(t)
-  }, [open])
-
-  function reset() {
-    setValues(initialValues)
-    setErrors({})
-    setFormError(null)
-  }
 
   function handleOpenChange(next: boolean) {
     if (!next) {
       reset()
+      setFormError(null)
     }
     onOpenChange(next)
   }
 
   function handleField(field: keyof CreateCityValues, value: string) {
-    setValues((prev) => ({
-      ...prev,
-      [field]: value,
-      ...(field === 'region' ? { bioma: '' } : {}),
-    }))
-    setErrors((prev) => ({ ...prev, [field]: undefined }))
+    setValue(field, value, { shouldValidate: true })
+    if (field === 'region') {
+      setValue('bioma', '', { shouldValidate: false })
+    }
   }
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-
-    const result = createCitySchema.safeParse(values)
-    if (!result.success) {
-      const issueFor = (field: string) =>
-        result.error.issues.find((issue) => issue.path.join('.') === field)
-          ?.message
-      setErrors({
-        nombre: issueFor('nombre'),
-        region: issueFor('region'),
-        bioma: issueFor('bioma'),
-      })
-      return
-    }
-
-    const regionId = values.region
-    const biomeId = values.bioma
-
-    setSubmitting(true)
-    setFormError(null)
-    try {
-      const response = await createCity({
-        name: result.data.nombre,
-        region_id: regionId,
-        biome_id: biomeId,
-      })
-      await reload()
+  const submitMutation = useMutation({
+    mutationFn: (data: { name: string; region_id: string; biome_id: string }) =>
+      createCity(data),
+    onSuccess: async (response) => {
+      await queryClient.invalidateQueries({ queryKey: ['cities'] })
       handleOpenChange(false)
       router.push(`/ciudad/${response.city.id}`)
-    } catch (caught) {
+    },
+    onError: (caught) => {
       if (caught instanceof ApiError) {
         setFormError(caught.message)
-        setErrors({
-          nombre: caught.errors.name?.[0],
-          region: caught.errors.region_id?.[0],
-          bioma: caught.errors.biome_id?.[0],
-        })
+        if (caught.errors.name) setFieldError('nombre', { message: caught.errors.name[0] })
+        if (caught.errors.region_id) setFieldError('region', { message: caught.errors.region_id[0] })
+        if (caught.errors.biome_id) setFieldError('bioma', { message: caught.errors.biome_id[0] })
       } else {
         setFormError('No se pudo crear la ciudad. Inténtalo de nuevo.')
       }
-    } finally {
-      setSubmitting(false)
-    }
+    },
+  })
+
+  function onSubmit(data: CreateCityValues) {
+    setFormError(null)
+    submitMutation.mutate({
+      name: data.nombre,
+      region_id: data.region,
+      biome_id: data.bioma,
+    })
   }
 
   return (
@@ -150,7 +117,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4" noValidate>
           <figure className="ring-foreground/10 overflow-hidden rounded-xl ring-1">
             <Image
               src="/game/maps/mapaGlobal2048x1024.jpg"
@@ -165,35 +132,40 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
             <Label htmlFor="create-city-nombre">Nombre de la ciudad</Label>
             <Input
               id="create-city-nombre"
-              value={values.nombre}
-              onChange={(e) => handleField('nombre', e.target.value)}
+              {...register('nombre')}
               placeholder="Ej. Nueva Aurora"
               maxLength={30}
               aria-invalid={Boolean(errors.nombre)}
             />
             {errors.nombre ? (
-              <p className="text-destructive text-xs">{errors.nombre}</p>
+              <p className="text-destructive text-xs">{errors.nombre.message}</p>
             ) : (
-              <p className="text-muted-foreground text-xs">Máximo 30 caracteres.</p>
+              <p className="text-muted-foreground text-xs">
+                Máximo 30 caracteres.
+              </p>
             )}
           </div>
 
           <div className="grid gap-2">
             <Label>Región</Label>
-            {regionsError ? (
+            {regionsQuery.isError ? (
               <div className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2">
-                <p className="text-destructive text-xs">{regionsError}</p>
+                <p className="text-destructive text-xs">
+                  No se pudieron cargar las regiones.
+                </p>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => void loadRegions()}
+                  onClick={() => regionsQuery.refetch()}
                 >
                   Reintentar
                 </Button>
               </div>
             ) : regions.length === 0 ? (
-              <p className="text-muted-foreground text-xs">Cargando regiones…</p>
+              <p className="text-muted-foreground text-xs">
+                Cargando regiones…
+              </p>
             ) : (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {regions.map((r) => {
@@ -218,7 +190,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
               </div>
             )}
             {errors.region && (
-              <p className="text-destructive text-xs">{errors.region}</p>
+              <p className="text-destructive text-xs">{errors.region.message}</p>
             )}
           </div>
 
@@ -267,7 +239,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
               </div>
             )}
             {errors.bioma && (
-              <p className="text-destructive text-xs">{errors.bioma}</p>
+              <p className="text-destructive text-xs">{errors.bioma.message}</p>
             )}
           </div>
 
@@ -281,13 +253,13 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
             <Button
               type="button"
               variant="outline"
-              disabled={submitting}
+              disabled={isSubmitting}
               onClick={() => handleOpenChange(false)}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? 'Fundando…' : 'Crear ciudad'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Fundando…' : 'Crear ciudad'}
             </Button>
           </DialogFooter>
         </form>

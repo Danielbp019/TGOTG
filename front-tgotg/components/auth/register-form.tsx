@@ -1,13 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import type { z } from 'zod'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ApiError } from '@/lib/api'
 import { registerSchema, type RegisterValues } from '@/lib/validations/auth'
+import { getFieldError } from '@/lib/validations/utils'
 import { useAuth } from '@/components/auth/auth-provider'
 
 type RegisterErrors = Partial<Record<keyof RegisterValues, string>>
@@ -17,13 +16,6 @@ const initialRegister: RegisterValues = {
   email: '',
   password: '',
   confirmPassword: '',
-}
-
-function getFieldError(
-  error: z.ZodError<RegisterValues>,
-  field: keyof RegisterValues
-) {
-  return error.issues.find((issue) => issue.path.join('.') === field)?.message
 }
 
 export function RegisterForm() {

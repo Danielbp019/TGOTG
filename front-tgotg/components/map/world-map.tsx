@@ -2,12 +2,13 @@
 
 import * as React from 'react'
 import Image from 'next/image'
+import { useQuery } from '@tanstack/react-query'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { biomeBonusLabel, biomeMeta } from '@/data/biomes'
-import { fetchRegionsCached, type RegionPayload } from '@/lib/api'
+import { fetchRegions, type RegionPayload } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 const MAP_IMAGE = '/game/maps/mapaGlobal2048x1024.jpg'
@@ -24,36 +25,25 @@ function polygonPoints(region: RegionPayload): string {
 }
 
 export function WorldMap() {
-  const [regions, setRegions] = React.useState<RegionPayload[] | null>(null)
-  const [error, setError] = React.useState<string | null>(null)
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
 
-  const load = React.useCallback(async () => {
-    setError(null)
-    try {
-      const response = await fetchRegionsCached()
-      setRegions(response.regions)
-    } catch {
-      setError('No se pudo cargar el mapa del mundo.')
-    }
-  }, [])
+  const query = useQuery({
+    queryKey: ['regions'],
+    queryFn: () => fetchRegions(),
+    select: (data) => data.regions,
+  })
 
-  React.useEffect(() => {
-    const t = window.setTimeout(() => {
-      void load()
-    }, 0)
-    return () => window.clearTimeout(t)
-  }, [load])
-
-  if (error) {
+  if (query.isError) {
     return (
       <div className="bg-card flex flex-col items-center justify-between gap-2 rounded-xl border px-4 py-3 sm:flex-row">
-        <p className="text-destructive text-sm">{error}</p>
+        <p className="text-destructive text-sm">
+          No se pudo cargar el mapa del mundo.
+        </p>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => void load()}
+          onClick={() => query.refetch()}
         >
           Reintentar
         </Button>
@@ -61,7 +51,7 @@ export function WorldMap() {
     )
   }
 
-  if (regions === null) {
+  if (!query.data) {
     return (
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <div className="aspect-[2/1] w-full animate-pulse rounded-xl bg-muted" />
@@ -70,6 +60,7 @@ export function WorldMap() {
     )
   }
 
+  const regions = query.data
   const selected = regions.find((r) => r.id === selectedId) ?? null
 
   return (

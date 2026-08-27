@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { Check, Landmark } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -16,48 +17,52 @@ import { civilizationIcons } from '@/data/icons'
 import { useAuth } from '@/components/auth/auth-provider'
 import type { CivilizationPayload } from '@/lib/api'
 import {
-  ApiError,
-  fetchCivilizationsCached,
+  fetchCivilizations,
   fetchMyCivilization,
   updateMyCivilization,
 } from '@/lib/api'
-import { notifyBlessingChanged } from '@/lib/blessing'
 import { civilizationSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
 export function CivilizationDialog() {
   const { user, isLoading: authLoading } = useAuth()
+  const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
-  const [civilizations, setCivilizations] = React.useState<
-    CivilizationPayload[]
-  >([])
   const [selectedId, setSelectedId] = React.useState<string | undefined>()
   const [error, setError] = React.useState<string | undefined>()
-  const [saving, setSaving] = React.useState(false)
+
+  const civilizationsQuery = useQuery({
+    queryKey: ['civilizations'],
+    queryFn: () => fetchCivilizations(),
+    enabled: !!user && !authLoading,
+    select: (data) => data.civilizations,
+  })
+
+  const myCivQuery = useQuery({
+    queryKey: ['player-civilization'],
+    queryFn: () => fetchMyCivilization(),
+    enabled: !!user && !authLoading,
+  })
+
+  const civilizations = civilizationsQuery.data ?? []
 
   React.useEffect(() => {
     if (authLoading || !user) return
-    let active = true
+    const data = myCivQuery.data
+    if (!data) return
+    if (!data.in_game || data.civilization) return
+    const t = window.setTimeout(() => setOpen(true), 0)
+    return () => window.clearTimeout(t)
+  }, [authLoading, user, myCivQuery.data])
 
-    fetchCivilizationsCached()
-      .then((response) => {
-        if (!active) return
-        setCivilizations(response.civilizations)
-      })
-      .catch(() => {})
-
-    fetchMyCivilization()
-      .then((response) => {
-        if (!active) return
-        if (!response.in_game || response.civilization) return
-        setOpen(true)
-      })
-      .catch(() => {})
-
-    return () => {
-      active = false
-    }
-  }, [authLoading, user])
+  const saveMutation = useMutation({
+    mutationFn: (key: string) => updateMyCivilization(key),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['player-civilization'] })
+      queryClient.invalidateQueries({ queryKey: ['player-blessing', user?.id ?? null] })
+      queryClient.invalidateQueries({ queryKey: ['player-resources', user?.id ?? null] })
+    },
+  })
 
   function handleOpenChange(next: boolean) {
     if (next) return
@@ -72,20 +77,16 @@ export function CivilizationDialog() {
       return
     }
 
-    setSaving(true)
     setError(undefined)
     try {
-      await updateMyCivilization(selectedId)
-      notifyBlessingChanged()
+      await saveMutation.mutateAsync(selectedId)
       setOpen(false)
     } catch (caught) {
-      if (caught instanceof ApiError) {
-        setError(caught.errors.key?.[0] ?? caught.message)
+      if (caught instanceof Error) {
+        setError(caught.message)
       } else {
         setError('No se pudo guardar la civilización. Inténtalo de nuevo.')
       }
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -107,7 +108,7 @@ export function CivilizationDialog() {
         </DialogHeader>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {civilizations.map((civilization) => {
+          {civilizations.map((civilization: CivilizationPayload) => {
             const selected = selectedId === civilization.key
             const Icon = civilizationIcons[civilization.key]
             return (
@@ -147,8 +148,14 @@ export function CivilizationDialog() {
         {error && <p className="text-destructive text-xs">{error}</p>}
 
         <DialogFooter showCloseButton={false}>
-          <Button onClick={handleConfirm} disabled={saving} className="w-full">
-            {saving ? 'Eligiendo pueblo…' : 'Fundar mi civilización'}
+          <Button
+            onClick={handleConfirm}
+            disabled={saveMutation.isPending}
+            className="w-full"
+          >
+            {saveMutation.isPending
+              ? 'Eligiendo pueblo…'
+              : 'Fundar mi civilización'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,7 +1,6 @@
 import Phaser from 'phaser'
 import { EventBus } from '@/game/event-bus'
 import {
-  allInteriorAssetPaths,
   buildingAssetPath,
   groundAsset,
 } from '@/game/assets'
@@ -61,8 +60,15 @@ export class CityScene extends Phaser.Scene {
 
   preload() {
     this.load.image('ground', groundAsset)
-    for (const path of allInteriorAssetPaths()) {
-      if (!this.textures.exists(path)) {
+    const buildings = getCityBuildings()
+    for (const building of buildings) {
+      const path = buildingAssetPath(
+        building.key,
+        building.level,
+        building.damage ?? 0,
+        { upgrading: building.upgrading ?? false }
+      )
+      if (path && !this.textures.exists(path)) {
         this.load.image(path, path)
       }
     }

@@ -57,19 +57,3 @@ export function buildingAssetPath(
   )
   return `/game/buildings/${entry.folder}/${entry.prefix}${assetLevel}.png`
 }
-
-/**
- * Todas las texturas para precarga — evita 404 por level dinámico.
- */
-export function allInteriorAssetPaths(): string[] {
-  const paths: string[] = []
-  for (const [key, entry] of Object.entries(BUILDING_ASSET_BASE)) {
-    if (!entry) continue
-    const max = (DEFENSIVES_4 as Set<string>).has(key) ? 4 : 5
-    for (let lvl = 1; lvl <= max; lvl++) {
-      paths.push(`/game/buildings/${entry.folder}/${entry.prefix}${lvl}.png`)
-    }
-    paths.push(`/game/buildings/${entry.folder}/${entry.prefix}Destruido.png`)
-  }
-  return [...new Set(paths)]
-}

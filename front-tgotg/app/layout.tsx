@@ -7,6 +7,7 @@ import {
 } from 'next/font/google'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/components/auth/auth-provider'
+import { Providers } from './providers'
 import './globals.css'
 
 const cinzel = Cinzel({
@@ -45,9 +46,11 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${cinzel.variable} ${cinzelDecorative.variable} ${sourceSans.variable} ${plexMono.variable}`}
     >
       <body>
-        <TooltipProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </TooltipProvider>
+        <Providers>
+          <TooltipProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </TooltipProvider>
+        </Providers>
       </body>
     </html>
   )

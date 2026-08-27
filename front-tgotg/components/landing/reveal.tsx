@@ -46,6 +46,7 @@ export function Reveal({ children, className, delay }: RevealProps) {
 
     observer.observe(element)
     return () => observer.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

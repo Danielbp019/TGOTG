@@ -331,37 +331,15 @@ export function fetchBuildingTypes() {
   return apiFetch<{ building_types: BuildingTypePayload[] }>('/building-types')
 }
 
-const catalogCache = new Map<string, Promise<unknown>>()
 
-async function cachedFetch<T>(key: string, loader: () => Promise<T>): Promise<T> {
-  const cached = catalogCache.get(key)
-  if (cached) return cached as Promise<T>
 
-  const promise = loader().catch((error) => {
-    // Los fallos no se cachean: el siguiente montaje puede reintentar.
-    catalogCache.delete(key)
-    throw error
-  })
-
-  catalogCache.set(key, promise)
-  return promise
-}
-
-/** Invalida los catálogos en caché (p. ej. futuro evento de paso del día). */
-export function clearCatalogCache() {
-  catalogCache.clear()
-}
-
-export function fetchBuildingTypesCached() {
-  return cachedFetch('building-types', fetchBuildingTypes)
-}
-
-export function fetchBlessingsCached() {
-  return cachedFetch('blessings', fetchBlessings)
-}
-
-export function fetchCivilizationsCached() {
-  return cachedFetch('civilizations', fetchCivilizations)
+export interface BiomePayload {
+  id: string
+  key: string
+  label: string | null
+  description: string | null
+  bonusResource: string
+  bonusValue: number
 }
 
 export interface RegionPayload {
@@ -371,15 +349,6 @@ export interface RegionPayload {
   polygon: number[]
   sortOrder: number
   biomes: BiomePayload[]
-}
-
-export interface BiomePayload {
-  id: string
-  key: string
-  label: string | null
-  description: string | null
-  bonusResource: string
-  bonusValue: number
 }
 
 export interface CitiesPayload {
@@ -399,13 +368,7 @@ export function fetchBiomes() {
   return apiFetch<{ biomes: BiomePayload[] }>('/biomes')
 }
 
-export function fetchRegionsCached() {
-  return cachedFetch('regions', fetchRegions)
-}
 
-export function fetchBiomesCached() {
-  return cachedFetch('biomes', fetchBiomes)
-}
 
 export function fetchCities() {
   return apiFetch<CitiesPayload>('/cities')

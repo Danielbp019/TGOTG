@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useParams } from 'next/navigation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { setCityBuildings, setWorldSize } from '@/game/city-data'
 import type { CityPayload } from '@/lib/api'
 import { ApiError, fetchCity, fetchCityById } from '@/lib/api'
@@ -11,7 +12,7 @@ interface CityContextValue {
   city: CityPayload | null
   isLoading: boolean
   error: ApiError | null
-  /** Número de cargas completadas con éxito, útil para remontar escenas. */
+  /** Timestamp de la última carga exitosa, útil para remontar escenas. */
   version: number
   reload: () => Promise<void>
 }
@@ -20,95 +21,80 @@ const CityContext = React.createContext<CityContextValue | null>(null)
 
 export function CityProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoading: authLoading } = useAuth()
+  const queryClient = useQueryClient()
   const params = useParams<{ id?: string }>()
-  // Ciudad activa: la de la ruta /ciudad/[id] o, en su defecto, la primera del jugador.
   const activeCityId = typeof params?.id === 'string' ? params.id : null
-  const [city, setCity] = React.useState<CityPayload | null>(null)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState<ApiError | null>(null)
-  const [version, setVersion] = React.useState(0)
   const userId = user?.id ?? null
+  const [version, setVersion] = React.useState(0)
 
-  const load = React.useCallback(
-    async (signal?: AbortSignal) => {
-      if (authLoading || !userId) return
-      setIsLoading(true)
-      setError(null)
-      try {
-        const response = await (
-          activeCityId ? fetchCityById(activeCityId, signal) : fetchCity(signal)
-        )
-        setCity(response.city)
-        setCityBuildings(response.city.buildings)
-        if (response.city.worldSize) setWorldSize(response.city.worldSize)
-        setVersion((current) => current + 1)
-      } catch (caught) {
-        if (caught instanceof DOMException && caught.name === 'AbortError')
-          return
-        if (caught instanceof ApiError) {
-          if (caught.status === 401 || caught.status === 403 || caught.status === 404) {
-            setCity(null)
-          }
-          setError(caught)
-        } else {
-          setError(new ApiError(500, 'No se pudo cargar la ciudad.'))
-        }
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [authLoading, userId, activeCityId]
+  const queryKey = React.useMemo(
+    () => ['city', activeCityId ?? 'default'] as const,
+    [activeCityId]
   )
 
-  const reload = load
+  const query = useQuery({
+    queryKey,
+    queryFn: async ({ signal }) => {
+      const response = await (
+        activeCityId
+          ? fetchCityById(activeCityId, signal)
+          : fetchCity(signal)
+      )
+      return response.city
+    },
+    enabled: !!userId && !authLoading,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (!data) return false
+      const hasUpgrading = data.buildings.some((b) => b.upgrading)
+      return hasUpgrading ? 1000 : false
+    },
+  })
 
-  // Evita mostrar datos de la ciudad anterior al navegar a otra.
-  const [prevCityId, setPrevCityId] = React.useState(activeCityId)
-  if (prevCityId !== activeCityId) {
-    setPrevCityId(activeCityId)
-    setCity(null)
-    setError(null)
-  }
+  const city = query.data ?? null
+  const isLoading = query.isLoading
+  const error = React.useMemo(
+    () =>
+      query.error instanceof ApiError
+        ? query.error
+        : query.error
+          ? new ApiError(500, 'No se pudo cargar la ciudad.')
+          : null,
+    [query.error]
+  )
 
+  // Sincronizar datos con Phaser cuando cambian.
   React.useEffect(() => {
-    if (authLoading || !userId) return
-    const controller = new AbortController()
-    const timer = window.setTimeout(() => {
-      void load(controller.signal)
-    }, 0)
-    return () => {
-      window.clearTimeout(timer)
-      controller.abort()
-    }
-  }, [authLoading, userId, load])
-
-  // Recarga cuando termina la mejora más próxima; un temporizador de 1 s
-  // evita depender del reloj del cliente para programar la petición.
-  const nextUpgradeAt = React.useMemo(() => {
-    const times = (city?.buildings ?? [])
-      .map((building) => building.upgradeFinishesAt)
-      .filter((finish): finish is string => Boolean(finish))
-      .map((finish) => new Date(finish).getTime())
-
-    return times.length > 0 ? Math.min(...times) : null
+    if (!city) return
+    setCityBuildings(city.buildings)
+    if (city.worldSize) setWorldSize(city.worldSize)
   }, [city])
 
+  // Incrementar versión cuando la query se resuelve con éxito.
+  const prevFetchStatusRef = React.useRef(query.fetchStatus)
   React.useEffect(() => {
-    if (!nextUpgradeAt) return
+    if (
+      prevFetchStatusRef.current === 'fetching' &&
+      query.fetchStatus === 'idle' &&
+      query.status === 'success'
+    ) {
+      setVersion((v) => v + 1)
+    }
+    prevFetchStatusRef.current = query.fetchStatus
+  }, [query.fetchStatus, query.status])
 
-    let reloading = false
+  // Resetear versión al cambiar de ciudad.
+  const prevCityRef = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    if (prevCityRef.current !== activeCityId) {
+      prevCityRef.current = activeCityId
+      setVersion(0)
+    }
+  }, [activeCityId])
 
-    const id = window.setInterval(() => {
-      if (reloading || Date.now() < nextUpgradeAt + 2000) return
-
-      reloading = true
-      void load().finally(() => {
-        reloading = false
-      })
-    }, 1000)
-
-    return () => window.clearInterval(id)
-  }, [nextUpgradeAt, load])
+  const reload = React.useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey })
+  }, [queryClient, queryKey])
 
   const value = React.useMemo(
     () => ({ city, isLoading, error, version, reload }),

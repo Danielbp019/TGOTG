@@ -1,59 +1,27 @@
 'use client'
 
-import * as React from 'react'
+import { useQuery } from '@tanstack/react-query'
 
-import { ApiError, fetchMyResources, type MyResourcesResponse } from '@/lib/api'
+import { fetchMyResources } from '@/lib/api'
 import { useAuth } from '@/components/auth/auth-provider'
 
-export type PlayerResources = NonNullable<MyResourcesResponse['resources']>
+export type PlayerResources = NonNullable<
+  Awaited<ReturnType<typeof fetchMyResources>>['resources']
+>
 
-interface UseMyResourcesResult {
-  resources: PlayerResources | null
-  isLoading: boolean
-  error: ApiError | null
-  refresh: () => Promise<void>
-}
-
-export function useMyResources(): UseMyResourcesResult {
+export function useMyResources() {
   const { user, isLoading: authLoading } = useAuth()
-  const [data, setData] = React.useState<MyResourcesResponse | null>(null)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState<ApiError | null>(null)
 
-  const refresh = React.useCallback(async () => {
-    if (authLoading || !user) return
-    setIsLoading(true)
-    setError(null)
-    try {
-      setData(await fetchMyResources())
-    } catch (caught) {
-      if (caught instanceof ApiError) setError(caught)
-      else setError(new ApiError(500, 'No se pudieron cargar los recursos.'))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [authLoading, user])
-
-  React.useEffect(() => {
-    if (authLoading) return
-    if (!user) {
-      const t = window.setTimeout(() => {
-        setData(null)
-        setIsLoading(false)
-      }, 0)
-      return () => window.clearTimeout(t)
-    }
-
-    const t = window.setTimeout(() => {
-      void refresh()
-    }, 0)
-    return () => window.clearTimeout(t)
-  }, [authLoading, user, refresh])
+  const query = useQuery({
+    queryKey: ['player-resources', user?.id ?? null],
+    queryFn: fetchMyResources,
+    enabled: !!user && !authLoading,
+  })
 
   return {
-    resources: data?.in_game ? data.resources : null,
-    isLoading,
-    error,
-    refresh,
+    resources: query.data?.in_game ? query.data.resources : null,
+    isLoading: query.isLoading,
+    error: query.error ?? null,
+    refresh: query.refetch,
   }
 }

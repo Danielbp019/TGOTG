@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import type { ChatConversation, ChatMessage } from '@/types'
 import type {
@@ -81,107 +82,128 @@ function detailToChat(detail: ConversationDetailPayload): ChatConversation {
 
 export function MessagesInbox() {
   const { user, isLoading: authLoading } = useAuth()
-  const [conversations, setConversations] = React.useState<ChatConversation[]>(
-    []
-  )
+  const queryClient = useQueryClient()
   const [selectedId, setSelectedId] = React.useState<string | undefined>()
-  const [selected, setSelected] = React.useState<ChatConversation | undefined>()
   const [dialogOpen, setDialogOpen] = React.useState(false)
-  const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | undefined>()
 
-  React.useEffect(() => {
-    if (authLoading || !user) {
-      const t = window.setTimeout(() => setLoading(false), 0)
-      return () => window.clearTimeout(t)
-    }
-    let active = true
+  const enabled = !!user && !authLoading
 
-    fetchConversations()
-      .then((response) => {
-        if (!active) return
-        setConversations(response.conversations.map(summaryToChat))
-        setSelectedId((current) => current ?? response.conversations[0]?.id)
-      })
-      .catch((caught) => {
-        if (!active) return
-        setError(
-          caught instanceof ApiError
-            ? caught.message
-            : 'No se pudieron cargar los mensajes.'
-        )
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
+  const conversationsQuery = useQuery({
+    queryKey: ['conversations'],
+    queryFn: fetchConversations,
+    enabled,
+  })
 
-    return () => {
-      active = false
-    }
-  }, [authLoading, user])
+  const conversations = React.useMemo(
+    () => conversationsQuery.data?.conversations.map(summaryToChat) ?? [],
+    [conversationsQuery.data]
+  )
 
   React.useEffect(() => {
-    if (authLoading || !user || !selectedId) return
-    let active = true
-
-    fetchConversation(selectedId)
-      .then((response) => {
-        if (!active) return
-        const chat = detailToChat(response.conversation)
-        setSelected(chat)
-        setConversations((prev) =>
-          prev.map((conversation) =>
-            conversation.id === chat.id ? chat : conversation
-          )
-        )
-      })
-      .catch(() => {})
-
-    return () => {
-      active = false
+    if (conversations.length > 0 && !selectedId) {
+      setSelectedId(conversations[0]?.id)
     }
-  }, [authLoading, user, selectedId])
+  }, [conversations, selectedId])
 
-  function handleSelect(id: string) {
-    setSelectedId(id)
-  }
+  const selectedQuery = useQuery({
+    queryKey: ['conversation', selectedId],
+    queryFn: () => fetchConversation(selectedId!),
+    enabled: enabled && !!selectedId,
+  })
 
-  async function handleSend(text: string) {
-    if (!selectedId) return
-    try {
-      const response = await sendMessage(selectedId, text)
+  const selected = React.useMemo(() => {
+    if (!selectedQuery.data) return undefined
+    return detailToChat(selectedQuery.data.conversation)
+  }, [selectedQuery.data])
+
+  const sendMutation = useMutation({
+    mutationFn: ({ id, text }: { id: string; text: string }) =>
+      sendMessage(id, text),
+    onSuccess: (response) => {
       const chat = detailToChat(response.conversation)
-      setSelected(chat)
-      setConversations((prev) =>
-        prev.map((conversation) =>
-          conversation.id === chat.id ? chat : conversation
-        )
-      )
+      queryClient.setQueryData(['conversation', chat.id], {
+        conversation: response.conversation,
+      })
+      queryClient.setQueryData(['conversations'], (old: Awaited<ReturnType<typeof fetchConversations>> | undefined) => {
+        if (!old) return old
+        return {
+          conversations: old.conversations.map((c) =>
+            c.id === chat.id
+              ? { ...c, lastMessage: response.conversation.messages.at(-1) ?? c.lastMessage, unreadCount: 0 }
+              : c
+          ),
+        }
+      })
       setError(undefined)
-    } catch (caught) {
+    },
+    onError: (caught) => {
       setError(
         caught instanceof ApiError
           ? caught.message
           : 'No se pudo enviar el mensaje.'
       )
-    }
+    },
+  })
+
+  const createMutation = useMutation({
+    mutationFn: (values: NewConversationValues) =>
+      createConversation({
+        recipient_nick: values.destinatario.trim(),
+        body: values.primerMensaje.trim(),
+      }),
+    onSuccess: (response) => {
+      const chat = detailToChat(response.conversation)
+      queryClient.setQueryData(['conversations'], (old: Awaited<ReturnType<typeof fetchConversations>> | undefined) => {
+        if (!old) return { conversations: [response.conversation] }
+        return {
+          conversations: [
+            response.conversation,
+            ...old.conversations.filter((c) => c.id !== chat.id),
+          ],
+        }
+      })
+      setSelectedId(chat.id)
+      setDialogOpen(false)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteConversation(id),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData(['conversations'], (old: Awaited<ReturnType<typeof fetchConversations>> | undefined) => {
+        if (!old) return old
+        return {
+          conversations: old.conversations.filter((c) => c.id !== id),
+        }
+      })
+      if (selectedId === id) {
+        setSelectedId(undefined)
+      }
+    },
+    onError: (caught) => {
+      setError(
+        caught instanceof ApiError
+          ? caught.message
+          : 'No se pudo eliminar la conversación.'
+      )
+    },
+  })
+
+  function handleSelect(id: string) {
+    setSelectedId(id)
+  }
+
+  function handleSend(text: string) {
+    if (!selectedId) return
+    sendMutation.mutate({ id: selectedId, text })
   }
 
   async function handleCreate(
     values: NewConversationValues
   ): Promise<string | null> {
     try {
-      const response = await createConversation({
-        recipient_nick: values.destinatario.trim(),
-        body: values.primerMensaje.trim(),
-      })
-      const chat = detailToChat(response.conversation)
-      setConversations((prev) => [
-        chat,
-        ...prev.filter((conversation) => conversation.id !== chat.id),
-      ])
-      setSelectedId(chat.id)
-      setDialogOpen(false)
+      await createMutation.mutateAsync(values)
       return null
     } catch (caught) {
       if (caught instanceof ApiError) return caught.message
@@ -189,30 +211,11 @@ export function MessagesInbox() {
     }
   }
 
-  async function handleDelete(id: string) {
-    try {
-      await deleteConversation(id)
-    } catch (caught) {
-      setError(
-        caught instanceof ApiError
-          ? caught.message
-          : 'No se pudo eliminar la conversación.'
-      )
-      return
-    }
-
-    const index = conversations.findIndex(
-      (conversation) => conversation.id === id
-    )
-    const next = conversations.filter((conversation) => conversation.id !== id)
-    setConversations(next)
-    if (selectedId === id) {
-      setSelected(undefined)
-      setSelectedId(next[Math.min(index, next.length - 1)]?.id)
-    }
+  function handleDelete(id: string) {
+    deleteMutation.mutate(id)
   }
 
-  if (loading) {
+  if (conversationsQuery.isLoading) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <p className="text-muted-foreground text-sm">Cargando mensajes…</p>

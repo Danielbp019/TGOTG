@@ -2,7 +2,9 @@
 
 import * as React from 'react'
 import { Hammer, Wrench } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { useAuth } from '@/components/auth/auth-provider'
 import { useCity } from '@/components/city/city-provider'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,7 +18,6 @@ import { buildingColors, buildingIcons } from '@/data/icons'
 import { resources } from '@/data/resources'
 import type { ResourceKey } from '@/types'
 import {
-  ApiError,
   repairBuilding,
   type CityBuilding,
   type CityBuildingRepairCost,
@@ -32,30 +33,30 @@ function isResourceKey(value: string): value is ResourceKey {
 }
 
 export function RepairPanel() {
-  const { city, isLoading, reload } = useCity()
-  const [busyKey, setBusyKey] = React.useState<string | null>(null)
-  const [error, setError] = React.useState<string | undefined>()
+  const { user } = useAuth()
+  const { city, isLoading } = useCity()
+  const queryClient = useQueryClient()
+
+  const repairMutation = useMutation({
+    mutationFn: ({
+      buildingId,
+      type,
+    }: {
+      buildingId: string
+      type: 'paid' | 'auto'
+    }) => repairBuilding(buildingId, type),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['city'] })
+      queryClient.invalidateQueries({ queryKey: ['player-resources', user?.id ?? null] })
+    },
+  })
 
   const damaged =
     city?.buildings.filter((building) => building.damage > 0) ?? []
 
-  async function handleRepair(building: CityBuilding, type: 'paid' | 'auto') {
-    if (!city) return
-
-    setBusyKey(building.key)
-    setError(undefined)
-    try {
-      await repairBuilding(building.id, type)
-      await reload()
-    } catch (caught) {
-      if (caught instanceof ApiError) {
-        setError(caught.message)
-      } else {
-        setError('No se pudo iniciar la reparación.')
-      }
-    } finally {
-      setBusyKey(null)
-    }
+  function handleRepair(building: CityBuilding, type: 'paid' | 'auto') {
+    repairMutation.reset()
+    repairMutation.mutate({ buildingId: building.id, type })
   }
 
   if (isLoading) {
@@ -125,7 +126,7 @@ export function RepairPanel() {
                         <resources.gold.icon
                           className={`size-3.5 ${resources.gold.iconColor}`}
                         />
-                        {cost.gold.toLocaleString('es')}
+                        {cost.gold.toLocaleString('es-ES')}
                       </span>
                       <span className="text-muted-foreground flex items-center gap-1">
                         {material && MaterialIcon && (
@@ -133,7 +134,7 @@ export function RepairPanel() {
                             className={`size-3.5 ${resources[material].iconColor}`}
                           />
                         )}
-                        {cost.amount.toLocaleString('es')}
+                        {cost.amount.toLocaleString('es-ES')}
                       </span>
                     </div>
                   )}
@@ -144,7 +145,7 @@ export function RepairPanel() {
                         type="button"
                         size="sm"
                         onClick={() => handleRepair(building, 'paid')}
-                        disabled={busyKey === building.key}
+                        disabled={repairMutation.isPending}
                         className="flex-1 sm:flex-none"
                       >
                         <Hammer className="size-3.5" />
@@ -155,7 +156,7 @@ export function RepairPanel() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleRepair(building, 'auto')}
-                        disabled={busyKey === building.key}
+                        disabled={repairMutation.isPending}
                         className="flex-1 sm:flex-none"
                       >
                         Auto-reparar
@@ -172,7 +173,13 @@ export function RepairPanel() {
           </ul>
         )}
 
-        {error && <p className="text-destructive mt-3 text-xs">{error}</p>}
+        {repairMutation.isError && (
+          <p className="text-destructive mt-3 text-xs">
+            {repairMutation.error instanceof Error
+              ? repairMutation.error.message
+              : 'No se pudo iniciar la reparación.'}
+          </p>
+        )}
       </CardContent>
     </Card>
   )

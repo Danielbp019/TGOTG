@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { Check, Sparkles } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -16,35 +17,26 @@ import { blessingIcons } from '@/data/icons'
 import { useAuth } from '@/components/auth/auth-provider'
 import { useMyBlessing } from '@/hooks/use-my-blessing'
 import type { BlessingPayload } from '@/lib/api'
-import { ApiError, fetchBlessingsCached, updateMyBlessing } from '@/lib/api'
-import { notifyBlessingChanged } from '@/lib/blessing'
+import { fetchBlessings } from '@/lib/api'
 import { blessingSchema } from '@/lib/validations/new-game'
 import { cn } from '@/lib/utils'
 
 export function BlessingDialog() {
   const { user, isLoading: authLoading } = useAuth()
-  const { blessing: myBlessing, inGame, hasLoaded } = useMyBlessing()
+  const { blessing: myBlessing, inGame, hasLoaded, selectBlessing, isSaving } =
+    useMyBlessing()
   const [open, setOpen] = React.useState(false)
-  const [blessings, setBlessings] = React.useState<BlessingPayload[]>([])
   const [selectedId, setSelectedId] = React.useState<string | undefined>()
   const [error, setError] = React.useState<string | undefined>()
-  const [saving, setSaving] = React.useState(false)
 
-  React.useEffect(() => {
-    if (authLoading || !user) return
-    let active = true
+  const blessingsQuery = useQuery({
+    queryKey: ['blessings'],
+    queryFn: () => fetchBlessings(),
+    enabled: !!user && !authLoading,
+    select: (data) => data.blessings,
+  })
 
-    fetchBlessingsCached()
-      .then((response) => {
-        if (!active) return
-        setBlessings(response.blessings)
-      })
-      .catch(() => {})
-
-    return () => {
-      active = false
-    }
-  }, [authLoading, user])
+  const blessings = blessingsQuery.data ?? []
 
   React.useEffect(() => {
     if (authLoading || !user || !hasLoaded) return
@@ -67,20 +59,16 @@ export function BlessingDialog() {
       return
     }
 
-    setSaving(true)
     setError(undefined)
     try {
-      await updateMyBlessing(selectedId)
-      notifyBlessingChanged()
+      await selectBlessing(selectedId)
       setOpen(false)
     } catch (caught) {
-      if (caught instanceof ApiError) {
-        setError(caught.errors.key?.[0] ?? caught.message)
+      if (caught instanceof Error) {
+        setError(caught.message)
       } else {
         setError('No se pudo guardar la bendición. Inténtalo de nuevo.')
       }
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -103,7 +91,7 @@ export function BlessingDialog() {
         </DialogHeader>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {blessings.map((blessing) => {
+          {blessings.map((blessing: BlessingPayload) => {
             const selected = selectedId === blessing.key
             const Icon = blessingIcons[blessing.key]
             return (
@@ -143,8 +131,8 @@ export function BlessingDialog() {
         {error && <p className="text-destructive text-xs">{error}</p>}
 
         <DialogFooter showCloseButton={false}>
-          <Button onClick={handleConfirm} disabled={saving} className="w-full">
-            {saving ? 'Guardando bendición…' : 'Aceptar bendición'}
+          <Button onClick={handleConfirm} disabled={isSaving} className="w-full">
+            {isSaving ? 'Guardando bendición…' : 'Aceptar bendición'}
           </Button>
         </DialogFooter>
       </DialogContent>

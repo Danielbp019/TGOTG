@@ -1,13 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import type { z } from 'zod'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ApiError } from '@/lib/api'
 import { loginSchema, type LoginValues } from '@/lib/validations/auth'
+import { getFieldError } from '@/lib/validations/utils'
 import { useAuth } from '@/components/auth/auth-provider'
 
 type LoginErrors = Partial<Record<keyof LoginValues, string>>
@@ -15,13 +14,6 @@ type LoginErrors = Partial<Record<keyof LoginValues, string>>
 const initialLogin: LoginValues = {
   email: '',
   password: '',
-}
-
-function getFieldError(
-  error: z.ZodError<LoginValues>,
-  field: keyof LoginValues
-) {
-  return error.issues.find((issue) => issue.path.join('.') === field)?.message
 }
 
 export function LoginForm() {

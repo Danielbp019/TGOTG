@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { Building2, Clock3, Hammer } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { LevelBar } from '@/components/city/level-bar'
 import { useCity } from '@/components/city/city-provider'
@@ -17,8 +18,7 @@ import {
 import { useAuth } from '@/components/auth/auth-provider'
 import { buildingColors, buildingIcons } from '@/data/icons'
 import {
-  ApiError,
-  fetchBuildingTypesCached,
+  fetchBuildingTypes,
   upgradeBuilding,
   type BuildingLevelCost,
   type BuildingTypePayload,
@@ -27,7 +27,11 @@ import {
 import { cn } from '@/lib/utils'
 
 type BuildingCategory =
-  'Principal' | 'Defensa' | 'Recursos' | 'Militar' | 'Investigación'
+  | 'Principal'
+  | 'Defensa'
+  | 'Recursos'
+  | 'Militar'
+  | 'Investigación'
 
 const categoryStyles: Record<BuildingCategory, string> = {
   Principal: 'border border-white/25 bg-ink/50 text-[#DCDFEB]',
@@ -194,13 +198,9 @@ function ConstructionRow({
 }
 
 export function ConstructionPanel() {
-  const { city, isLoading, reload } = useCity()
+  const { city, isLoading: cityLoading } = useCity()
   const { user, isLoading: authLoading } = useAuth()
-  const [catalog, setCatalog] = React.useState<BuildingTypePayload[] | null>(
-    null
-  )
-  const [upgradingKey, setUpgradingKey] = React.useState<string | null>(null)
-  const [error, setError] = React.useState<string | null>(null)
+  const queryClient = useQueryClient()
   const [now, setNow] = React.useState(() => Date.now())
 
   const hasAnyUpgrading = React.useMemo(
@@ -214,48 +214,36 @@ export function ConstructionPanel() {
     return () => window.clearInterval(id)
   }, [hasAnyUpgrading])
 
-  React.useEffect(() => {
-    if (authLoading || !user) return
-    let active = true
+  const catalogQuery = useQuery({
+    queryKey: ['building-types'],
+    queryFn: () => fetchBuildingTypes(),
+    enabled: !!user && !authLoading,
+    select: (data) => data.building_types,
+  })
 
-    fetchBuildingTypesCached()
-      .then((response) => {
-        if (active) setCatalog(response.building_types)
-      })
-      .catch(() => {
-        if (active) setCatalog([])
-      })
-
-    return () => {
-      active = false
-    }
-  }, [authLoading, user])
+  const upgradeMutation = useMutation({
+    mutationFn: (buildingId: string) => upgradeBuilding(buildingId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['city'] })
+      queryClient.invalidateQueries({ queryKey: ['player-resources', user?.id ?? null] })
+    },
+  })
 
   const buildingMap = React.useMemo(() => {
     if (!city) return new Map<string, CityBuilding>()
     return new Map(city.buildings.map((b) => [b.key, b]))
   }, [city])
 
-  async function handleUpgrade(building: BuildingTypePayload) {
+  function handleUpgrade(building: BuildingTypePayload) {
     const cityBuilding = buildingMap.get(building.key)
     if (!cityBuilding) return
-    setError(null)
-    setUpgradingKey(building.key)
-    try {
-      await upgradeBuilding(cityBuilding.id)
-      await reload()
-    } catch (caught) {
-      const msg =
-        caught instanceof ApiError
-          ? caught.message
-          : 'No se pudo iniciar la mejora.'
-      setError(msg)
-    } finally {
-      setUpgradingKey(null)
-    }
+    upgradeMutation.reset()
+    upgradeMutation.mutate(cityBuilding.id)
   }
 
-  if (isLoading || !catalog) {
+  const catalog = catalogQuery.data
+
+  if (cityLoading || !catalog) {
     return <p className="text-muted-foreground text-sm">Cargando edificios…</p>
   }
 
@@ -270,9 +258,13 @@ export function ConstructionPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="divide-y px-0 py-0">
-          {error ? (
-            <p className="text-destructive px-4 pt-3 text-xs">{error}</p>
-          ) : null}
+          {upgradeMutation.isError && (
+            <p className="text-destructive px-4 pt-3 text-xs">
+              {upgradeMutation.error instanceof Error
+                ? upgradeMutation.error.message
+                : 'No se pudo iniciar la mejora.'}
+            </p>
+          )}
           <ul>
             {catalog.map((building) => {
               const cityBuilding = buildingMap.get(building.key)
@@ -286,7 +278,7 @@ export function ConstructionPanel() {
                   isDestroyed={(cityBuilding?.damage ?? 0) > 0}
                   upgradeFinishesAt={cityBuilding?.upgradeFinishesAt ?? null}
                   maxLevel={building.max_level}
-                  isBusy={upgradingKey === building.key}
+                  isBusy={upgradeMutation.isPending}
                   now={now}
                   onUpgrade={() => handleUpgrade(building)}
                 />
