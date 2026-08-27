@@ -15,12 +15,13 @@ import {
 interface AuthContextValue {
   user: AuthUser | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string, remember?: boolean) => Promise<void>
   register: (data: {
     nick: string
     email: string
     password: string
     password_confirmation: string
+    remember?: boolean
   }) => Promise<void>
   logout: () => Promise<void>
   updateUser: (user: AuthUser) => void
@@ -102,8 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isLoading, pathname, router, user])
 
   const login = React.useCallback(
-    async (email: string, password: string) => {
-      const { user: authenticated } = await loginRequest(email, password)
+    async (email: string, password: string, remember: boolean = false) => {
+      const { user: authenticated } = await loginRequest(email, password, remember)
       setUser(authenticated)
       hasRedirectedRef.current = true
       router.replace('/')
@@ -117,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: string
       password: string
       password_confirmation: string
+      remember?: boolean
     }) => {
       const { user: created } = await registerRequest(data)
       setUser(created)

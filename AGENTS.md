@@ -65,6 +65,7 @@ Juego de estrategia medieval persistente por navegador, con una experiencia visu
 
 - Consultar Context7 antes de asumir APIs de Next.js, React, Phaser, Tailwind, shadcn/ui, Laravel, Eloquent u otras librerías.
 - Next.js 16: `proxy.ts` reemplaza a `middleware.ts` (ver `vercel/next.js` en Context7 `proxy.mdx` y `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.mdx`). No crear `middleware.ts`; usar `proxy.ts` con `export function proxy(request)` y `matcher`.
+- Los README de `front-tgotg/` y `back-tgotg/` contienen la documentación específica de cada parte del sistema. Consultarlos para entender la estructura, convenciones y particularidades de cada módulo.
 
 ## Diseño visual
 

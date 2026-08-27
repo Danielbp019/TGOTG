@@ -9,6 +9,7 @@ use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
@@ -19,11 +20,13 @@ class AuthController extends Controller
     public function register(RegisterRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $remember = (bool) ($data['remember'] ?? false);
 
         $user = User::create($data);
         $user->refresh();
 
         $token = $user->createToken('auth-token')->plainTextToken;
+        $minutes = $remember ? 60 * 24 * 30 : 60 * 24;
 
         return response()
             ->json([
@@ -33,7 +36,7 @@ class AuthController extends Controller
             ->withCookie(cookie(
                 'tgotg_token',
                 $token,
-                60 * 24,
+                $minutes,
                 '/',
                 null,
                 (bool) config('session.secure'),
@@ -45,7 +48,9 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
-        $credentials = $request->validated();
+        $validated = $request->validated();
+        $remember = (bool) ($validated['remember'] ?? false);
+        $credentials = Arr::only($validated, ['email', 'password']);
 
         if (! Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
@@ -55,6 +60,7 @@ class AuthController extends Controller
 
         $user = Auth::user();
         $token = $user->createToken('auth-token')->plainTextToken;
+        $minutes = $remember ? 60 * 24 * 30 : 60 * 24;
 
         return response()
             ->json([
@@ -64,7 +70,7 @@ class AuthController extends Controller
             ->withCookie(cookie(
                 'tgotg_token',
                 $token,
-                60 * 24,
+                $minutes,
                 '/',
                 null,
                 (bool) config('session.secure'),

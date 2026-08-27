@@ -20,6 +20,7 @@ class RegisterRequest extends FormRequest
             'nick' => ['required', 'string', 'max:255', 'unique:users,nick'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'remember' => ['nullable', 'boolean'],
         ];
     }
 

@@ -229,10 +229,10 @@ export async function apiFetch<T>(
   return payload as T
 }
 
-export function loginRequest(email: string, password: string) {
+export function loginRequest(email: string, password: string, remember: boolean = false) {
   return apiFetch<AuthResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, remember }),
   })
 }
 
@@ -241,6 +241,7 @@ export function registerRequest(data: {
   email: string
   password: string
   password_confirmation: string
+  remember?: boolean
 }) {
   return apiFetch<AuthResponse>('/auth/register', {
     method: 'POST',

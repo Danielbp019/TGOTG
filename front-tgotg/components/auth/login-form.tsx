@@ -2,18 +2,27 @@
 
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { ApiError } from '@/lib/api'
 import { loginSchema, type LoginValues } from '@/lib/validations/auth'
 import { getFieldError } from '@/lib/validations/utils'
 import { useAuth } from '@/components/auth/auth-provider'
+import { HelpCircle } from 'lucide-react'
 
 type LoginErrors = Partial<Record<keyof LoginValues, string>>
 
 const initialLogin: LoginValues = {
   email: '',
   password: '',
+  remember: false,
 }
 
 export function LoginForm() {
@@ -23,7 +32,7 @@ export function LoginForm() {
   const [formError, setFormError] = React.useState<string | undefined>()
   const [submitting, setSubmitting] = React.useState(false)
 
-  function handleField(field: keyof LoginValues, value: string) {
+  function handleField(field: keyof LoginValues, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }))
     setFormError(undefined)
   }
@@ -41,7 +50,7 @@ export function LoginForm() {
     setErrors({})
     setSubmitting(true)
     try {
-      await login(form.email, form.password)
+      await login(form.email, form.password, form.remember)
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 422) {
@@ -110,6 +119,27 @@ export function LoginForm() {
             {errors.password}
           </p>
         )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="login-remember"
+          checked={form.remember ?? false}
+          onCheckedChange={(checked) => handleField('remember', checked === true)}
+        />
+        <Label htmlFor="login-remember" className="text-sm font-normal">
+          Recuérdame
+        </Label>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <HelpCircle className="text-muted-foreground size-4 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Mantener la sesión activa durante 30 días</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {formError && (

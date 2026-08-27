@@ -2,12 +2,20 @@
 
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { ApiError } from '@/lib/api'
 import { registerSchema, type RegisterValues } from '@/lib/validations/auth'
 import { getFieldError } from '@/lib/validations/utils'
 import { useAuth } from '@/components/auth/auth-provider'
+import { HelpCircle } from 'lucide-react'
 
 type RegisterErrors = Partial<Record<keyof RegisterValues, string>>
 
@@ -16,6 +24,7 @@ const initialRegister: RegisterValues = {
   email: '',
   password: '',
   confirmPassword: '',
+  remember: false,
 }
 
 export function RegisterForm() {
@@ -25,7 +34,7 @@ export function RegisterForm() {
   const [formError, setFormError] = React.useState<string | undefined>()
   const [submitting, setSubmitting] = React.useState(false)
 
-  function handleField(field: keyof RegisterValues, value: string) {
+  function handleField(field: keyof RegisterValues, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }))
     setFormError(undefined)
   }
@@ -50,6 +59,7 @@ export function RegisterForm() {
         email: form.email,
         password: form.password,
         password_confirmation: form.confirmPassword,
+        remember: form.remember,
       })
     } catch (error) {
       if (error instanceof ApiError) {
@@ -170,6 +180,27 @@ export function RegisterForm() {
             {errors.confirmPassword}
           </p>
         )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="register-remember"
+          checked={form.remember ?? false}
+          onCheckedChange={(checked) => handleField('remember', checked === true)}
+        />
+        <Label htmlFor="register-remember" className="text-sm font-normal">
+          Recuérdame
+        </Label>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <HelpCircle className="text-muted-foreground size-4 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Mantener la sesión activa durante 30 días</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {formError && (
