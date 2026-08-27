@@ -1,6 +1,5 @@
 import { CityProvider } from '@/components/city/city-provider'
-import { BlessingDialog } from '@/components/game/blessing-dialog'
-import { CivilizationDialog } from '@/components/game/civilization-dialog'
+import { OnboardingWizard } from '@/components/game/onboarding-wizard'
 import { GameShell } from '@/components/layout/game-shell'
 
 export default function GameLayout({
@@ -13,8 +12,7 @@ export default function GameLayout({
       <CityProvider>
         <GameShell>{children}</GameShell>
       </CityProvider>
-      <BlessingDialog />
-      <CivilizationDialog />
+      <OnboardingWizard />
     </>
   )
 }
