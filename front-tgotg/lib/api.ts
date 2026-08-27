@@ -1,4 +1,4 @@
-import type { PlotShape, ResourceKey } from '@/types'
+import type { Clan, ClanApplication, ClanBulletin, ClanDetail, ClanMessage, PlotShape, ResourceKey } from '@/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
 
@@ -475,5 +475,139 @@ export function sendMessage(id: string, body: string) {
 export function deleteConversation(id: string) {
   return apiFetch<{ message: string }>(`/conversations/${id}`, {
     method: 'DELETE',
+  })
+}
+
+export function fetchClans() {
+  return apiFetch<{ clans: Clan[] }>('/clans')
+}
+
+export function fetchMyClan() {
+  return apiFetch<{ clan: ClanDetail | null }>('/clans/my')
+}
+
+export function fetchClan(id: string) {
+  return apiFetch<{ clan: Clan }>('/clans/' + id)
+}
+
+export function createClan(data: { name: string; acronym: string }) {
+  return apiFetch<{ clan: ClanDetail }>('/clans', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function joinClan(clanId: string, message?: string) {
+  return apiFetch<{ application: { id: string; status: string; createdAt: string } }>(
+    '/clans/' + clanId + '/join',
+    {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }
+  )
+}
+
+export function leaveClan() {
+  return apiFetch<{ message: string }>('/clans/my/leave', {
+    method: 'POST',
+  })
+}
+
+export function disbandClan(clanId: string) {
+  return apiFetch<{ message: string }>('/clans/' + clanId, {
+    method: 'DELETE',
+  })
+}
+
+export function fetchClanApplications(clanId: string) {
+  return apiFetch<{ applications: ClanApplication[] }>(
+    '/clans/' + clanId + '/applications'
+  )
+}
+
+export function acceptClanApplication(clanId: string, applicationId: string) {
+  return apiFetch<{ message: string }>(
+    '/clans/' + clanId + '/applications/' + applicationId + '/accept',
+    { method: 'POST' }
+  )
+}
+
+export function rejectClanApplication(clanId: string, applicationId: string) {
+  return apiFetch<{ message: string }>(
+    '/clans/' + clanId + '/applications/' + applicationId + '/reject',
+    { method: 'POST' }
+  )
+}
+
+export function fetchClanBulletins(clanId: string) {
+  return apiFetch<{ bulletins: ClanBulletin[] }>(
+    '/clans/' + clanId + '/bulletins'
+  )
+}
+
+export function createClanBulletin(
+  clanId: string,
+  data: { title: string; content: string }
+) {
+  return apiFetch<{ bulletin: ClanBulletin }>(
+    '/clans/' + clanId + '/bulletins',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  )
+}
+
+export function updateClanBulletin(
+  clanId: string,
+  bulletinId: string,
+  data: { title: string; content: string }
+) {
+  return apiFetch<{ bulletin: ClanBulletin }>(
+    '/clans/' + clanId + '/bulletins/' + bulletinId,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  )
+}
+
+export function deleteClanBulletin(clanId: string, bulletinId: string) {
+  return apiFetch<{ message: string }>(
+    '/clans/' + clanId + '/bulletins/' + bulletinId,
+    { method: 'DELETE' }
+  )
+}
+
+export function fetchClanMessages(clanId: string) {
+  return apiFetch<{ messages: ClanMessage[] }>(
+    '/clans/' + clanId + '/messages'
+  )
+}
+
+export function sendClanMessage(clanId: string, body: string) {
+  return apiFetch<{ message: ClanMessage }>(
+    '/clans/' + clanId + '/messages',
+    {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }
+  )
+}
+
+export function transferResources(data: {
+  recipient_player_id: string
+  gold?: number
+  wood?: number
+  stone?: number
+  iron?: number
+  food?: number
+}) {
+  return apiFetch<{
+    message: string
+    sender: Record<ResourceKey, number>
+  }>('/clan/transfer', {
+    method: 'POST',
+    body: JSON.stringify(data),
   })
 }

@@ -4,9 +4,13 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CitiesController;
 use App\Http\Controllers\Api\CityController;
+use App\Http\Controllers\Api\ClanBulletinController;
+use App\Http\Controllers\Api\ClanChatController;
+use App\Http\Controllers\Api\ClanController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PlayerController;
 use App\Http\Controllers\Api\RegionController;
+use App\Http\Controllers\Api\ResourceTransferController;
 use App\Http\Controllers\Api\SystemController;
 use App\Http\Controllers\Api\WorldController;
 use Illuminate\Support\Facades\Route;
@@ -52,5 +56,29 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
         Route::get('/conversations/{conversation}', [MessageController::class, 'show']);
         Route::post('/conversations/{conversation}/messages', [MessageController::class, 'sendMessage']);
         Route::delete('/conversations/{conversation}', [MessageController::class, 'destroy']);
+    });
+
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/clans', [ClanController::class, 'index']);
+        Route::post('/clans', [ClanController::class, 'store']);
+        Route::get('/clans/my', [ClanController::class, 'my']);
+        Route::get('/clans/{clan}', [ClanController::class, 'show']);
+        Route::post('/clans/{clan}/join', [ClanController::class, 'join']);
+        Route::post('/clans/{clan}/leave', [ClanController::class, 'leave']);
+        Route::delete('/clans/{clan}', [ClanController::class, 'destroy']);
+
+        Route::get('/clans/{clan}/applications', [ClanController::class, 'applications']);
+        Route::post('/clans/{clan}/applications/{application}/accept', [ClanController::class, 'acceptApplication']);
+        Route::post('/clans/{clan}/applications/{application}/reject', [ClanController::class, 'rejectApplication']);
+
+        Route::get('/clans/{clan}/bulletins', [ClanBulletinController::class, 'index']);
+        Route::post('/clans/{clan}/bulletins', [ClanBulletinController::class, 'store']);
+        Route::put('/clans/{clan}/bulletins/{bulletin}', [ClanBulletinController::class, 'update']);
+        Route::delete('/clans/{clan}/bulletins/{bulletin}', [ClanBulletinController::class, 'destroy']);
+
+        Route::get('/clans/{clan}/messages', [ClanChatController::class, 'index']);
+        Route::post('/clans/{clan}/messages', [ClanChatController::class, 'store']);
+
+        Route::post('/clan/transfer', [ResourceTransferController::class, 'store']);
     });
 });

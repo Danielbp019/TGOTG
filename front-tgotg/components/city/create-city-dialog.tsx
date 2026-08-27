@@ -51,7 +51,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
   } = form
 
   const [formError, setFormError] = React.useState<string | null>(null)
-  const values = watch()
+  const selectedRegionId = watch('region')
 
   const regionsQuery = useQuery({
     queryKey: ['regions'],
@@ -61,7 +61,7 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
   })
 
   const regions = regionsQuery.data ?? []
-  const selectedRegion = regions.find((r) => r.id === values.region) ?? null
+  const selectedRegion = regions.find((r) => r.id === selectedRegionId) ?? null
 
   function handleOpenChange(next: boolean) {
     if (!next) {

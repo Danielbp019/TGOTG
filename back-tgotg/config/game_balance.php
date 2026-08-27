@@ -109,4 +109,15 @@ return [
         'colinaRica' => ['iron' => 0.10],
         'costa' => ['gold' => 0.10],
     ],
+
+    'clan' => [
+        'max_members' => 20,
+        'min_days_to_leave' => 3,
+        'min_days_to_disband' => 3,
+        'max_applications_per_24h' => 3,
+        'chat_retention_days' => 7,
+        'chat_max_messages' => 100,
+        'acronym_min_length' => 3,
+        'acronym_max_length' => 5,
+    ],
 ];

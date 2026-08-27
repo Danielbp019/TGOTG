@@ -100,11 +100,13 @@ export function MessagesInbox() {
     [conversationsQuery.data]
   )
 
+  const initializedRef = React.useRef(false)
   React.useEffect(() => {
-    if (conversations.length > 0 && !selectedId) {
+    if (conversations.length > 0 && !initializedRef.current) {
+      initializedRef.current = true
       setSelectedId(conversations[0]?.id)
     }
-  }, [conversations, selectedId])
+  }, [conversations])
 
   const selectedQuery = useQuery({
     queryKey: ['conversation', selectedId],

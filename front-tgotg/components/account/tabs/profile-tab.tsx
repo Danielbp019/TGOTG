@@ -31,6 +31,7 @@ export function ProfileTab({ initialProfile, onReset }: ProfileTabProps) {
   const [saving, setSaving] = React.useState(false)
 
   const versionRef = React.useRef(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (!onReset) return
     const v = onReset()

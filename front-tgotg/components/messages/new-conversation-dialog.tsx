@@ -1,7 +1,8 @@
 'use client'
 
 import * as React from 'react'
-
+import { useQuery } from '@tanstack/react-query'
+import { fetchMyClan } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,6 +15,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Shield } from 'lucide-react'
 import {
   newConversationSchema,
   type NewConversationValues,
@@ -43,10 +46,18 @@ export function NewConversationDialog({
     React.useState<NewConversationValues>(initialValues)
   const [errors, setErrors] = React.useState<NewConversationErrors>({})
   const [submitting, setSubmitting] = React.useState(false)
+  const [showClanMembers, setShowClanMembers] = React.useState(false)
+
+  const { data: clanData } = useQuery({
+    queryKey: ['my-clan'],
+    queryFn: fetchMyClan,
+    enabled: showClanMembers,
+  })
 
   function reset() {
     setValues(initialValues)
     setErrors({})
+    setShowClanMembers(false)
   }
 
   function handleOpenChange(next: boolean) {
@@ -59,6 +70,12 @@ export function NewConversationDialog({
   function handleField(field: keyof NewConversationValues, value: string) {
     setValues((prev) => ({ ...prev, [field]: value }))
     setErrors((prev) => ({ ...prev, [field]: undefined }))
+  }
+
+  function handleSelectClanMember(nick: string) {
+    setValues((prev) => ({ ...prev, destinatario: nick }))
+    setErrors((prev) => ({ ...prev, destinatario: undefined }))
+    setShowClanMembers(false)
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -89,6 +106,11 @@ export function NewConversationDialog({
     }
   }
 
+  const clanMembers =
+    clanData?.clan?.members?.filter(
+      (m) => m.nick !== values.destinatario
+    ) ?? []
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -101,7 +123,20 @@ export function NewConversationDialog({
 
         <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
           <div className="grid gap-2">
-            <Label htmlFor="new-msg-recipient">Destinatario</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="new-msg-recipient">Destinatario</Label>
+              {clanData?.clan && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowClanMembers(!showClanMembers)}
+                >
+                  <Shield className="mr-1 h-3 w-3" />
+                  Clan
+                </Button>
+              )}
+            </div>
             <Input
               id="new-msg-recipient"
               type="text"
@@ -124,6 +159,38 @@ export function NewConversationDialog({
               </p>
             )}
           </div>
+
+          {showClanMembers && clanMembers.length > 0 && (
+            <div className="border rounded-lg">
+              <div className="p-2 border-b">
+                <p className="text-xs text-muted-foreground">
+                  Miembros del clan
+                </p>
+              </div>
+              <ScrollArea className="h-[150px]">
+                <div className="p-1">
+                  {clanMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors"
+                      onClick={() => handleSelectClanMember(member.nick)}
+                    >
+                      {member.nick}
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+
+          {showClanMembers && clanMembers.length === 0 && (
+            <div className="border rounded-lg p-4 text-center">
+              <p className="text-xs text-muted-foreground">
+                No hay otros miembros en tu clan.
+              </p>
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor="new-msg-body">Primer mensaje</Label>

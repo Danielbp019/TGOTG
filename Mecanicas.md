@@ -336,7 +336,6 @@ Edificios iniciales: **todo en nivel 0 excepto el ayuntamiento, que empieza en n
 
 - [ ] No mostrar ciudades con demasiada diferencia de nivel.
 - [ ] PvP.
-- [ ] Crear alianzas y enviar recursos entre jugadores de la misma alianza.
 
 ### Partidas
 

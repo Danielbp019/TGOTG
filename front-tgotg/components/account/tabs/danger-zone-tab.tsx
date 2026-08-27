@@ -30,6 +30,7 @@ export function DangerZoneTab({ onReset }: DangerZoneTabProps) {
   const [deleting, setDeleting] = React.useState(false)
 
   const versionRef = React.useRef(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (!onReset) return
     const v = onReset()

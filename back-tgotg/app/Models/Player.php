@@ -23,6 +23,7 @@ class Player extends Model
         'user_id',
         'civilization_id',
         'blessing_id',
+        'clan_id',
         'gold',
         'wood',
         'stone',
@@ -73,6 +74,16 @@ class Player extends Model
     public function blessing(): BelongsTo
     {
         return $this->belongsTo(Blessing::class);
+    }
+
+    public function clan(): BelongsTo
+    {
+        return $this->belongsTo(Clan::class);
+    }
+
+    public function clanMember(): HasOne
+    {
+        return $this->hasOne(ClanMember::class);
     }
 
     public function cities(): HasMany

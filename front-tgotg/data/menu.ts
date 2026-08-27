@@ -28,7 +28,7 @@ export const mainMenu: MenuItem[] = [
     disabled: true,
   },
   { label: 'Mapa', href: '/mapa', icon: Map },
-  { label: 'Alianzas', href: '/alianzas', icon: Users, disabled: true },
+  { label: 'Clanes', href: '/clans', icon: Users },
   { label: 'Mensajes', href: '/mensajes', icon: MessageSquare },
   {
     label: 'Configuración del mundo',

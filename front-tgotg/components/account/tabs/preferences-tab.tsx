@@ -15,6 +15,7 @@ export function PreferencesTab({ onReset }: PreferencesTabProps) {
   const [timeFormat, setTimeFormat] = React.useState<TimeFormat>('24h')
 
   const versionRef = React.useRef(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (!onReset) return
     const v = onReset()

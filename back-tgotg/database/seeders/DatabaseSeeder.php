@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             RegionSeeder::class,
             DemoWorldSeeder::class,
             DemoMessagesSeeder::class,
+            DemoClansSeeder::class,
         ]);
     }
 }

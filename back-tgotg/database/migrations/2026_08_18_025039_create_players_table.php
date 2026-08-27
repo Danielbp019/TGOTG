@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('civilization_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignUuid('blessing_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUuid('clan_id')->nullable()->constrained()->nullOnDelete();
             $table->unsignedBigInteger('gold')->default(0);
             $table->unsignedBigInteger('wood')->default(0);
             $table->unsignedBigInteger('stone')->default(0);
