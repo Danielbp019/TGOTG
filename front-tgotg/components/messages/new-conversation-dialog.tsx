@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
   newConversationSchema,
@@ -126,9 +127,8 @@ export function NewConversationDialog({
 
           <div className="grid gap-2">
             <Label htmlFor="new-msg-body">Primer mensaje</Label>
-            <Input
+            <Textarea
               id="new-msg-body"
-              type="text"
               value={values.primerMensaje}
               onChange={(event) =>
                 handleField('primerMensaje', event.target.value)
@@ -138,6 +138,7 @@ export function NewConversationDialog({
                 errors.primerMensaje ? 'new-msg-body-error' : undefined
               }
               placeholder="Escribe tu mensaje"
+              className="min-h-[120px]"
             />
             {errors.primerMensaje && (
               <p id="new-msg-body-error" className="text-destructive text-xs">
