@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -45,15 +45,15 @@ export function CreateCityDialog({ open, onOpenChange }: CreateCityDialogProps) 
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     setError: setFieldError,
     formState: { errors, isSubmitting },
   } = form
 
   const [formError, setFormError] = React.useState<string | null>(null)
-  const selectedRegionId = watch('region')
-  const selectedBiomaId = watch('bioma')
+  const selectedRegionId = useWatch({ control, name: 'region' })
+  const selectedBiomaId = useWatch({ control, name: 'bioma' })
 
   const regionsQuery = useQuery({
     queryKey: ['regions'],

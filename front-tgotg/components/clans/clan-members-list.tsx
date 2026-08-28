@@ -9,7 +9,6 @@ import type { ClanMember, ClanRole } from '@/types'
 
 interface ClanMembersListProps {
   members: ClanMember[]
-  currentUserRole?: ClanRole
   currentUserId?: string
   onTransfer: (member: ClanMember) => void
 }
@@ -30,7 +29,6 @@ const roleBadgeVariants: Record<ClanRole, string> = {
 
 export function ClanMembersList({
   members,
-  currentUserRole,
   currentUserId,
   onTransfer,
 }: ClanMembersListProps) {

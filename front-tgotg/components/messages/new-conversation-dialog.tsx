@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { fetchMyClan } from '@/lib/api'
 import { FormDialog } from '@/components/ui/form-dialog'
@@ -39,13 +39,13 @@ export function NewConversationDialog({
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     setError,
     formState: { errors, isSubmitting },
   } = form
 
-  const destinatarioValue = watch('destinatario')
+  const destinatarioValue = useWatch({ control, name: 'destinatario' })
 
   const { data: clanData } = useQuery({
     queryKey: ['my-clan'],

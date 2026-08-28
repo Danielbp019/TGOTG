@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Check, Globe, Rocket } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import { Button } from '@/components/ui/button'
@@ -30,12 +30,12 @@ export function WorldConfigPanel() {
 
   const {
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = form
 
-  const durationId = watch('durationId')
-  const multiplierId = watch('multiplierId')
+  const durationId = useWatch({ control, name: 'durationId' })
+  const multiplierId = useWatch({ control, name: 'multiplierId' })
 
   const optionsQuery = useQuery({
     queryKey: ['game-options'],

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -21,7 +21,6 @@ import { HelpCircle } from 'lucide-react'
 export function LoginForm() {
   const { login } = useAuth()
   const [formError, setFormError] = React.useState<string | undefined>()
-  const submittedRef = React.useRef(false)
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -32,15 +31,13 @@ export function LoginForm() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = form
 
-  const rememberValue = watch('remember')
+  const rememberValue = useWatch({ control, name: 'remember' })
 
   async function onSubmit(data: LoginValues) {
-    if (submittedRef.current) return
-    submittedRef.current = true
     setFormError(undefined)
     try {
       await login(data.email, data.password, data.remember)
@@ -62,8 +59,6 @@ export function LoginForm() {
       } else {
         setFormError('No se pudo conectar con el servidor.')
       }
-    } finally {
-      submittedRef.current = false
     }
   }
 

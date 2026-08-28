@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Check, Sparkles } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import { Button } from '@/components/ui/button'
@@ -56,12 +56,12 @@ export function OnboardingWizard() {
 
   const {
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = form
 
-  const selectedBlessing = watch('blessingId')
-  const selectedCiv = watch('civilizationId')
+  const selectedBlessing = useWatch({ control, name: 'blessingId' })
+  const selectedCiv = useWatch({ control, name: 'civilizationId' })
 
   const blessingsQuery = useQuery({
     queryKey: ['blessings'],

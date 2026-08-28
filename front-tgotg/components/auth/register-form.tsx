@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -37,11 +37,11 @@ export function RegisterForm() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = form
 
-  const rememberValue = watch('remember')
+  const rememberValue = useWatch({ control, name: 'remember' })
 
   async function onSubmit(data: RegisterValues) {
     setFormError(undefined)

@@ -120,7 +120,6 @@ export function ClanDetail({ clan }: ClanDetailProps) {
       <div className="grid gap-6 lg:grid-cols-2">
         <ClanMembersList
           members={clan.members}
-          currentUserRole={clan.currentUserRole}
           currentUserId={clan.currentPlayerId}
           onTransfer={handleTransfer}
         />
