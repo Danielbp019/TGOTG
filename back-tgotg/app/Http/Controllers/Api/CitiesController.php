@@ -54,6 +54,8 @@ class CitiesController extends Controller
                     'id' => $city->biome->id,
                     'key' => $city->biome->key,
                 ] : null,
+                'protectionUntil' => $city->protection_until?->toIso8601String(),
+                'defensePower' => (int) $city->defense_power,
             ]);
 
         return response()->json(['cities' => $cities]);

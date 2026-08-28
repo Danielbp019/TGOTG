@@ -304,6 +304,7 @@ export function fetchMyCivilization() {
 export interface MyResourcesResponse {
   in_game: boolean
   resources: Record<ResourceKey, number> | null
+  perHour: Record<ResourceKey, number> | null
 }
 
 export function fetchMyResources() {
@@ -358,6 +359,8 @@ export interface CitiesPayload {
     name: string
     region: { id: string; key: string; label: string } | null
     biome: { id: string; key: string } | null
+    protectionUntil: string | null
+    defensePower: number
   }>
 }
 

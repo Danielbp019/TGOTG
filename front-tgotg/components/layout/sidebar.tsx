@@ -1,5 +1,4 @@
 import { AccountHeader } from '@/components/account/account-header'
-import { BlessingBadge } from '@/components/game/blessing-badge'
 import { ResourceBar } from '@/components/resources/resource-bar'
 import { MainMenu } from '@/components/navigation/main-menu'
 import { ServerClock } from '@/components/layout/server-clock'
@@ -13,7 +12,6 @@ export function SidebarContent() {
           El Juego de los Dioses
         </h1>
         <AccountHeader />
-        <BlessingBadge />
         <Separator />
         <div>
           <h2 className="text-muted-foreground mb-1 px-3 text-xs font-medium">

@@ -20,6 +20,7 @@ export function useMyResources() {
 
   return {
     resources: query.data?.in_game ? query.data.resources : null,
+    perHour: query.data?.in_game ? query.data.perHour : null,
     isLoading: query.isLoading,
     error: query.error ?? null,
     refresh: query.refetch,

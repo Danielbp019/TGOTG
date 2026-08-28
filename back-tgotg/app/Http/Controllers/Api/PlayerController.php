@@ -29,6 +29,18 @@ class PlayerController extends Controller
             ]);
         }
 
+        $player->load('cities');
+        $speedMultiplier = (float) $player->world->speed_multiplier;
+
+        $perHour = ['gold' => 0, 'wood' => 0, 'stone' => 0, 'iron' => 0, 'food' => 0];
+        foreach ($player->cities as $city) {
+            $perHour['gold'] += (int) round($city->gold_per_hour * $speedMultiplier);
+            $perHour['wood'] += (int) round($city->wood_per_hour * $speedMultiplier);
+            $perHour['stone'] += (int) round($city->stone_per_hour * $speedMultiplier);
+            $perHour['iron'] += (int) round($city->iron_per_hour * $speedMultiplier);
+            $perHour['food'] += (int) round($city->food_per_hour * $speedMultiplier);
+        }
+
         return response()->json([
             'in_game' => true,
             'resources' => [
@@ -38,6 +50,7 @@ class PlayerController extends Controller
                 'iron' => (int) $player->iron,
                 'food' => (int) $player->food,
             ],
+            'perHour' => $perHour,
         ]);
     }
 
