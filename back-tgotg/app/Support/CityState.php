@@ -77,6 +77,7 @@ class CityState
             });
 
         return [
+            'id' => $city->id,
             'name' => $city->name,
             // Los recursos mostrados son los generales del jugador.
             'resources' => [

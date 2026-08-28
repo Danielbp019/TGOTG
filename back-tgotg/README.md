@@ -56,7 +56,7 @@ Al superarlo la API responde `429`.
 
 Las operaciones que tocan recursos del juego son atómicas:
 
-- **Mejora/reparación de edificios** (`CityController`): la validación de recursos y los descuentos ocurren dentro de una transacción con `lockForUpdate` sobre la fila de la ciudad → peticiones paralelas no pueden duplicar gastos ni dejar recursos en negativo.
+- **Mejora/reparación de edificios** (`CitiesController`): la validación de recursos y los descuentos ocurren dentro de una transacción con `lockForUpdate` sobre la fila del jugador → peticiones paralelas no pueden duplicar gastos ni dejar recursos en negativo.
 - **Creación de mundo** (`WorldController::store`): cierra mundos anteriores, borra sus jugadores (cascada) y crea el nuevo mundo/player/ciudad/edificios dentro de una sola transacción protegida con `Cache::lock('tgotg:world-create-lock')`; si otra creación está en curso responde `409`.
 - El mundo "actual" se memoiza por petición (`ResolvesCurrentPlayer`) para no repetir consultas.
 
@@ -82,14 +82,13 @@ Las operaciones que tocan recursos del juego son atómicas:
 | GET    | `/api/building-types`                         | Sí    | Lista todos los tipos de edificio disponibles.                           |
 | GET    | `/api/unit-types`                             | Sí    | Lista tipos de unidad (filtro por civilización).                         |
 | GET    | `/api/game-options`                           | Sí    | Devuelve duraciones y multiplicadores para crear partida.                |
-| GET    | `/api/city`                                   | Sí    | Devuelve la ciudad del jugador con recursos, producción, edificios, etc. |
 | GET    | `/api/cities`                                 | Sí    | Lista las ciudades del jugador.                                          |
 | GET    | `/api/cities/{city}`                          | Sí    | Devuelve una ciudad con sus edificios.                                   |
 | POST   | `/api/cities`                                 | Sí    | Crea una nueva ciudad en una región y bioma.                             |
+| POST   | `/api/cities/{city}/buildings/{building}/upgrade` | Sí | Inicia la mejora/construcción de un edificio (cola temporizada).         |
+| POST   | `/api/cities/{city}/buildings/{building}/repair`  | Sí | Repara un edificio (paid/auto).                                          |
 | GET    | `/api/regions`                                | Sí    | Lista regiones disponibles con sus biomas.                               |
 | GET    | `/api/biomes`                                 | Sí    | Lista todos los biomas disponibles.                                      |
-| POST   | `/api/city/buildings/{building}/repair`       | Sí    | Repara un edificio (paid/auto).                                          |
-| POST   | `/api/city/buildings/{building}/upgrade`      | Sí    | Inicia la mejora/construcción de un edificio (cola temporizada).         |
 | POST   | `/api/worlds`                                 | Admin | Crea una nueva contienda (partida).                                      |
 | GET    | `/api/conversations`                          | Sí    | Lista conversaciones del jugador.                                        |
 | POST   | `/api/conversations`                          | Sí    | Crea una nueva conversación con un mensaje inicial.                      |

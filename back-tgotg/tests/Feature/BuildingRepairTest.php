@@ -49,7 +49,7 @@ function createDamagedBuilding(City $city, array $overrides = [], ?BuildingType 
 test('reparar un edificio requiere autenticación', function () {
     $building = Building::factory()->create(['damage' => 20]);
 
-    $this->postJson("/api/city/buildings/{$building->id}/repair", ['type' => 'paid'])
+    $this->postJson("/api/cities/{$building->city_id}/buildings/{$building->id}/repair", ['type' => 'paid'])
         ->assertStatus(401);
 });
 
@@ -58,7 +58,7 @@ test('no se puede reparar un edificio de otro jugador', function () {
     $foreign = Building::factory()->create(['damage' => 20]);
 
     $this->actingAs($user, 'sanctum')
-        ->postJson("/api/city/buildings/{$foreign->id}/repair", ['type' => 'paid'])
+        ->postJson("/api/cities/{$foreign->city_id}/buildings/{$foreign->id}/repair", ['type' => 'paid'])
         ->assertStatus(403);
 });
 
@@ -67,7 +67,7 @@ test('reparar un edificio sin daños devuelve error', function () {
     $building = createDamagedBuilding($city, ['level' => 2]);
 
     $this->actingAs($user, 'sanctum')
-        ->postJson("/api/city/buildings/{$building->id}/repair", ['type' => 'paid'])
+        ->postJson("/api/cities/{$city->id}/buildings/{$building->id}/repair", ['type' => 'paid'])
         ->assertStatus(422);
 });
 
@@ -81,7 +81,7 @@ test('la reparación pagada descuenta oro y material y marca la reparación', fu
 
     // HP muralla L2 = 2 × 1000 × 1,5 = 3000 → 50 % = 1500 puntos → 4500 oro + 1500 piedra
     $this->actingAs($user, 'sanctum')
-        ->postJson("/api/city/buildings/{$building->id}/repair", ['type' => 'paid'])
+        ->postJson("/api/cities/{$city->id}/buildings/{$building->id}/repair", ['type' => 'paid'])
         ->assertStatus(200)
         ->assertJsonPath('building.repairing', true)
         ->assertJsonPath('building.repairPaid', true);
@@ -104,7 +104,7 @@ test('la reparación pagada sin recursos suficientes falla', function () {
     $building = createDamagedBuilding($city, ['level' => 2, 'damage' => 50], $type);
 
     $this->actingAs($user, 'sanctum')
-        ->postJson("/api/city/buildings/{$building->id}/repair", ['type' => 'paid'])
+        ->postJson("/api/cities/{$city->id}/buildings/{$building->id}/repair", ['type' => 'paid'])
         ->assertStatus(422);
 });
 
@@ -113,7 +113,7 @@ test('la reparación automática es gratuita y lenta', function () {
     $building = createDamagedBuilding($city, ['damage' => 30]);
 
     $this->actingAs($user, 'sanctum')
-        ->postJson("/api/city/buildings/{$building->id}/repair", ['type' => 'auto'])
+        ->postJson("/api/cities/{$city->id}/buildings/{$building->id}/repair", ['type' => 'auto'])
         ->assertStatus(200)
         ->assertJsonPath('building.repairPaid', false);
 
@@ -133,7 +133,7 @@ test('no se puede encolar una segunda reparación', function () {
     ]);
 
     $this->actingAs($user, 'sanctum')
-        ->postJson("/api/city/buildings/{$building->id}/repair", ['type' => 'paid'])
+        ->postJson("/api/cities/{$city->id}/buildings/{$building->id}/repair", ['type' => 'paid'])
         ->assertStatus(409);
 });
 
@@ -142,7 +142,7 @@ test('el tipo de reparación debe ser válido', function () {
     $building = createDamagedBuilding($city, ['damage' => 30]);
 
     $this->actingAs($user, 'sanctum')
-        ->postJson("/api/city/buildings/{$building->id}/repair", ['type' => 'exprés'])
+        ->postJson("/api/cities/{$city->id}/buildings/{$building->id}/repair", ['type' => 'exprés'])
         ->assertStatus(422);
 });
 
@@ -161,7 +161,7 @@ test('la reparación pagada avanza rápido y la automática lento', function () 
     ], BuildingType::factory()->create(['name' => 'Muralla']));
 
     $this->actingAs($user, 'sanctum')
-        ->getJson('/api/city')
+        ->getJson("/api/cities/{$city->id}")
         ->assertStatus(200)
         ->assertJsonPath('city.buildings.0.damage', 30)
         ->assertJsonPath('city.buildings.0.repairing', true)
@@ -186,7 +186,7 @@ test('la reparación finalizada se limpia al consultar la ciudad', function () {
     ]);
 
     $this->actingAs($user, 'sanctum')
-        ->getJson('/api/city')
+        ->getJson("/api/cities/{$city->id}")
         ->assertStatus(200)
         ->assertJsonPath('city.buildings.0.damage', 0)
         ->assertJsonPath('city.buildings.0.repairing', false);

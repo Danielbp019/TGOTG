@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { setCityBuildings, setWorldSize } from '@/game/city-data'
 import type { CityPayload } from '@/lib/api'
-import { ApiError, fetchCity, fetchCityById } from '@/lib/api'
+import { ApiError, fetchCity } from '@/lib/api'
 import { useAuth } from '@/components/auth/auth-provider'
 
 interface CityContextValue {
@@ -28,21 +28,18 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
   const [version, setVersion] = React.useState(0)
 
   const queryKey = React.useMemo(
-    () => ['city', activeCityId ?? 'default'] as const,
+    () => ['city', activeCityId] as const,
     [activeCityId]
   )
 
   const query = useQuery({
     queryKey,
     queryFn: async ({ signal }) => {
-      const response = await (
-        activeCityId
-          ? fetchCityById(activeCityId, signal)
-          : fetchCity(signal)
-      )
+      if (!activeCityId) return null
+      const response = await fetchCity(activeCityId, signal)
       return response.city
     },
-    enabled: !!userId && !authLoading,
+    enabled: !!userId && !authLoading && !!activeCityId,
     refetchInterval: (query) => {
       const data = query.state.data
       if (!data) return false
@@ -52,7 +49,7 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
   })
 
   const city = query.data ?? null
-  const isLoading = query.isLoading
+  const isLoading = activeCityId ? query.isLoading : false
   const error = React.useMemo(
     () =>
       query.error instanceof ApiError

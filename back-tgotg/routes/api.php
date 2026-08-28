@@ -3,7 +3,6 @@
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CitiesController;
-use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\ClanBulletinController;
 use App\Http\Controllers\Api\ClanChatController;
 use App\Http\Controllers\Api\ClanController;
@@ -40,14 +39,13 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::get('/building-types', [SystemController::class, 'buildingTypes']);
     Route::get('/unit-types', [SystemController::class, 'unitTypes']);
     Route::get('/game-options', [SystemController::class, 'gameOptions']);
-    Route::get('/city', [CityController::class, 'show']);
     Route::get('/cities', [CitiesController::class, 'index']);
     Route::get('/cities/{city}', [CitiesController::class, 'show']);
     Route::post('/cities', [CitiesController::class, 'store']);
+    Route::post('/cities/{city}/buildings/{building}/upgrade', [CitiesController::class, 'upgrade']);
+    Route::post('/cities/{city}/buildings/{building}/repair', [CitiesController::class, 'repair']);
     Route::get('/regions', [RegionController::class, 'index']);
     Route::get('/biomes', [RegionController::class, 'biomes']);
-    Route::post('/city/buildings/{building}/repair', [CityController::class, 'repair']);
-    Route::post('/city/buildings/{building}/upgrade', [CityController::class, 'upgrade']);
     Route::post('/worlds', [WorldController::class, 'store'])->middleware('role:admin');
 
     Route::middleware('throttle:30,1')->group(function () {

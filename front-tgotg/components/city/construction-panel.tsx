@@ -217,7 +217,10 @@ export function ConstructionPanel() {
   })
 
   const upgradeMutation = useMutation({
-    mutationFn: (buildingId: string) => upgradeBuilding(buildingId),
+    mutationFn: (buildingId: string) => {
+      if (!city) throw new Error('No hay ciudad seleccionada')
+      return upgradeBuilding(city.id, buildingId)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['city'] })
       queryClient.invalidateQueries({ queryKey: ['player-resources', user?.id ?? null] })

@@ -39,7 +39,10 @@ export function RepairPanel() {
     }: {
       buildingId: string
       type: 'paid' | 'auto'
-    }) => repairBuilding(buildingId, type),
+    }) => {
+      if (!city) throw new Error('No hay ciudad seleccionada')
+      return repairBuilding(city.id, buildingId, type)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['city'] })
       queryClient.invalidateQueries({ queryKey: ['player-resources', user?.id ?? null] })

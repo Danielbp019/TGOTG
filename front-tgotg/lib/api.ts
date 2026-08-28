@@ -104,6 +104,7 @@ export interface CityBuilding {
 }
 
 export interface CityPayload {
+  id: string
   name: string | null
   resources: Record<ResourceKey, number>
   perHour: Record<ResourceKey, number>
@@ -389,27 +390,23 @@ export function fetchGameOptions() {
   return apiFetch<GameOptionsPayload>('/game-options')
 }
 
-export function fetchCity(signal?: AbortSignal) {
-  return apiFetch<{ city: CityPayload }>('/city', { signal } as RequestInit)
-}
-
-export function fetchCityById(id: string, signal?: AbortSignal) {
+export function fetchCity(id: string, signal?: AbortSignal) {
   return apiFetch<{ city: CityPayload }>(`/cities/${id}`, { signal } as RequestInit)
 }
 
-export function repairBuilding(buildingId: string, type: 'paid' | 'auto') {
+export function repairBuilding(cityId: string, buildingId: string, type: 'paid' | 'auto') {
   return apiFetch<{
     building: Pick<CityBuilding, 'key' | 'damage'> & {
       repairing: boolean
       repairPaid: boolean
     }
-  }>(`/city/buildings/${buildingId}/repair`, {
+  }>(`/cities/${cityId}/buildings/${buildingId}/repair`, {
     method: 'POST',
     body: JSON.stringify({ type }),
   })
 }
 
-export function upgradeBuilding(buildingId: string, instant?: boolean) {
+export function upgradeBuilding(cityId: string, buildingId: string, instant?: boolean) {
   const query = instant ? '?instant=1' : ''
   return apiFetch<{
     building: Pick<
@@ -425,7 +422,7 @@ export function upgradeBuilding(buildingId: string, instant?: boolean) {
         minutes: number
       }
     }
-  }>(`/city/buildings/${buildingId}/upgrade${query}`, {
+  }>(`/cities/${cityId}/buildings/${buildingId}/upgrade${query}`, {
     method: 'POST',
   })
 }
