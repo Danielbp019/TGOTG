@@ -66,7 +66,7 @@ export function OnboardingWizard() {
   const blessingsQuery = useQuery({
     queryKey: ['blessings'],
     queryFn: () => fetchBlessings(),
-    enabled: !!user && !authLoading,
+    enabled: !!user && !authLoading && open,
     select: (data) => data.blessings,
   })
 
@@ -79,7 +79,7 @@ export function OnboardingWizard() {
   const civilizationsQuery = useQuery({
     queryKey: ['civilizations'],
     queryFn: () => fetchCivilizations(),
-    enabled: !!user && !authLoading,
+    enabled: !!user && !authLoading && open,
     select: (data) => data.civilizations,
   })
 
