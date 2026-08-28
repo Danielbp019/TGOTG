@@ -61,10 +61,13 @@ Juego de estrategia medieval persistente por navegador, con una experiencia visu
 
 ### Reutilización antes de crear
 
+- **Usar siempre los componentes shadcn/ui instalados**: `Card`, `Button`, `Badge`, `Input`, `Label`, etc.
+  No crear `<div className="rounded-xl border p-4">` cuando existe `Card`.
+  No crear `<button className="...">` cuando existe `Button`.
+  Revisar `components/ui/` antes de crear cualquier elemento de UI.
 - Diálogo de confirmación → `ConfirmDialog` (`components/ui/confirm-dialog.tsx`)
 - Formulario en diálogo → `FormDialog` (`components/ui/form-dialog.tsx`)
 - Estado de carga → `Skeleton` (`components/ui/skeleton.tsx`). Nunca `<p>Cargando...</p>`
-- Revisar `components/ui/` antes de crear componentes nuevos
 - No usar `confirm()` del navegador
 
 ### Formato de imports
