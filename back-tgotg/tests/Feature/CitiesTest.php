@@ -132,10 +132,13 @@ test('una ciudad recien creada tiene atributos coherentes con sus edificios', fu
         ])
         ->assertStatus(201);
 
+    $player = Player::where('user_id', $user->id)->first();
+    $city = City::where('player_id', $player->id)->first();
+
     // TH Nvl 1, resto Nvl 0: oro/h 24 (100 × 0,24), producción base,
     // defensa 10 y poder defensivo 10 sin tropas.
     $this->actingAs($user, 'sanctum')
-        ->getJson('/api/city')
+        ->getJson("/api/cities/{$city->id}")
         ->assertStatus(200)
         ->assertJsonPath('city.perHour.gold', 24)
         ->assertJsonPath('city.perHour.wood', 35)

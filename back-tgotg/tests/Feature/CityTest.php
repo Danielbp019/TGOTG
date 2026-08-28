@@ -11,14 +11,17 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 test('la ciudad requiere autenticación', function () {
-    $this->getJson('/api/city')->assertStatus(401);
+    $city = City::factory()->create();
+
+    $this->getJson("/api/cities/{$city->id}")->assertStatus(401);
 });
 
 test('un usuario sin jugador no tiene ciudad', function () {
     $user = User::factory()->create();
+    $city = City::factory()->create();
 
     $this->actingAs($user, 'sanctum')
-        ->getJson('/api/city')
+        ->getJson("/api/cities/{$city->id}")
         ->assertStatus(404);
 });
 
@@ -26,10 +29,11 @@ test('un jugador sin ciudad tampoco tiene datos', function () {
     $user = User::factory()->create();
     $world = World::factory()->create(['status' => 'running']);
     Player::factory()->create(['world_id' => $world->id, 'user_id' => $user->id]);
+    $city = City::factory()->create(['world_id' => $world->id]);
 
     $this->actingAs($user, 'sanctum')
-        ->getJson('/api/city')
-        ->assertStatus(404);
+        ->getJson("/api/cities/{$city->id}")
+        ->assertStatus(403);
 });
 
 test('devuelve la ciudad del jugador actual con sus edificios', function () {
@@ -67,7 +71,7 @@ test('devuelve la ciudad del jugador actual con sus edificios', function () {
     ]);
 
     $this->actingAs($user, 'sanctum')
-        ->getJson('/api/city')
+        ->getJson("/api/cities/{$city->id}")
         ->assertStatus(200)
         ->assertJsonPath('city.name', 'Principal')
         ->assertJsonPath('city.resources.gold', 12450)
@@ -111,7 +115,7 @@ test('el payload incluye el material y costo de reparación de un edificio daña
 
     // HP = 2 × 1000 × 1,5 (defensivo) = 3000; puntos = 50 % de 3000 = 1500.
     $this->actingAs($user, 'sanctum')
-        ->getJson('/api/city')
+        ->getJson("/api/cities/{$city->id}")
         ->assertStatus(200)
         ->assertJsonPath('city.buildings.0.repairMaterial', 'stone')
         ->assertJsonPath('city.buildings.0.repairCost.gold', 4500)
@@ -129,7 +133,7 @@ test('los recursos del payload de ciudad son los generales del jugador', functio
         'wood' => 555,
     ]);
     // La ciudad tiene columnas de recursos propias que deben ignorarse.
-    City::factory()->create([
+    $city = City::factory()->create([
         'player_id' => $player->id,
         'world_id' => $world->id,
         'gold' => 123456,
@@ -137,7 +141,7 @@ test('los recursos del payload de ciudad son los generales del jugador', functio
     ]);
 
     $this->actingAs($user, 'sanctum')
-        ->getJson('/api/city')
+        ->getJson("/api/cities/{$city->id}")
         ->assertStatus(200)
         ->assertJsonPath('city.resources.gold', 777)
         ->assertJsonPath('city.resources.wood', 555);
@@ -147,7 +151,7 @@ test('la producción horaria aplica el multiplicador de velocidad del mundo', fu
     $user = User::factory()->create();
     $world = World::factory()->create(['status' => 'running', 'speed_multiplier' => 2]);
     $player = Player::factory()->create(['world_id' => $world->id, 'user_id' => $user->id]);
-    City::factory()->create([
+    $city = City::factory()->create([
         'player_id' => $player->id,
         'world_id' => $world->id,
         'gold_per_hour' => 120,
@@ -155,7 +159,7 @@ test('la producción horaria aplica el multiplicador de velocidad del mundo', fu
     ]);
 
     $this->actingAs($user, 'sanctum')
-        ->getJson('/api/city')
+        ->getJson("/api/cities/{$city->id}")
         ->assertStatus(200)
         ->assertJsonPath('city.perHour.gold', 240)
         ->assertJsonPath('city.perHour.wood', 170);

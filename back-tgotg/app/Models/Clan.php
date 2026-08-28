@@ -45,7 +45,7 @@ class Clan extends Model
 
     public function bulletins(): HasMany
     {
-        return $this->hasMany(ClanBulletin::class);
+        return $this->hasMany(ClanBulletin::class)->latest();
     }
 
     public function messages(): HasMany

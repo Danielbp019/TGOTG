@@ -54,11 +54,7 @@ export function CitiesSummary() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            Aún no tienes ciudades.{' '}
-            <Link href="/ciudades" className="underline">
-              Crea una
-            </Link>
-            .
+            Aún no tienes ciudades.
           </p>
         </CardContent>
       </Card>

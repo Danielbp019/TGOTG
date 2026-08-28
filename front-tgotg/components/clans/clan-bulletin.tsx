@@ -76,7 +76,7 @@ export function ClanBulletin({
   }
 
   return (
-    <Card className="w-full min-h-[300px] max-h-[500px] flex flex-col">
+    <Card className="w-full min-h-[220px] max-h-[500px]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle>Tablón</CardTitle>
         {canEdit && (
@@ -90,7 +90,7 @@ export function ClanBulletin({
           </Button>
         )}
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto min-h-0">
+      <CardContent className="overflow-y-auto">
         <FormDialog
           open={showDialog}
           onOpenChange={handleDialogOpenChange}
